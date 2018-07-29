@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2FC6C155-2BDF-4761-B9B5-7DFE9C2BB4F4}</ProjectGuid>
+    <TemplateGuid>{1bc93793-694f-48fe-9372-81e2b05556fd}</TemplateGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+    <Configuration>Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">Win32</Platform>
+    <RootNamespace>hvpp</RootNamespace>
+    <WindowsTargetPlatformVersion>$(LatestTargetPlatformVersion)</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <TargetVersion>Windows7</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <TargetVersion>Windows7</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(IncludePath);$(KMDF_INC_PATH)$(KMDF_VER_PATH)</IncludePath>
+    <OutDir>$(SolutionDir)bin\$(PlatformShortName)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)bin\obj\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <EnableInf2cat>false</EnableInf2cat>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(IncludePath);$(KMDF_INC_PATH)$(KMDF_VER_PATH)</IncludePath>
+    <OutDir>$(SolutionDir)bin\$(PlatformShortName)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)bin\obj\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <DisableSpecificWarnings>4201;4748;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename)%(Extension).obj</ObjectFileName>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Inf />
+    <Inf />
+    <MASM />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <DisableSpecificWarnings>4201;4603;4627;4986;4987;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename)%(Extension).obj</ObjectFileName>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Inf />
+    <MASM />
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Inf Include="hvpp.inf">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </Inf>
+  </ItemGroup>
+  <ItemGroup>
+    <FilesToPackage Include="$(TargetPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="hvpp\ept.cpp" />
+    <ClCompile Include="hvpp\hypervisor.cpp" />
+    <ClCompile Include="hvpp\vcpu.cpp" />
+    <ClCompile Include="hvpp\vcpu_vmcs.cpp" />
+    <ClCompile Include="hvpp\vmexit.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="lib\log.cpp" />
+    <ClCompile Include="lib\mm.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="hvpp\ept.h" />
+    <ClInclude Include="hvpp\hypervisor.h" />
+    <ClInclude Include="hvpp\vcpu.h" />
+    <ClInclude Include="hvpp\vmexit.h" />
+    <ClInclude Include="ia32\arch.h" />
+    <ClInclude Include="ia32\arch\cr.h" />
+    <ClInclude Include="ia32\arch\dr.h" />
+    <ClInclude Include="ia32\arch\rflags.h" />
+    <ClInclude Include="ia32\arch\segment.h" />
+    <ClInclude Include="ia32\asm.h" />
+    <ClInclude Include="ia32\ept.h" />
+    <ClInclude Include="ia32\exception.h" />
+    <ClInclude Include="ia32\interrupt.h" />
+    <ClInclude Include="ia32\memory.h" />
+    <ClInclude Include="ia32\msr.h" />
+    <ClInclude Include="ia32\msr\arch.h" />
+    <ClInclude Include="ia32\msr\mtrr.h" />
+    <ClInclude Include="ia32\msr\vmx.h" />
+    <ClInclude Include="ia32\mtrr.h" />
+    <ClInclude Include="ia32\vmx.h" />
+    <ClInclude Include="ia32\vmx\exception_bitmap.h" />
+    <ClInclude Include="ia32\vmx\instruction_error.h" />
+    <ClInclude Include="ia32\vmx\exit_qualification.h" />
+    <ClInclude Include="ia32\vmx\exit_reason.h" />
+    <ClInclude Include="ia32\vmx\interrupt.h" />
+    <ClInclude Include="ia32\vmx\io_bitmap.h" />
+    <ClInclude Include="ia32\vmx\msr_bitmap.h" />
+    <ClInclude Include="ia32\vmx\vmcs.h" />
+    <ClInclude Include="lib\assert.h" />
+    <ClInclude Include="lib\bitmap.h" />
+    <ClInclude Include="lib\enumname.h" />
+    <ClInclude Include="lib\log.h" />
+    <ClInclude Include="lib\mm.h" />
+    <ClInclude Include="lib\mp.h" />
+    <ClInclude Include="lib\noopt.h" />
+    <ClInclude Include="lib\spinlock.h" />
+    <ClInclude Include="lib\thread.h" />
+    <ClInclude Include="lib\typelist.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="hvpp\vcpu.asm" />
+    <MASM Include="ia32\context.asm" />
+    <MASM Include="ia32\asm.asm" />
+    <MASM Include="lib\noopt.asm" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ia32\common.inc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

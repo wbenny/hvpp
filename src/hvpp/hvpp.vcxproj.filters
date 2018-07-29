@@ -1,0 +1,214 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Driver Files">
+      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
+      <Extensions>inf;inv;inx;mof;mc;</Extensions>
+    </Filter>
+    <Filter Include="Header Files\ia32">
+      <UniqueIdentifier>{13e4faaa-e9d5-4495-89a7-dd142bb34be3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ia32\arch">
+      <UniqueIdentifier>{a9380f7e-8f06-435f-afc8-79745b851d4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\lib">
+      <UniqueIdentifier>{4faa566a-7c94-4f40-a79c-3e4d03c0d3e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lib">
+      <UniqueIdentifier>{621e920d-d9e9-47e9-a5de-aa77f6d02d7c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ia32\msr">
+      <UniqueIdentifier>{990b5132-506f-4853-9336-95c982e94260}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ia32">
+      <UniqueIdentifier>{fc817069-060d-47b9-b37c-4f2ba84d821b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ia32\vmx">
+      <UniqueIdentifier>{5cf1ee73-6f94-4e3d-95d8-eca749f13b11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\hvpp">
+      <UniqueIdentifier>{6e4d9600-74cd-4df7-a644-8958c9188801}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\hvpp">
+      <UniqueIdentifier>{9551dfc3-9d67-46f2-8f7a-5fc5f601b58f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="hvpp.inf">
+      <Filter>Driver Files</Filter>
+    </Inf>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="lib\mm.cpp">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\ept.cpp">
+      <Filter>Source Files\hvpp</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\vcpu.cpp">
+      <Filter>Source Files\hvpp</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\vcpu_vmcs.cpp">
+      <Filter>Source Files\hvpp</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\hypervisor.cpp">
+      <Filter>Source Files\hvpp</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\vmexit.cpp">
+      <Filter>Source Files\hvpp</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\log.cpp">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lib\bitmap.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\enumname.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\typelist.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\arch.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\ept.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\memory.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\msr.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\mtrr.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\arch\cr.h">
+      <Filter>Header Files\ia32\arch</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\arch\dr.h">
+      <Filter>Header Files\ia32\arch</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\arch\rflags.h">
+      <Filter>Header Files\ia32\arch</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\arch\segment.h">
+      <Filter>Header Files\ia32\arch</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\msr\arch.h">
+      <Filter>Header Files\ia32\msr</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\msr\mtrr.h">
+      <Filter>Header Files\ia32\msr</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\msr\vmx.h">
+      <Filter>Header Files\ia32\msr</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\log.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\asm.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx\exit_qualification.h">
+      <Filter>Header Files\ia32\vmx</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx\vmcs.h">
+      <Filter>Header Files\ia32\vmx</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx\msr_bitmap.h">
+      <Filter>Header Files\ia32\vmx</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx\exit_reason.h">
+      <Filter>Header Files\ia32\vmx</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\noopt.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx\io_bitmap.h">
+      <Filter>Header Files\ia32\vmx</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx\interrupt.h">
+      <Filter>Header Files\ia32\vmx</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\ept.h">
+      <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\vcpu.h">
+      <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\exception.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\interrupt.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\hypervisor.h">
+      <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\vmexit.h">
+      <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\assert.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx\instruction_error.h">
+      <Filter>Header Files\ia32\vmx</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx\exception_bitmap.h">
+      <Filter>Header Files\ia32\vmx</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\mm.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\spinlock.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\mp.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\thread.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="lib\noopt.asm">
+      <Filter>Source Files\lib</Filter>
+    </MASM>
+    <MASM Include="ia32\context.asm">
+      <Filter>Source Files\ia32</Filter>
+    </MASM>
+    <MASM Include="hvpp\vcpu.asm">
+      <Filter>Source Files\hvpp</Filter>
+    </MASM>
+    <MASM Include="ia32\asm.asm">
+      <Filter>Source Files\ia32</Filter>
+    </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ia32\common.inc">
+      <Filter>Source Files\ia32</Filter>
+    </None>
+  </ItemGroup>
+</Project>
