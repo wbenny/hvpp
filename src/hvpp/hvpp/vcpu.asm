@@ -4,7 +4,7 @@
 ;
 ; Module:
 ;
-;   context.asm
+;   vcpu.asm
 ;
 ; Abstract:
 ;
@@ -36,23 +36,23 @@ INCLUDE ia32/common.inc
 ;
 ; Externally used symbols.
 ;
-    ; "public:  __int64 __cdecl ia32::context::capture(void)"
-    EXTERN ?capture@context@ia32@@QEAAHXZ           : PROC
+    ; "public:  __int64 __cdecl ia32::context_t::capture(void)"
+    EXTERN ?capture@context_t@ia32@@QEAAHXZ           : PROC
 
-    ; "public:  void    __cdecl ia32::context::restore(void)"
-    EXTERN ?restore@context@ia32@@QEAAXXZ           : PROC
+    ; "public:  void    __cdecl ia32::context_t::restore(void)"
+    EXTERN ?restore@context_t@ia32@@QEAAXXZ           : PROC
 
-    ; "private: void    __cdecl hvpp::vcpu::entry_host(void)"
-    EXTERN ?entry_host@vcpu@hvpp@@AEAAXXZ            : PROC
+    ; "private: void    __cdecl hvpp::vcpu_t::entry_host(void)"
+    EXTERN ?entry_host@vcpu_t@hvpp@@AEAAXXZ           : PROC
 
-    ; "private: void    __cdecl hvpp::vcpu::entry_guest(void)"
-    EXTERN ?entry_guest@vcpu@hvpp@@AEAAXXZ : PROC
+    ; "private: void    __cdecl hvpp::vcpu_t::entry_guest(void)"
+    EXTERN ?entry_guest@vcpu_t@hvpp@@AEAAXXZ          : PROC
 
 ;++
 ;
 ; private:
 ;   static void __cdecl
-;   hvpp::vcpu::entry_guest_(void)
+;   hvpp::vcpu_t::entry_guest_(void)
 ;
 ; Routine description:
 ;
@@ -60,7 +60,7 @@ INCLUDE ia32/common.inc
 ;
 ;--
 
-    ?entry_guest_@vcpu@hvpp@@CAXXZ PROC
+    ?entry_guest_@vcpu_t@hvpp@@CAXXZ PROC
 ;
 ; RCX = &vcpu
 ; RBX = &vcpu.launch_context_
@@ -72,21 +72,21 @@ INCLUDE ia32/common.inc
 ; Create shadow space
 ;
         sub     rsp, SHADOW_SPACE
-        call    ?entry_guest@vcpu@hvpp@@AEAAXXZ
+        call    ?entry_guest@vcpu_t@hvpp@@AEAAXXZ
 
 ;
 ; Restore CPU context
 ; Note that RBX is preserved, because it is non-volatile register
 ;
         mov     rcx, rbx
-        jmp     ?restore@context@ia32@@QEAAXXZ
-    ?entry_guest_@vcpu@hvpp@@CAXXZ ENDP
+        jmp     ?restore@context_t@ia32@@QEAAXXZ
+    ?entry_guest_@vcpu_t@hvpp@@CAXXZ ENDP
 
 ;++
 ;
 ; private:
 ;   static void __cdecl
-;   hvpp::vcpu::entry_host_(void)
+;   hvpp::vcpu_t::entry_host_(void)
 ;
 ; Routine description:
 ;
@@ -95,14 +95,14 @@ INCLUDE ia32/common.inc
 ;
 ;--
 
-    ?entry_host_@vcpu@hvpp@@CAXXZ PROC
+    ?entry_host_@vcpu_t@hvpp@@CAXXZ PROC
         push    rcx
 
 ;
 ; RCX = &vcpu.exit_context_
 ;
         lea     rcx, qword ptr [rsp + 8 + VCPU_EXIT_CONTEXT_OFFSET]
-        call    ?capture@context@ia32@@QEAAHXZ
+        call    ?capture@context_t@ia32@@QEAAHXZ
 
 ;
 ; RBX = &vcpu.exit_context_
@@ -112,8 +112,8 @@ INCLUDE ia32/common.inc
         mov     rbx, rcx
         pop     rcx
 
-        mov     context.$rcx[rbx], rcx
-        mov     context.$rsp[rbx], rsp
+        mov     context_t.$rcx[rbx], rcx
+        mov     context_t.$rsp[rbx], rsp
 
 ;
 ; RCX = &vcpu
@@ -124,14 +124,14 @@ INCLUDE ia32/common.inc
 ; Create shadow space
 ;
         sub     rsp, SHADOW_SPACE
-        call    ?entry_host@vcpu@hvpp@@AEAAXXZ
+        call    ?entry_host@vcpu_t@hvpp@@AEAAXXZ
 
 ;
 ; Restore CPU context
 ; Note that RBX is preserved, because it is non-volatile register
 ;
         mov     rcx, rbx
-        jmp     ?restore@context@ia32@@QEAAXXZ
-    ?entry_host_@vcpu@hvpp@@CAXXZ ENDP
+        jmp     ?restore@context_t@ia32@@QEAAXXZ
+    ?entry_host_@vcpu_t@hvpp@@CAXXZ ENDP
 
 END

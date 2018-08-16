@@ -46,9 +46,11 @@ struct cr3_t
 
     struct
     {
-      uint64_t reserved_1 : 3;
-      uint64_t page_level_write_through : 1;
-      uint64_t page_level_cache_disable : 1;
+      uint64_t pcid : 12;
+      uint64_t page_frame_number : 36;
+      uint64_t reserved_1 : 12;
+      uint64_t reserved_2 : 3;
+      uint64_t pcid_invalidate : 1;
     };
   };
 };

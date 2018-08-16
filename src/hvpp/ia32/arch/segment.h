@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <type_traits>
 
 namespace ia32 {
 
@@ -152,39 +153,48 @@ static_assert(sizeof(seg_descriptor_entry_t) == 16);
 //
 template <typename T> T read() noexcept;
 
-template <typename T>
+template <typename T = seg_selector_t>
 struct seg_t
 {
   static_assert(std::is_base_of_v<seg_selector_t, T>);
 
-  T                 selector;
-  seg_access_vmx_t  access;
-  uint32_t          limit;
   void*             base_address;
+  uint32_t          limit;
+  seg_access_vmx_t  access;
+  T                 selector;
 
   seg_t() noexcept
-    : selector()
-    , access()
+    : base_address()
     , limit()
-    , base_address()
+    , access()
+    , selector()
   {
 
   }
 
   seg_t(T selector) noexcept
-    : selector(selector)
-    , access()
+    : base_address()
     , limit()
-    , base_address()
+    , access()
+    , selector(selector)
   {
 
   }
 
   seg_t(T selector, void* base_address) noexcept
-    : selector(selector)
-    , access()
+    : base_address(base_address)
     , limit()
-    , base_address(base_address)
+    , access()
+    , selector(selector)
+  {
+
+  }
+
+  seg_t(void* base_address, uint32_t limit, seg_access_vmx_t access, T selector) noexcept
+    : base_address(base_address)
+    , limit(limit)
+    , access(access)
+    , selector(selector)
   {
 
   }
@@ -211,13 +221,13 @@ struct seg_t
 
       if constexpr (std::is_same_v<T, fs_t>)
       {
-        UNREFERENCED_PARAMETER(descriptor_table);
-        base_address = reinterpret_cast<void*>(msr::read<msr::fs_base>());
+        (void)(descriptor_table);
+        base_address = reinterpret_cast<void*>(msr::read<msr::fs_base_t>());
       }
       else if constexpr (std::is_same_v<T, gs_t>)
       {
-        UNREFERENCED_PARAMETER(descriptor_table);
-        base_address = reinterpret_cast<void*>(msr::read<msr::gs_base>());
+        (void)(descriptor_table);
+        base_address = reinterpret_cast<void*>(msr::read<msr::gs_base_t>());
       }
       else
       {

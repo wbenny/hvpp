@@ -1,5 +1,9 @@
 #pragma once
-#include "ia32/asm.h"
+#include "asm.h"
+
+#include "msr/arch.h"
+#include "msr/mtrr.h"
+#include "msr/vmx.h"
 
 #include <cstdint>
 
@@ -18,7 +22,3 @@ template <typename T> inline void     write(uint32_t msr_id, T r)            noe
                       inline void     write(uint32_t msr_id, uint64_t value) noexcept { ia32_asm_write_msr(   msr_id, value)     ; }
 
 }
-
-#include "msr/arch.h"
-#include "msr/mtrr.h"
-#include "msr/vmx.h"

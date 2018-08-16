@@ -1,12 +1,11 @@
 #pragma once
-#include "ia32/arch.h"
-#include "lib/log.h"
+#include "ia32/arch.h" // cr0_t, cr4_t
 
 #include <cstdint>
 
 namespace ia32::msr {
 
-struct vmx_true_ctls
+struct vmx_true_ctls_t
 {
   union
   {
@@ -20,10 +19,10 @@ struct vmx_true_ctls
   };
 };
 
-struct vmx_basic
+struct vmx_basic_t
 {
   static constexpr uint32_t msr_id = 0x00000480;
-  using result_type = vmx_basic;
+  using result_type = vmx_basic_t;
 
   union
   {
@@ -32,9 +31,9 @@ struct vmx_basic
     struct
     {
       uint64_t vmcs_revision_id : 31;
-      uint64_t must_be_zero : 1;
+      uint64_t reserved_1 : 1;
       uint64_t vmcs_size_in_bytes : 13;
-      uint64_t reserved_1 : 3;
+      uint64_t reserved_2 : 3;
       uint64_t vmcs_physical_address_width : 1;
       uint64_t dual_monitor : 1;
       uint64_t memory_type : 4;
@@ -44,10 +43,10 @@ struct vmx_basic
   };
 };
 
-struct vmx_pinbased_ctls
+struct vmx_pinbased_ctls_t
 {
   static constexpr uint32_t msr_id = 0x00000481;
-  using result_type = vmx_pinbased_ctls;
+  using result_type = vmx_pinbased_ctls_t;
 
   union
   {
@@ -66,10 +65,10 @@ struct vmx_pinbased_ctls
   };
 };
 
-struct vmx_procbased_ctls
+struct vmx_procbased_ctls_t
 {
   static constexpr uint32_t msr_id = 0x00000482;
-  using result_type = vmx_procbased_ctls;
+  using result_type = vmx_procbased_ctls_t;
 
   union
   {
@@ -108,10 +107,10 @@ struct vmx_procbased_ctls
   };
 };
 
-struct vmx_exit_ctls
+struct vmx_exit_ctls_t
 {
   static constexpr uint32_t msr_id = 0x00000483;
-  using result_type = vmx_exit_ctls;
+  using result_type = vmx_exit_ctls_t;
 
   union
   {
@@ -139,10 +138,10 @@ struct vmx_exit_ctls
   };
 };
 
-struct vmx_entry_ctls
+struct vmx_entry_ctls_t
 {
   static constexpr uint32_t msr_id = 0x00000484;
-  using result_type = vmx_entry_ctls;
+  using result_type = vmx_entry_ctls_t;
 
   union
   {
@@ -166,10 +165,10 @@ struct vmx_entry_ctls
   };
 };
 
-struct vmx_misc
+struct vmx_misc_t
 {
   static constexpr uint32_t msr_id = 0x00000485;
-  using result_type = vmx_misc;
+  using result_type = vmx_misc_t;
 
   union
   {
@@ -194,34 +193,34 @@ struct vmx_misc
   };
 };
 
-struct vmx_cr0_fixed0
+struct vmx_cr0_fixed0_t
 {
   static constexpr uint32_t msr_id = 0x00000486;
   using result_type = cr0_t;
 };
 
-struct vmx_cr0_fixed1
+struct vmx_cr0_fixed1_t
 {
   static constexpr uint32_t msr_id = 0x00000487;
   using result_type = cr0_t;
 };
 
-struct vmx_cr4_fixed0
+struct vmx_cr4_fixed0_t
 {
   static constexpr uint32_t msr_id = 0x00000488;
   using result_type = cr4_t;
 };
 
-struct vmx_cr4_fixed1
+struct vmx_cr4_fixed1_t
 {
   static constexpr uint32_t msr_id = 0x00000489;
   using result_type = cr4_t;
 };
 
-struct vmx_procbased_ctls2
+struct vmx_procbased_ctls2_t
 {
   static constexpr uint32_t msr_id = 0x0000048B;
-  using result_type = vmx_procbased_ctls2;
+  using result_type = vmx_procbased_ctls2_t;
 
   union
   {
@@ -258,10 +257,10 @@ struct vmx_procbased_ctls2
   };
 };
 
-struct vmx_ept_vpid_cap
+struct vmx_ept_vpid_cap_t
 {
   static constexpr uint32_t msr_id = 0x0000048C;
-  using result_type = vmx_ept_vpid_cap;
+  using result_type = vmx_ept_vpid_cap_t;
 
   union
   {

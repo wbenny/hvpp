@@ -56,6 +56,7 @@
     <OutDir>$(SolutionDir)bin\$(PlatformShortName)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\obj\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
     <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
+    <EnableInf2cat>false</EnableInf2cat>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -63,10 +64,15 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename)%(Extension).obj</ObjectFileName>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Inf />
     <Inf />
     <MASM />
+    <Link>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+    </Link>
+    <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -74,9 +80,16 @@
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename)%(Extension).obj</ObjectFileName>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Inf />
     <MASM />
+    <Link>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+    </Link>
+    <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
     <Inf Include="hvpp.inf">
@@ -90,29 +103,40 @@
     <ClCompile Include="hvpp\ept.cpp" />
     <ClCompile Include="hvpp\hypervisor.cpp" />
     <ClCompile Include="hvpp\vcpu.cpp" />
-    <ClCompile Include="hvpp\vcpu_vmcs.cpp" />
     <ClCompile Include="hvpp\vmexit.cpp">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="hvpp\vmexit_stats.cpp" />
+    <ClCompile Include="ia32\win32\memory.cpp" />
     <ClCompile Include="lib\log.cpp" />
     <ClCompile Include="lib\mm.cpp" />
+    <ClCompile Include="lib\vmware\vmware.cpp" />
+    <ClCompile Include="lib\win32\kernel_cr3.cpp" />
+    <ClCompile Include="lib\win32\log.cpp" />
+    <ClCompile Include="lib\win32\mp.cpp" />
+    <ClCompile Include="lib\win32\tracelog.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="custom_vmexit.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="custom_vmexit.h" />
+    <ClInclude Include="hvpp\config.h" />
     <ClInclude Include="hvpp\ept.h" />
     <ClInclude Include="hvpp\hypervisor.h" />
     <ClInclude Include="hvpp\vcpu.h" />
     <ClInclude Include="hvpp\vmexit.h" />
+    <ClInclude Include="hvpp\vmexit_stats.h" />
     <ClInclude Include="ia32\arch.h" />
     <ClInclude Include="ia32\arch\cr.h" />
     <ClInclude Include="ia32\arch\dr.h" />
     <ClInclude Include="ia32\arch\rflags.h" />
     <ClInclude Include="ia32\arch\segment.h" />
+    <ClInclude Include="ia32\arch\xsave.h" />
     <ClInclude Include="ia32\asm.h" />
+    <ClInclude Include="ia32\cpuid\cpuid_eax_01.h" />
     <ClInclude Include="ia32\ept.h" />
     <ClInclude Include="ia32\exception.h" />
-    <ClInclude Include="ia32\interrupt.h" />
     <ClInclude Include="ia32\memory.h" />
     <ClInclude Include="ia32\msr.h" />
     <ClInclude Include="ia32\msr\arch.h" />
@@ -121,6 +145,7 @@
     <ClInclude Include="ia32\mtrr.h" />
     <ClInclude Include="ia32\vmx.h" />
     <ClInclude Include="ia32\vmx\exception_bitmap.h" />
+    <ClInclude Include="ia32\vmx\instruction_info.h" />
     <ClInclude Include="ia32\vmx\instruction_error.h" />
     <ClInclude Include="ia32\vmx\exit_qualification.h" />
     <ClInclude Include="ia32\vmx\exit_reason.h" />
@@ -128,24 +153,32 @@
     <ClInclude Include="ia32\vmx\io_bitmap.h" />
     <ClInclude Include="ia32\vmx\msr_bitmap.h" />
     <ClInclude Include="ia32\vmx\vmcs.h" />
+    <ClInclude Include="ia32\win32\asm.h" />
+    <ClInclude Include="ia32\win32\memory.h" />
     <ClInclude Include="lib\assert.h" />
     <ClInclude Include="lib\bitmap.h" />
-    <ClInclude Include="lib\enumname.h" />
+    <ClInclude Include="lib\cr3_guard.h" />
     <ClInclude Include="lib\log.h" />
     <ClInclude Include="lib\mm.h" />
     <ClInclude Include="lib\mp.h" />
     <ClInclude Include="lib\noopt.h" />
+    <ClInclude Include="lib\object.h" />
     <ClInclude Include="lib\spinlock.h" />
-    <ClInclude Include="lib\thread.h" />
     <ClInclude Include="lib\typelist.h" />
+    <ClInclude Include="lib\vmware\vmware.h" />
+    <ClInclude Include="lib\win32\kernel_cr3.h" />
+    <ClInclude Include="lib\win32\log.h" />
+    <ClInclude Include="lib\win32\mp.h" />
+    <ClInclude Include="lib\win32\tracelog.h" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="hvpp\vcpu.asm" />
     <MASM Include="ia32\context.asm" />
     <MASM Include="ia32\asm.asm" />
-    <MASM Include="lib\noopt.asm" />
+    <MASM Include="lib\vmware\ioctx.asm" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="hvpp\vcpu.inl" />
     <None Include="ia32\common.inc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

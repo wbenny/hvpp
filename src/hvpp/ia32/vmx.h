@@ -1,14 +1,18 @@
 #pragma once
+#include "asm.h"
+#include "ept.h"
+#include "msr.h"
+#include "memory.h"
+
 #include "vmx/exit_qualification.h"
 #include "vmx/exit_reason.h"
 #include "vmx/interrupt.h"
 #include "vmx/instruction_error.h"
+#include "vmx/instruction_info.h"
 #include "vmx/vmcs.h"
 #include "vmx/exception_bitmap.h"
 #include "vmx/io_bitmap.h"
 #include "vmx/msr_bitmap.h"
-#include "msr.h"
-#include "lib/enumname.h"
 
 #include <cstdint>
 
@@ -42,18 +46,21 @@ auto adjust(T desired) noexcept
     std::is_same_v<T, cr4_t>;
 
   constexpr bool is_vmx_ctl_msr =
-    std::is_same_v<T, msr::vmx_pinbased_ctls>  ||
-    std::is_same_v<T, msr::vmx_procbased_ctls> ||
-    std::is_same_v<T, msr::vmx_entry_ctls>     ||
-    std::is_same_v<T, msr::vmx_exit_ctls>;
+    std::is_same_v<T, msr::vmx_pinbased_ctls_t>  ||
+    std::is_same_v<T, msr::vmx_procbased_ctls_t> ||
+    std::is_same_v<T, msr::vmx_entry_ctls_t>     ||
+    std::is_same_v<T, msr::vmx_exit_ctls_t>;
 
-  static_assert(is_control_register || is_vmx_ctl_msr,
+  constexpr bool is_vmx_procbased_ctls2_msr =
+    std::is_same_v<T, msr::vmx_procbased_ctls2_t>;
+
+  static_assert(is_control_register || is_vmx_ctl_msr || is_vmx_procbased_ctls2_msr,
                 "type is not adjustable");
 
   if constexpr (is_control_register)
   {
-    using fixed0_msr_t = std::conditional_t<std::is_same_v<T, cr0_t>, msr::vmx_cr0_fixed0, msr::vmx_cr4_fixed0>;
-    using fixed1_msr_t = std::conditional_t<std::is_same_v<T, cr0_t>, msr::vmx_cr0_fixed1, msr::vmx_cr4_fixed1>;
+    using fixed0_msr_t = std::conditional_t<std::is_same_v<T, cr0_t>, msr::vmx_cr0_fixed0_t, msr::vmx_cr4_fixed0_t>;
+    using fixed1_msr_t = std::conditional_t<std::is_same_v<T, cr0_t>, msr::vmx_cr0_fixed1_t, msr::vmx_cr4_fixed1_t>;
 
     auto cr_fixed0 = msr::read<fixed0_msr_t>();
     auto cr_fixed1 = msr::read<fixed1_msr_t>();
@@ -66,7 +73,16 @@ auto adjust(T desired) noexcept
   else if constexpr (is_vmx_ctl_msr)
   {
     constexpr uint32_t true_msr_id = T::msr_id + 0xC;
-    auto true_ctls = msr::read<msr::vmx_true_ctls>(true_msr_id);
+    auto true_ctls = msr::read<msr::vmx_true_ctls_t>(true_msr_id);
+
+    desired.flags |= true_ctls.allowed_0_settings;
+    desired.flags &= true_ctls.allowed_1_settings;
+
+    return desired;
+  }
+  else if constexpr(is_vmx_procbased_ctls2_msr)
+  {
+    auto true_ctls = msr::read<msr::vmx_true_ctls_t>(T::msr_id);
 
     desired.flags |= true_ctls.allowed_0_settings;
     desired.flags &= true_ctls.allowed_1_settings;
@@ -97,7 +113,7 @@ inline error_code vmresume() noexcept
 { return static_cast<error_code>(ia32_asm_vmx_vmresume()); }
 
 template <typename T>
-inline error_code vmread(vmcs::field vmcs_field, T& value) noexcept
+inline error_code vmread(vmcs_t::field vmcs_field, T& value) noexcept
 {
   detail::u64_t<T> u{ 0 };
 
@@ -109,7 +125,7 @@ inline error_code vmread(vmcs::field vmcs_field, T& value) noexcept
 }
 
 template <typename T>
-inline error_code vmwrite(vmcs::field vmcs_field, T value) noexcept
+inline error_code vmwrite(vmcs_t::field vmcs_field, T value) noexcept
 {
   detail::u64_t<T> u{ 0 };
 

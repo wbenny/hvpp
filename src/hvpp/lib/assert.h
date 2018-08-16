@@ -1,4 +1,10 @@
 #pragma once
-#include <ntddk.h>
+#include "ia32/asm.h"
 
-#define hvpp_assert(expression) do { if (!(expression)) { __debugbreak(); } } while (0)
+#define hvpp_assert(expression)                         \
+  do                                                    \
+  {                                                     \
+    if (!(expression)) {                                \
+      ia32_asm_int3();                                  \
+    }                                                   \
+  } while (0)

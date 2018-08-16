@@ -1,14 +1,18 @@
 #pragma once
+#include "asm.h"
+
 #include "arch/cr.h"
 #include "arch/dr.h"
 #include "arch/rflags.h"
 #include "arch/segment.h"
+#include "arch/xsave.h"
 
 #include <cstdint>
+#include <cstring> // memset
 
 namespace ia32 {
 
-struct context
+struct context_t
 {
   enum
   {
@@ -28,43 +32,249 @@ struct context
     reg_r13 = 13,
     reg_r14 = 14,
     reg_r15 = 15,
+
+    reg_min =  0,
+    reg_max = 15,
+  };
+
+  enum
+  {
+    seg_es  = 0,
+    seg_cs  = 1,
+    seg_ss  = 2,
+    seg_ds  = 3,
+    seg_fs  = 4,
+    seg_gs  = 5,
+    seg_ldtr= 6,
+    seg_tr  = 7,
+
+    seg_min = 0,
+    seg_max = 7,
   };
 
   union
   {
     struct
     {
-      uint64_t rax;
-      uint64_t rcx;
-      uint64_t rdx;
-      uint64_t rbx;
-      uint64_t rsp;
-      uint64_t rbp;
-      uint64_t rsi;
-      uint64_t rdi;
-      uint64_t r8;
-      uint64_t r9;
-      uint64_t r10;
-      uint64_t r11;
-      uint64_t r12;
-      uint64_t r13;
-      uint64_t r14;
-      uint64_t r15;
+      union
+      {
+        uint64_t rax;
+        void*    rax_as_pointer;
+
+        struct
+        {
+          uint32_t eax;
+          uint32_t rax_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t rcx;
+        void*    rcx_as_pointer;
+
+        struct
+        {
+          uint32_t ecx;
+          uint32_t rcx_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t rdx;
+        void*    rdx_as_pointer;
+
+        struct
+        {
+          uint32_t edx;
+          uint32_t rdx_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t rbx;
+        void*    rbx_as_pointer;
+
+        struct
+        {
+          uint32_t ebx;
+          uint32_t rbx_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t rsp;
+        void*    rsp_as_pointer;
+
+        struct
+        {
+          uint32_t esp;
+          uint32_t rsp_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t rbp;
+        void*    rbp_as_pointer;
+
+        struct
+        {
+          uint32_t ebp;
+          uint32_t rbp_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t rsi;
+        void*    rsi_as_pointer;
+
+        struct
+        {
+          uint32_t esi;
+          uint32_t rsi_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t rdi;
+        void*    rdi_as_pointer;
+
+        struct
+        {
+          uint32_t edi;
+          uint32_t rdi_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t r8;
+        void*    r8_as_pointer;
+
+        struct
+        {
+          uint32_t r8d;
+          uint32_t r8_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t r9;
+        void*    r9_as_pointer;
+
+        struct
+        {
+          uint32_t r9d;
+          uint32_t r9_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t r10;
+        void*    r10_as_pointer;
+
+        struct
+        {
+          uint32_t r10d;
+          uint32_t r10_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t r11;
+        void*    r11_as_pointer;
+
+        struct
+        {
+          uint32_t r11d;
+          uint32_t r11_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t r12;
+        void*    r12_as_pointer;
+
+        struct
+        {
+          uint32_t r12d;
+          uint32_t r12_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t r13;
+        void*    r13_as_pointer;
+
+        struct
+        {
+          uint32_t r13d;
+          uint32_t r13_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t r14;
+        void*    r14_as_pointer;
+
+        struct
+        {
+          uint32_t r14d;
+          uint32_t r14_hi;
+        };
+      };
+
+      union
+      {
+        uint64_t r15;
+        void*    r15_as_pointer;
+
+        struct
+        {
+          uint32_t r15d;
+          uint32_t r15_hi;
+        };
+      };
     };
 
     uint64_t gp_register[16];
   };
 
-  uint64_t rip;
+  union
+  {
+    uint64_t rip;
+    void*    rip_as_pointer;
+
+    struct
+    {
+      uint32_t eip;
+      uint32_t rip_hi;
+    };
+  };
+
   rflags_t rflags;
 
   int  capture() noexcept;
 
   [[noreturn]]
   void restore() noexcept;
+
+  void clear() noexcept { memset(this, 0, sizeof(*this)); }
 };
 
-static_assert(sizeof(context) == 144);
+static_assert(sizeof(context_t) == 144);
 
 template <typename T> T    read()         noexcept { static_assert(0, "invalid specialization"); }
 template <typename T> void write(T value) noexcept { static_assert(0, "invalid specialization"); }

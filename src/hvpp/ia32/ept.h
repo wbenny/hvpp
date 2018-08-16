@@ -1,13 +1,14 @@
 #pragma once
 #include "memory.h"
-#include <cstdint>
 
-#define EPT_PAGE_WALK_LENGTH_4                                       0x00000003
+#include <cstdint>
 
 namespace ia32 {
 
 struct ept_ptr_t
 {
+  static constexpr int page_walk_length_4 = 3;
+
   union
   {
     uint64_t flags;
@@ -163,6 +164,20 @@ struct ept_pte_t
 
 struct epte_t
 {
+  enum class access_type : uint32_t
+  {
+    read        = 0b0000'0001,
+    write       = 0b0000'0010,
+    execute     = 0b0000'0100,
+
+    read_write         = read | write,
+    read_execute       = read | execute,
+    read_write_execute = read | write | execute,
+    write_execute      = write | execute,
+
+    access_mask = 0b0000'0111,
+  };
+
   union
   {
     uint64_t        flags;
@@ -190,23 +205,33 @@ struct epte_t
       uint64_t reserved_2 : 15;
       uint64_t suppress_ve : 1;
     };
+
+    struct
+    {
+      access_type access : 3;
+    };
   };
 
-  void update(pa_t pa) noexcept
+  void update(access_type new_access) noexcept
   {
-    read_access = write_access = execute_access = true;
+    access = new_access;
+  }
+
+  void update(pa_t pa, access_type new_access = access_type::read_write_execute) noexcept
+  {
+    update(new_access);
     page_frame_number = pa.pfn();
   }
 
-  void update(pa_t pa, mtype type) noexcept
+  void update(pa_t pa, ia32::memory_type type, access_type new_access = access_type::read_write_execute) noexcept
   {
-    update(pa);
+    update(pa, new_access);
     memory_type = static_cast<uint64_t>(type);
   }
 
-  void update(pa_t pa, mtype type, bool large) noexcept
+  void update(pa_t pa, ia32::memory_type type, bool large, access_type new_access = access_type::read_write_execute) noexcept
   {
-    update(pa, type);
+    update(pa, type, new_access);
     large_page = large;
   }
 
@@ -222,6 +247,18 @@ struct epte_t
     return read_access || write_access || execute_access;
   }
 };
+
+constexpr inline epte_t::access_type operator&(epte_t::access_type value1, epte_t::access_type value2) noexcept
+{ return static_cast<epte_t::access_type>(static_cast<uint32_t>(value1) & static_cast<uint32_t>(value2)); }
+
+constexpr inline epte_t::access_type operator|(epte_t::access_type value1, epte_t::access_type value2) noexcept
+{ return static_cast<epte_t::access_type>(static_cast<uint32_t>(value1) | static_cast<uint32_t>(value2)); }
+
+constexpr inline epte_t::access_type& operator&=(epte_t::access_type& value1, epte_t::access_type value2) noexcept
+{ value1 = value1 & value2; return value1; }
+
+constexpr inline epte_t::access_type& operator|=(epte_t::access_type& value1, epte_t::access_type value2) noexcept
+{ value1 = value1 | value2; return value1; }
 
 static_assert(sizeof(epte_t) == 8);
 

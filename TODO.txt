@@ -1,8 +1,0 @@
-class system_thread
-better EPT handling
-split VCPU to hypervisor + vcpu
-make some intelligent guess of how much memory will be needed to allocate (to memory_manager)
-implement in/out exiting
-remove all references to ntoskrnl, all functions should be provided via struct
-implement io-ctrl, make hvppctrl somewhat useful
-fix cr3 on exit + inspect ShvVmxCleanup (ds, es, fs fix)

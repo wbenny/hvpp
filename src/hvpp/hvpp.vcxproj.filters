@@ -44,6 +44,27 @@
     <Filter Include="Header Files\hvpp">
       <UniqueIdentifier>{9551dfc3-9d67-46f2-8f7a-5fc5f601b58f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\lib\win32">
+      <UniqueIdentifier>{9672ddae-e529-45ac-bb8b-049cf5f33c1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\lib\win32">
+      <UniqueIdentifier>{c8b42ad2-96bd-43db-bcf1-2baa6d39a0e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\lib\vmware">
+      <UniqueIdentifier>{b199f4fb-0f50-4a62-b44d-f80541e9b91a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lib\vmware">
+      <UniqueIdentifier>{5df648ce-5d58-4dd3-802d-cb8a2fc32b0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ia32\win32">
+      <UniqueIdentifier>{50e78dad-77ff-4213-95a4-cc2797d4fec0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ia32\win32">
+      <UniqueIdentifier>{58ca1824-8dab-4080-a6bf-57fc434547b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ia32\cpuid">
+      <UniqueIdentifier>{62dd8975-bcd7-4cf8-b7d1-d70006bb42c9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Inf Include="hvpp.inf">
@@ -60,9 +81,6 @@
     <ClCompile Include="hvpp\vcpu.cpp">
       <Filter>Source Files\hvpp</Filter>
     </ClCompile>
-    <ClCompile Include="hvpp\vcpu_vmcs.cpp">
-      <Filter>Source Files\hvpp</Filter>
-    </ClCompile>
     <ClCompile Include="hvpp\hypervisor.cpp">
       <Filter>Source Files\hvpp</Filter>
     </ClCompile>
@@ -75,12 +93,33 @@
     <ClCompile Include="lib\log.cpp">
       <Filter>Source Files\lib</Filter>
     </ClCompile>
+    <ClCompile Include="hvpp\vmexit_stats.cpp">
+      <Filter>Source Files\hvpp</Filter>
+    </ClCompile>
+    <ClCompile Include="custom_vmexit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\vmware\vmware.cpp">
+      <Filter>Source Files\lib\vmware</Filter>
+    </ClCompile>
+    <ClCompile Include="ia32\win32\memory.cpp">
+      <Filter>Source Files\ia32\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\win32\kernel_cr3.cpp">
+      <Filter>Source Files\lib\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\win32\mp.cpp">
+      <Filter>Source Files\lib\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\win32\log.cpp">
+      <Filter>Source Files\lib\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\win32\tracelog.cpp">
+      <Filter>Source Files\lib\win32</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\bitmap.h">
-      <Filter>Header Files\lib</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\enumname.h">
       <Filter>Header Files\lib</Filter>
     </ClInclude>
     <ClInclude Include="lib\typelist.h">
@@ -161,9 +200,6 @@
     <ClInclude Include="ia32\exception.h">
       <Filter>Header Files\ia32</Filter>
     </ClInclude>
-    <ClInclude Include="ia32\interrupt.h">
-      <Filter>Header Files\ia32</Filter>
-    </ClInclude>
     <ClInclude Include="hvpp\hypervisor.h">
       <Filter>Header Files\hvpp</Filter>
     </ClInclude>
@@ -188,14 +224,53 @@
     <ClInclude Include="lib\mp.h">
       <Filter>Header Files\lib</Filter>
     </ClInclude>
-    <ClInclude Include="lib\thread.h">
+    <ClInclude Include="lib\object.h">
       <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\vmx\instruction_info.h">
+      <Filter>Header Files\ia32\vmx</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\vmexit_stats.h">
+      <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\arch\xsave.h">
+      <Filter>Header Files\ia32\arch</Filter>
+    </ClInclude>
+    <ClInclude Include="custom_vmexit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\config.h">
+      <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\win32\kernel_cr3.h">
+      <Filter>Header Files\lib\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\cr3_guard.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\vmware\vmware.h">
+      <Filter>Header Files\lib\vmware</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\win32\memory.h">
+      <Filter>Header Files\ia32\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\win32\asm.h">
+      <Filter>Header Files\ia32\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\win32\mp.h">
+      <Filter>Header Files\lib\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\win32\log.h">
+      <Filter>Header Files\lib\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\win32\tracelog.h">
+      <Filter>Header Files\lib\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="ia32\cpuid\cpuid_eax_01.h">
+      <Filter>Header Files\ia32\cpuid</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="lib\noopt.asm">
-      <Filter>Source Files\lib</Filter>
-    </MASM>
     <MASM Include="ia32\context.asm">
       <Filter>Source Files\ia32</Filter>
     </MASM>
@@ -205,10 +280,16 @@
     <MASM Include="ia32\asm.asm">
       <Filter>Source Files\ia32</Filter>
     </MASM>
+    <MASM Include="lib\vmware\ioctx.asm">
+      <Filter>Source Files\lib\vmware</Filter>
+    </MASM>
   </ItemGroup>
   <ItemGroup>
     <None Include="ia32\common.inc">
       <Filter>Source Files\ia32</Filter>
+    </None>
+    <None Include="hvpp\vcpu.inl">
+      <Filter>Source Files\hvpp</Filter>
     </None>
   </ItemGroup>
 </Project>

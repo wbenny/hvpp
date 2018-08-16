@@ -3,10 +3,10 @@
 
 namespace ia32::msr {
 
-struct apic_base
+struct apic_base_t
 {
   static constexpr uint32_t msr_id = 0x0000001b;
-  using result_type = apic_base;
+  using result_type = apic_base_t;
 
   union
   {
@@ -24,10 +24,10 @@ struct apic_base
   };
 };
 
-struct debugctl
+struct debugctl_t
 {
   static constexpr uint32_t msr_id = 0x000001d9;
-  using result_type = debugctl;
+  using result_type = debugctl_t;
 
   union
   {
@@ -52,13 +52,13 @@ struct debugctl
   };
 };
 
-struct fs_base
+struct fs_base_t
 {
   static constexpr uint32_t msr_id = 0xc0000100;
   using result_type = uint64_t;
 };
 
-struct gs_base
+struct gs_base_t
 {
   static constexpr uint32_t msr_id = 0xc0000101;
   using result_type = uint64_t;

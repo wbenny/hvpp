@@ -15,7 +15,7 @@ enum class interrupt_type : uint32_t
   other_event                 = 7,
 };
 
-struct interrupt_info
+struct interrupt_info_t
 {
   union
   {
@@ -32,5 +32,21 @@ struct interrupt_info
     };
   };
 };
+
+inline constexpr char* interrupt_type_to_string(interrupt_type value) noexcept
+{
+  switch (value)
+  {
+    case interrupt_type::external: return "external";
+    case interrupt_type::reserved: return "reserved";
+    case interrupt_type::nmi: return "nmi";
+    case interrupt_type::hardware_exception: return "hardware_exception";
+    case interrupt_type::software: return "software";
+    case interrupt_type::privileged_exception: return "privileged_exception";
+    case interrupt_type::software_exception: return "software_exception";
+    case interrupt_type::other_event: return "other_event";
+    default: return "";
+  }
+}
 
 }

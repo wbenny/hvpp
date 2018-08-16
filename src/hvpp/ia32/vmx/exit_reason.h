@@ -69,4 +69,74 @@ enum class exit_reason : uint16_t
   execute_xrstors                              = 0x00000040,
 };
 
+inline constexpr char* exit_reason_to_string(exit_reason value) noexcept
+{
+  switch (value)
+  {
+    case exit_reason::exception_or_nmi: return "exception_or_nmi";
+    case exit_reason::external_interrupt: return "external_interrupt";
+    case exit_reason::triple_fault: return "triple_fault";
+    case exit_reason::init_signal: return "init_signal";
+    case exit_reason::startup_ipi: return "startup_ipi";
+    case exit_reason::io_smi: return "io_smi";
+    case exit_reason::smi: return "smi";
+    case exit_reason::interrupt_window: return "interrupt_window";
+    case exit_reason::nmi_window: return "nmi_window";
+    case exit_reason::task_switch: return "task_switch";
+    case exit_reason::execute_cpuid: return "execute_cpuid";
+    case exit_reason::execute_getsec: return "execute_getsec";
+    case exit_reason::execute_hlt: return "execute_hlt";
+    case exit_reason::execute_invd: return "execute_invd";
+    case exit_reason::execute_invlpg: return "execute_invlpg";
+    case exit_reason::execute_rdpmc: return "execute_rdpmc";
+    case exit_reason::execute_rdtsc: return "execute_rdtsc";
+    case exit_reason::execute_rsm_in_smm: return "execute_rsm_in_smm";
+    case exit_reason::execute_vmcall: return "execute_vmcall";
+    case exit_reason::execute_vmclear: return "execute_vmclear";
+    case exit_reason::execute_vmlaunch: return "execute_vmlaunch";
+    case exit_reason::execute_vmptrld: return "execute_vmptrld";
+    case exit_reason::execute_vmptrst: return "execute_vmptrst";
+    case exit_reason::execute_vmread: return "execute_vmread";
+    case exit_reason::execute_vmresume: return "execute_vmresume";
+    case exit_reason::execute_vmwrite: return "execute_vmwrite";
+    case exit_reason::execute_vmxoff: return "execute_vmxoff";
+    case exit_reason::execute_vmxon: return "execute_vmxon";
+    case exit_reason::mov_cr: return "mov_cr";
+    case exit_reason::mov_dr: return "mov_dr";
+    case exit_reason::execute_io_instruction: return "execute_io_instruction";
+    case exit_reason::execute_rdmsr: return "execute_rdmsr";
+    case exit_reason::execute_wrmsr: return "execute_wrmsr";
+    case exit_reason::error_invalid_guest_state: return "error_invalid_guest_state";
+    case exit_reason::error_msr_load: return "error_msr_load";
+    case exit_reason::execute_mwait: return "execute_mwait";
+    case exit_reason::monitor_trap_flag: return "monitor_trap_flag";
+    case exit_reason::execute_monitor: return "execute_monitor";
+    case exit_reason::execute_pause: return "execute_pause";
+    case exit_reason::error_machine_check: return "error_machine_check";
+    case exit_reason::tpr_below_threshold: return "tpr_below_threshold";
+    case exit_reason::apic_access: return "apic_access";
+    case exit_reason::virtualized_eoi: return "virtualized_eoi";
+    case exit_reason::gdtr_idtr_access: return "gdtr_idtr_access";
+    case exit_reason::ldtr_tr_access: return "ldtr_tr_access";
+    case exit_reason::ept_violation: return "ept_violation";
+    case exit_reason::ept_misconfiguration: return "ept_misconfiguration";
+    case exit_reason::execute_invept: return "execute_invept";
+    case exit_reason::execute_rdtscp: return "execute_rdtscp";
+    case exit_reason::vmx_preemption_timer_expired: return "vmx_preemption_timer_expired";
+    case exit_reason::execute_invvpid: return "execute_invvpid";
+    case exit_reason::execute_wbinvd: return "execute_wbinvd";
+    case exit_reason::execute_xsetbv: return "execute_xsetbv";
+    case exit_reason::apic_write: return "apic_write";
+    case exit_reason::execute_rdrand: return "execute_rdrand";
+    case exit_reason::execute_invpcid: return "execute_invpcid";
+    case exit_reason::execute_vmfunc: return "execute_vmfunc";
+    case exit_reason::execute_encls: return "execute_encls";
+    case exit_reason::execute_rdseed: return "execute_rdseed";
+    case exit_reason::page_modification_log_full: return "page_modification_log_full";
+    case exit_reason::execute_xsaves: return "execute_xsaves";
+    case exit_reason::execute_xrstors: return "execute_xrstors";
+    default: return "";
+  }
+}
+
 }

@@ -27,8 +27,7 @@ enum class exception_vector : uint32_t
   virtualization_exception    = 20,
 };
 
-
-struct pagefault_error_code
+struct pagefault_error_code_t
 {
   union
   {
@@ -49,7 +48,7 @@ struct pagefault_error_code
   };
 };
 
-struct exception_error_code
+struct exception_error_code_t
 {
   union
   {
@@ -64,9 +63,37 @@ struct exception_error_code
       uint32_t reserved : 16;
     };
 
-    pagefault_error_code pagefault;
+    pagefault_error_code_t pagefault;
   };
 };
+
+inline constexpr char* exception_vector_to_string(exception_vector value) noexcept
+{
+  switch (value)
+  {
+    case exception_vector::divide_error: return "divide_error";
+    case exception_vector::debug: return "debug";
+    case exception_vector::nmi_interrupt: return "nmi_interrupt";
+    case exception_vector::breakpoint: return "breakpoint";
+    case exception_vector::overflow: return "overflow";
+    case exception_vector::bound: return "bound";
+    case exception_vector::invalid_opcode: return "invalid_opcode";
+    case exception_vector::device_not_available: return "device_not_available";
+    case exception_vector::double_fault: return "double_fault";
+    case exception_vector::coprocessor_segment_overrun: return "coprocessor_segment_overrun";
+    case exception_vector::invalid_tss: return "invalid_tss";
+    case exception_vector::segment_not_present: return "segment_not_present";
+    case exception_vector::stack_segment_fault: return "stack_segment_fault";
+    case exception_vector::general_protection: return "general_protection";
+    case exception_vector::page_fault: return "page_fault";
+    case exception_vector::x87_floating_point_error: return "x87_floating_point_error";
+    case exception_vector::alignment_check: return "alignment_check";
+    case exception_vector::machine_check: return "machine_check";
+    case exception_vector::simd_floating_point_error: return "simd_floating_point_error";
+    case exception_vector::virtualization_exception: return "virtualization_exception";
+    default: return "";
+  }
+}
 
 }
 

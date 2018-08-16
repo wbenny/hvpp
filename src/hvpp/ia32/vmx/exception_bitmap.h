@@ -3,7 +3,7 @@
 
 namespace ia32::vmx {
 
-struct exception_bitmap
+struct exception_bitmap_t
 {
   union
   {

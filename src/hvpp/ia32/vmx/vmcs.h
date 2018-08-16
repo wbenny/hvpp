@@ -1,4 +1,6 @@
 #pragma once
+#include "../memory.h"
+
 #include <cstdint>
 
 namespace ia32::vmx {
@@ -56,7 +58,7 @@ namespace detail
   static constexpr uint16_t encode(vmcs_access_type_t access_type, vmcs_type_t type, vmcs_width_t width, uint16_t index) noexcept
   {
     //
-    // Visual Studio has some problems understanding bitfiends
+    // Visual Studio has some problems understanding bitfields
     // in constexpr functions... let's just use good ol' bit operations.
     //
     // vmcs_componing_encoding result{ 0 };
@@ -89,13 +91,13 @@ namespace detail
   }
 }
 
-struct vmcs
+struct alignas(page_size) vmcs_t
 {
   uint32_t revision_id;
   uint32_t abort_indicator;
 
 private:
-  uint8_t  data[PAGE_SIZE - 2 * sizeof(uint32_t)];
+  uint8_t  data[page_size - 2 * sizeof(uint32_t)];
 
   using type  = detail::vmcs_type_t;
   using width = detail::vmcs_width_t;
@@ -178,17 +180,17 @@ public:
     ctrl_cr3_target_value_3                              = detail::encode_full(type::control, width::natural, 7),
 
     //
-    // [VMEXIT]
+    // [VMEXIT] (read-only)
     //
 
     //
     // vmexit::16_bit
     //
-    vmexit_guest_physical_address                        = detail::encode_full(type::vmexit, width::_16_bit, 0),
 
     //
     // vmexit::64_bit
     //
+    vmexit_guest_physical_address                        = detail::encode_full(type::vmexit, width::_64_bit, 0),
 
     //
     // vmexit::32_bit
@@ -339,6 +341,18 @@ public:
   };
 };
 
-static_assert(sizeof(vmcs) == PAGE_SIZE);
+inline vmcs_t::field operator+(vmcs_t::field vmcs_field, int index) noexcept
+{ return static_cast<vmcs_t::field>(static_cast<int>(vmcs_field) + index); }
+
+inline vmcs_t::field operator-(vmcs_t::field vmcs_field, int index) noexcept
+{ return static_cast<vmcs_t::field>(static_cast<int>(vmcs_field) - index); }
+
+inline vmcs_t::field& operator+=(vmcs_t::field& vmcs_field, int index) noexcept
+{ reinterpret_cast<int&>(vmcs_field) += index; return vmcs_field; }
+
+inline vmcs_t::field& operator-=(vmcs_t::field& vmcs_field, int index) noexcept
+{ reinterpret_cast<int&>(vmcs_field) -= index; return vmcs_field; }
+
+static_assert(sizeof(vmcs_t) == page_size);
 
 }

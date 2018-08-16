@@ -1,17 +1,24 @@
 #pragma once
 #include "mm.h"
+
+#include "ia32/memory.h"
+
 #include "lib/assert.h"
 #include "lib/bitmap.h"
+#include "lib/object.h"
 #include "lib/spinlock.h"
 
 #include <cstring>
 #include <limits>
 #include <mutex>
 
-#include <ntddk.h>
-
 //
 // Simple memory manager implementation.
+//
+// Because in VM-exits it is very dangerous to call OS function for memory
+// (de)allocation (they can cause IPIs and/or TLB flush), the hypervisor
+// has its own simple memory manager. The memory manager should be the very
+// first thing to initialize.
 //
 // Memory manager is provided memory space on which it can operate. Small part
 // from this space is reserved for the page bitmap and page allocation map.
@@ -31,48 +38,32 @@
 
 namespace memory_manager
 {
-  uint8_t*  base_address   = nullptr;         // Pool base address
-  size_t    available_size = 0;               // Available memory in the pool
+  uint8_t*  base_address = nullptr;         // Pool base address
+  size_t    available_size = 0;             // Available memory in the pool
 
-  bitmap*   page_bitmap    = nullptr;         // Bitmap holding used pages
-  int       page_bitmap_object_size = 0;      //
-  int       page_bitmap_buffer_size = 0;      //
+  using pgbmp_t = object_t<bitmap>;
+  pgbmp_t   page_bitmap;                    // Bitmap holding used pages
+  int       page_bitmap_buffer_size = 0;    //
 
   using pgmap_t = uint16_t;
-  pgmap_t*  page_allocation_map = nullptr;    // Map holding number of allocated pages
-  int       page_allocation_map_size = 0;     //
+  pgmap_t*  page_allocation_map = nullptr;  // Map holding number of allocated pages
+  int       page_allocation_map_size = 0;   //
 
-  int       last_page_offset = 0;             // Last returned page offset - used as a hint
+  int       last_page_offset = 0;           // Last returned page offset - used as hint
 
   size_t    number_of_allocated_bytes = 0;
   size_t    number_of_free_bytes = 0;
 
-  //
-  // Well, isn't this unfortunate... If we took the pretty path and just used:
-  //   spinlock lock;
-  //
-  // the linker would complain with:
-  //   warning LNK4210: .CRT section exists; there may be unhandled static initializers
-  //   or terminators
-  //
-  // In another words, in Windows Drivers, there is no CRT code to initialize static and
-  // global variables with non-trivial construction (which spinlock isn't). But since we
-  // know that spinlock consists of 32 bits, we can basically create storage for it with
-  // uint32_t and create lock as a reference to that memory.
-  //
-  // Note that initialization of the spinlock happens in the initialize() function.
-  //
-
-  uint32_t  __lock_storage__;
-  spinlock& lock = (spinlock&)__lock_storage__;
-  static_assert(sizeof(uint32_t) == sizeof(spinlock));
+  object_t<ia32::physical_memory_descriptor> memory_descriptor;
+  object_t<ia32::mtrr> memory_type_range_registers;
+  object_t<spinlock> lock;
 
   void initialize(void* address, size_t size) noexcept
   {
-    if (size < PAGE_SIZE * 4)
+    if (size < ia32::page_size * 3)
     {
       //
-      // We need at least 4 pages (see explanation below).
+      // We need at least 3 pages (see explanation below).
       //
       hvpp_assert(0);
       return;
@@ -81,11 +72,11 @@ namespace memory_manager
     //
     // If the provided address is not page aligned, align it to the next page.
     //
-    if (BYTE_OFFSET(address) != 0)
+    if (ia32::byte_offset(address) != 0)
     {
-      uint32_t lost_bytes = BYTE_OFFSET(address);
+      uint32_t lost_bytes = ia32::byte_offset(address);
 
-      address = reinterpret_cast<uint8_t*>(PAGE_ALIGN(address)) + PAGE_SIZE;
+      address = reinterpret_cast<uint8_t*>(ia32::page_align(address)) + ia32::page_size;
 
       //
       // Subtract amount of "lost" bytes due to alignment.
@@ -96,12 +87,12 @@ namespace memory_manager
     //
     // Align size to the page boundary.
     //
-    size = reinterpret_cast<size_t>(PAGE_ALIGN(size));
+    size = reinterpret_cast<size_t>(ia32::page_align(size));
 
     //
     // Check again.
     //
-    if (size < PAGE_SIZE * 4)
+    if (size < ia32::page_size * 3)
     {
       hvpp_assert(0);
       return;
@@ -113,43 +104,32 @@ namespace memory_manager
     //
 
     //
-    // The provided memory is split up to 4 parts:
+    // The provided memory is split up to 3 parts:
     //   1. page bitmap - stores information if page is allocated or not
-    //   2. page bitmap object - stores the bitmap object itself
-    //   3. page count  - stores information how many consecutive pages has been allocated
-    //   4. memory pool - this is the memory which will be provided
+    //   2. page count  - stores information how many consecutive pages has been allocated
+    //   3. memory pool - this is the memory which will be provided
     //
     // For (1), there is taken (size / PAGE_SIZE / 8) bytes from the provided memory space.
-    // For (2), there is taken (PAGE_SIZE) bytes from the provided memory space.
-    // For (3), there is taken (size / PAGE_SIZE * sizeof(pgmap_t)) bytes from the provided
-    // memory space. The rest memory is used for (4). This should account for ~93% of the
+    // For (2), there is taken (size / PAGE_SIZE * sizeof(pgmap_t)) bytes from the provided
+    // memory space. The rest memory is used for (3). This should account for ~93% of the
     // provided memory space (if it is big enough, e.g.: 32MB).
     //
-
-    static_assert(sizeof(bitmap) < PAGE_SIZE);
 
     //
     // Construct the page bitmap.
     //
     uint8_t* page_bitmap_buffer = reinterpret_cast<uint8_t*>(address);
-    page_bitmap_buffer_size = static_cast<int>(ROUND_TO_PAGES(size / PAGE_SIZE / 8));
-    memset(page_bitmap_buffer, 0, page_bitmap_object_size);
+    page_bitmap_buffer_size = static_cast<int>(ia32::round_to_pages(size / ia32::page_size / 8));
+    memset(page_bitmap_buffer, 0, page_bitmap_buffer_size);
 
-    page_bitmap = reinterpret_cast<bitmap*>(page_bitmap_buffer + page_bitmap_buffer_size);
-    page_bitmap_object_size = PAGE_SIZE;
-    new (page_bitmap) bitmap(page_bitmap_buffer, page_bitmap_buffer_size * 8);
+    page_bitmap.initialize(page_bitmap_buffer, page_bitmap_buffer_size * 8);
 
     //
     // Construct the page allocation map.
     //
-    page_allocation_map = reinterpret_cast<pgmap_t*>(reinterpret_cast<uint8_t*>(page_bitmap) + PAGE_SIZE);
-    page_allocation_map_size = static_cast<int>(ROUND_TO_PAGES(size / PAGE_SIZE) * sizeof(pgmap_t));
+    page_allocation_map = reinterpret_cast<pgmap_t*>(page_bitmap_buffer + page_bitmap_buffer_size);
+    page_allocation_map_size = static_cast<int>(ia32::round_to_pages(size / ia32::page_size) * sizeof(pgmap_t));
     memset(page_allocation_map, 0, page_allocation_map_size);
-
-    //
-    // Construct the lock.
-    //
-    new (&lock) spinlock();
 
     //
     // Compute available memory.
@@ -157,17 +137,38 @@ namespace memory_manager
     base_address = reinterpret_cast<uint8_t*>(page_allocation_map) + page_allocation_map_size;
     available_size = size
       - page_bitmap_buffer_size
-      - page_bitmap_object_size
       - page_allocation_map_size;
 
 
+    //
+    // Initialize memory pool with garbage. This should help with debugging
+    // uninitialized variables and class members.
+    //
+    memset(base_address, 0xcc, available_size);
+
+    //
+    // Set initial values of allocated/free bytes.
+    //
     number_of_allocated_bytes = 0;
     number_of_free_bytes = size;
+
+    //
+    // Initialize physical memory descriptor and MTRRs.
+    //
+    lock.initialize();
+    memory_descriptor.initialize();
+    memory_type_range_registers.initialize();
   }
 
   void destroy() noexcept
   {
-    std::lock_guard _(lock);
+    //
+    // Destroy all objects. Note that this method doesn't lock and assumes
+    // all allocations has been already freed.
+    //
+    memory_type_range_registers.destroy();
+    memory_descriptor.destroy();
+    lock.destroy();
 
     //
     // Checks for memory leaks.
@@ -185,8 +186,7 @@ namespace memory_manager
     base_address = nullptr;
     available_size = 0;
 
-    page_bitmap = nullptr;
-    page_bitmap_object_size = 0;
+    page_bitmap.destroy();
     page_bitmap_buffer_size = 0;
 
     page_allocation_map = nullptr;
@@ -210,7 +210,7 @@ namespace memory_manager
       size = 1;
     }
 
-    int page_count = static_cast<int>(BYTES_TO_PAGES(size));
+    int page_count = static_cast<int>(ia32::bytes_to_pages(size));
 
     //
     // Check if the desired number of pages can fit into the allocation map.
@@ -224,7 +224,7 @@ namespace memory_manager
     int previous_page_offset;
 
     {
-      std::lock_guard _(lock);
+      std::lock_guard _(*lock);
 
       last_page_offset = page_bitmap->find_first_clear(last_page_offset, page_count);
 
@@ -249,17 +249,16 @@ namespace memory_manager
       previous_page_offset = last_page_offset;
       last_page_offset += page_count;
 
-      number_of_allocated_bytes += page_count * PAGE_SIZE;
-      number_of_free_bytes -= page_count * PAGE_SIZE;
+      number_of_allocated_bytes += page_count * ia32::page_size;
+      number_of_free_bytes      -= page_count * ia32::page_size;
     }
 
     //
-    // Clear the memory. Note that we don't need to be locked to do this.
+    // Return the final address. Note that we're not under lock here - we don't
+    // need it, because everything neccessary has been done (bitmap + page
+    // allocation map manipulation).
     //
-    auto result = base_address + previous_page_offset * PAGE_SIZE;
-    memset(result, 0, size);
-
-    return result;
+    return base_address + previous_page_offset * ia32::page_size;
   }
 
   void free(void* address) noexcept
@@ -267,11 +266,11 @@ namespace memory_manager
     //
     // Our allocator always provides page-aligned memory.
     //
-    hvpp_assert(BYTE_OFFSET(address) == 0);
+    hvpp_assert(ia32::byte_offset(address) == 0);
 
-    int offset = static_cast<int>(BYTES_TO_PAGES(reinterpret_cast<uint8_t*>(address) - base_address));
+    int offset = static_cast<int>(ia32::bytes_to_pages(reinterpret_cast<uint8_t*>(address) - base_address));
 
-    if (offset * PAGE_SIZE > available_size)
+    if (offset * ia32::page_size > available_size)
     {
       //
       // We don't own this memory.
@@ -280,7 +279,7 @@ namespace memory_manager
       return;
     }
 
-    std::lock_guard _(lock);
+    std::lock_guard _(*lock);
 
     if (page_allocation_map[offset] == 0)
     {
@@ -302,8 +301,8 @@ namespace memory_manager
     //
     page_bitmap->clear(offset, page_count);
 
-    number_of_allocated_bytes -= page_count * PAGE_SIZE;
-    number_of_free_bytes += page_count * PAGE_SIZE;
+    number_of_allocated_bytes -= page_count * ia32::page_size;
+    number_of_free_bytes      += page_count * ia32::page_size;
   }
 
   size_t allocated_bytes() noexcept
@@ -315,9 +314,17 @@ namespace memory_manager
   {
     return number_of_free_bytes;
   }
-}
 
-//////////////////////////////////////////////////////////////////////////
+  const ia32::physical_memory_descriptor& physical_memory_descriptor() noexcept
+  {
+    return *memory_descriptor;
+  }
+
+  const ia32::mtrr& mtrr() noexcept
+  {
+    return *memory_type_range_registers;
+  }
+}
 
 void* operator new  (size_t size)                                    { return memory_manager::allocate(size); }
 void* operator new[](size_t size)                                    { return memory_manager::allocate(size); }

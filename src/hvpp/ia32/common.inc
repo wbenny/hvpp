@@ -20,7 +20,7 @@
 ;
 ;--
 
-    context struct
+    context_t struct
         $rax    dq ?
         $rcx    dq ?
         $rdx    dq ?
@@ -39,4 +39,4 @@
         $r15    dq ?
         $rip    dq ?
         $rflags dq ?
-    context ends
+    context_t ends
