@@ -802,53 +802,47 @@ void vmexit_handler::handle_ldtr_tr_access(vcpu_t& vp) noexcept
 {
   auto instruction_info = vp.exit_instruction_info().ldtr_tr_access;
 
-  if (instruction_info.access_type == vmx::instruction_info_t::access_memory)
+  cr3_guard _(vp.guest_cr3());
+
+  uint16_t& low_word =
+    instruction_info.access_type == vmx::instruction_info_t::access_memory
+      ? *reinterpret_cast<uint16_t*>(vp.exit_instruction_info_guest_va())
+      // instruction_info.access_type == vmx::instruction_info::access_register
+      :  reinterpret_cast<uint16_t&>(vp.exit_context().gp_register[instruction_info.register_1]);
+
+  switch (instruction_info.instruction)
   {
-    cr3_guard _(vp.guest_cr3());
+    case vmx::instruction_info_ldtr_tr_access_t::instruction_sldt:
+      low_word = vp.guest_segment_selector(context_t::seg_ldtr).flags;
+      break;
 
-    uint16_t& guest_va_low_word = *reinterpret_cast<uint16_t*>(vp.exit_instruction_info_guest_va());
+    case vmx::instruction_info_ldtr_tr_access_t::instruction_str:
+      low_word = vp.guest_segment_selector(context_t::seg_tr).flags;
+      break;
 
-    switch (instruction_info.instruction)
-    {
-      case vmx::instruction_info_ldtr_tr_access_t::instruction_sldt:
-        guest_va_low_word = vp.guest_segment_selector(context_t::seg_ldtr).flags;
-        break;
+    case vmx::instruction_info_ldtr_tr_access_t::instruction_lldt:
+      vp.guest_segment_selector(context_t::seg_ldtr, seg_selector_t{ low_word });
+      break;
 
-      case vmx::instruction_info_ldtr_tr_access_t::instruction_str:
-        guest_va_low_word = vp.guest_segment_selector(context_t::seg_tr).flags;
-        break;
+    case vmx::instruction_info_ldtr_tr_access_t::instruction_ltr:
+      {
+        //
+        // After the segment selector is loaded in the task register, the processor uses the segment selector to locate the
+        // segment descriptor for the TSS in the global descriptor table(GDT). It then loads the segment limit and base
+        // address for the TSS from the segment descriptor into the task register.The task pointed to by the task register is
+        // marked busy, but a switch to the task does not occur.
+        // (ref: Vol2A[(LTR-Load Task Register)])
+        //
+        // TL;DR:
+        //   LTR instruction sets busy bit in the TSS and we need to emulate this behavior.
+        //
+        auto selector = seg_selector_t{ low_word };
+        vp.guest_segment_selector(context_t::seg_tr, selector);
 
-      case vmx::instruction_info_ldtr_tr_access_t::instruction_lldt:
-        vp.guest_segment_selector(context_t::seg_ldtr, seg_selector_t{ guest_va_low_word });
-        break;
-
-      case vmx::instruction_info_ldtr_tr_access_t::instruction_ltr:
-        vp.guest_segment_selector(context_t::seg_tr, seg_selector_t{ guest_va_low_word });
-        break;
-    }
-  }
-  else // if (instruction_info.access_type = vmx::instruction_info::access_register)
-  {
-    uint16_t& low_word = reinterpret_cast<uint16_t&>(vp.exit_context().gp_register[instruction_info.register_1]);
-
-    switch (instruction_info.instruction)
-    {
-      case vmx::instruction_info_ldtr_tr_access_t::instruction_sldt:
-        low_word = vp.guest_segment_selector(context_t::seg_ldtr).flags;
-        break;
-
-      case vmx::instruction_info_ldtr_tr_access_t::instruction_str:
-        low_word = vp.guest_segment_selector(context_t::seg_tr).flags;
-        break;
-
-      case vmx::instruction_info_ldtr_tr_access_t::instruction_lldt:
-        vp.guest_segment_selector(context_t::seg_ldtr, seg_selector_t{ low_word });
-        break;
-
-      case vmx::instruction_info_ldtr_tr_access_t::instruction_ltr:
-        vp.guest_segment_selector(context_t::seg_tr, seg_selector_t{ low_word });
-        break;
-    }
+        auto& descriptor = vp.guest_gdtr()[selector];
+        descriptor.access.type |= seg_access_t::type_tss_busy_flag;
+      }
+      break;
   }
 }
 

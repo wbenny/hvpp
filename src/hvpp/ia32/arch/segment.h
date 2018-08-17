@@ -6,6 +6,11 @@ namespace ia32 {
 
 struct seg_access_t
 {
+  enum
+  {
+    type_tss_busy_flag = 0b0010, // for "type" field
+  };
+
   union
   {
     uint16_t flags;
