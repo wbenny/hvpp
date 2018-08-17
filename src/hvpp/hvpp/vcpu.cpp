@@ -326,7 +326,7 @@ void vcpu_t::setup_host() noexcept
 
   //
   // Note that we're setting just base address of GDTR and IDTR. The limit of
-  // these descriptors is fixed at 0x0fff for VMX operations.
+  // these descriptors is fixed at 0xffff for VMX operations.
   //
   host_gdtr(gdtr);
   host_idtr(read<idtr_t>());

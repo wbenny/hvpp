@@ -858,6 +858,14 @@ void vcpu_t::host_rip(uint64_t rip) noexcept
   vmx::vmwrite(vmx::vmcs_t::field::host_rip, rip);
 }
 
+//
+// The base addresses for GDTR and IDTR are loaded from the GDTR base-address field and the IDTR base-address
+// field, respectively.If the processor supports the Intel 64 architecture and the processor supports N < 64 linearaddress
+// bits, each of bits 63:N of each base address is set to the value of bit N–1 of that base address.The GDTR
+// and IDTR limits are each set to FFFFH.
+// (ref: Vol3C[27.5.2(Loading Host Segment and Descriptor-Table Registers)])
+//
+
 auto vcpu_t::host_gdtr() const noexcept -> gdtr_t
 {
   gdtr_t gdtr;
@@ -883,6 +891,16 @@ void vcpu_t::host_idtr(idtr_t idtr) noexcept
 {
   vmx::vmwrite(vmx::vmcs_t::field::host_idtr_base, idtr.base_address);
 }
+
+//
+// Index - Selects one of 8192 descriptors in the GDT or LDT. The processor multiplies
+// the index value by 8 (the number of bytes in a segment descriptor) and adds the result to the base
+// address of the GDT or LDT(from the GDTR or LDTR register, respectively).
+// (ref: Vol3A[3.4.2(Segment Selectors)])
+//
+// Note that (selector.index * 8) could be represented by (selector.index << 3) - or in this case even
+// by (selector.flags & 0b0111).
+//
 
 auto vcpu_t::host_cs() const noexcept -> seg_t<cs_t>
 {

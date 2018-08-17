@@ -74,6 +74,9 @@ struct seg_descriptor_table_t
 
   seg_descriptor_entry_t& at(seg_selector_t selector) noexcept
   {
+    //
+    // See explanation of (selector.index * 8) in vcpu.inl.
+    //
     return *reinterpret_cast<seg_descriptor_entry_t*>
            (reinterpret_cast<uint64_t>
            (base_address) + selector.index * 8);
