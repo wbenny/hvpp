@@ -38,6 +38,12 @@ static_assert(sizeof(seg_access_vmx_t) == 4);
 
 struct seg_selector_t
 {
+  enum
+  {
+    table_gdt = 0,
+    table_ldt = 1,
+  };
+
   union
   {
     uint16_t flags;
@@ -237,7 +243,7 @@ struct seg_t
         //
         // Actually untested with LDT.
         //
-        if (selector.table == 1) __debugbreak();
+        if (selector.table == seg_selector_t::table_ldt) __debugbreak();
 
         auto& table_entry = selector.table
           ? descriptor_table[read<ldtr_t>()][selector]
