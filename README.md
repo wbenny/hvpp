@@ -15,8 +15,7 @@ huge pile of Intel Manual pages.
 C++ has been chosen as a language for this project because of two reasons:
 - The virtualization architecture can be better expressed in OOP concepts (with such objects as VCPU, EPT).
 - I didn't find other projects which would use modern C++17 features, except for [bareflank][bareflank]. Although
-  bareflank is compilable under Windows, it uses cygwin build toolchain on that platform, which prevents easy debugging
-  with WinDbg.
+  bareflank is compilable under Windows, Linux and UEFI, on Windows, it uses cygwin to cross-compile the hypervisor. Since the hypervisor is a self contained ELF binary, the Windows kernel is missing the debug symbols for the hypervisor, which prevents easy debugging with WinDbg.
 
 Even though this project is primarily developed for Windows, I've decided to not use traditional _Windows Driver naming
 convention_ (aka `DrvCamelCase`). Instead, traditional C++ `snake_case` is used. The reason is that hypervisor is very
