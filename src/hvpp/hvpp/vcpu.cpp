@@ -4,7 +4,6 @@
 #include "lib/assert.h"
 #include "lib/bitmap.h"
 #include "lib/log.h"
-#include "lib/noopt.h"
 
 #include <iterator> // std::end()
 

@@ -182,9 +182,6 @@
     <ClInclude Include="ia32\vmx\exit_reason.h">
       <Filter>Header Files\ia32\vmx</Filter>
     </ClInclude>
-    <ClInclude Include="lib\noopt.h">
-      <Filter>Header Files\lib</Filter>
-    </ClInclude>
     <ClInclude Include="ia32\vmx\io_bitmap.h">
       <Filter>Header Files\ia32\vmx</Filter>
     </ClInclude>

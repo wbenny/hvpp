@@ -161,7 +161,6 @@
     <ClInclude Include="lib\log.h" />
     <ClInclude Include="lib\mm.h" />
     <ClInclude Include="lib\mp.h" />
-    <ClInclude Include="lib\noopt.h" />
     <ClInclude Include="lib\object.h" />
     <ClInclude Include="lib\spinlock.h" />
     <ClInclude Include="lib\typelist.h" />
