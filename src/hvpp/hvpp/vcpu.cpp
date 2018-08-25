@@ -46,12 +46,13 @@ void vcpu_t::initialize(vmexit_handler* handler) noexcept
   handler_ = handler;
 
   //
-  // This is not really needed. CPU initializes VMCS on its own.
+  // Initialize VMXON region and VMCS.
   //
-  // memset(&vmcs_host_, 0, sizeof(vmcs_host_));
-  // memset(&vmcs_guest_, 0, sizeof(vmcs_guest_));
+  memset(&vmxon_, 0, sizeof(vmxon_));
+  memset(&vmcs_, 0, sizeof(vmcs_));
+
   //
-  // This is also not needed. MSR bitmaps and I/O bitmaps are actually copied here
+  // This is not really needed. MSR bitmaps and I/O bitmaps are actually copied here
   // from user-provided buffers (via msr_bitmap() and io_bitmap() methods) before
   // they are enabled.
   //
