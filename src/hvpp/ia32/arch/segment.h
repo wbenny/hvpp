@@ -8,7 +8,7 @@ struct seg_access_t
 {
   enum
   {
-    type_tss_busy_flag = 0b0010, // for "type" field
+    type_tss_busy_flag = 0b0010,
   };
 
   union

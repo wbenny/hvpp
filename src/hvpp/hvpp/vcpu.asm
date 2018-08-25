@@ -56,7 +56,7 @@ INCLUDE ia32/common.inc
 ;
 ; Routine description:
 ;
-;   Determines virtual cpu context from the stack pointer and calls
+;   Determines virtual cpu context from the stack pointer and calls vcpu_t::entry_guest() method.
 ;
 ;--
 
@@ -90,8 +90,7 @@ INCLUDE ia32/common.inc
 ;
 ; Routine description:
 ;
-;   This method captures current CPU context and calls regular
-;   VM-Exit handler.
+;   This method captures current CPU context and calls vcpu_t::entry_host() method.
 ;
 ;--
 
