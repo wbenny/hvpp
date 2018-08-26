@@ -18,6 +18,9 @@ class vmexit_handler
   public:
     vmexit_handler() noexcept;
 
+    virtual void initialize() noexcept { }
+    virtual void destroy() noexcept { }
+
     virtual void setup(vcpu_t& vp) noexcept;
 
     virtual void handle(vcpu_t& vp) noexcept;

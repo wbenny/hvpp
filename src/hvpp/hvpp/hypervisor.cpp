@@ -6,29 +6,40 @@
 #include "lib/log.h"
 #include "lib/mp.h"
 
-#define single_cpu_call(callback)                       \
-  do                                                    \
-  {                                                     \
-    auto idx = 0;                                       \
-    KeSetSystemAffinityThread((ULONG_PTR)1 << (idx));   \
-    callback();                                         \
-    KeRevertToUserAffinityThread();                     \
-  } while (0)
+#ifdef HVPP_SINGLE_VCPU
+# include <ntddk.h>
+
+# define single_cpu_call(callback)                       \
+   do                                                    \
+   {                                                     \
+     auto idx = 0;                                       \
+     KeSetSystemAffinityThread((ULONG_PTR)1 << (idx));   \
+     callback();                                         \
+     KeRevertToUserAffinityThread();                     \
+   } while (0)
+#endif
 
 namespace hvpp {
 
 void hypervisor::initialize() noexcept
 {
+  vcpu_list_ = new vcpu_t[mp::cpu_count()];
+  handler_ = nullptr;
   check_ = false;
 }
 
 void hypervisor::destroy() noexcept
 {
-
+  delete[] vcpu_list_;
 }
 
 bool hypervisor::check() noexcept
 {
+  if (!vcpu_list_)
+  {
+    return false;
+  }
+
 #ifdef HVPP_SINGLE_VCPU
   single_cpu_call(check_ipi_callback);
 #else
@@ -40,7 +51,7 @@ bool hypervisor::check() noexcept
 
 void hypervisor::start(vmexit_handler* handler) noexcept
 {
-  hvpp_assert(handler);
+  hvpp_assert(vcpu_list_ && check_ && handler);
 
   handler_ = handler;
 
@@ -112,14 +123,14 @@ void hypervisor::check_ipi_callback() noexcept
 void hypervisor::start_ipi_callback() noexcept
 {
   auto idx = mp::cpu_index();
-  vcpu_[idx].initialize(handler_);
-  vcpu_[idx].launch();
+  vcpu_list_[idx].initialize(handler_);
+  vcpu_list_[idx].launch();
 }
 
 void hypervisor::stop_ipi_callback() noexcept
 {
   auto idx = mp::cpu_index();
-  vcpu_[idx].destroy();
+  vcpu_list_[idx].destroy();
 }
 
 }

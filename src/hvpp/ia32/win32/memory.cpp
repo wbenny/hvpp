@@ -27,8 +27,8 @@ void physical_memory_descriptor::check_physical_memory() noexcept
 
   do
   {
-    pa_t address = physical_memory_ranges[count_].BaseAddress.QuadPart;
-    size_t     size = physical_memory_ranges[count_].NumberOfBytes.QuadPart;
+    pa_t   address = physical_memory_ranges[count_].BaseAddress.QuadPart;
+    size_t size    = physical_memory_ranges[count_].NumberOfBytes.QuadPart;
 
     if (!address && !size)
     {

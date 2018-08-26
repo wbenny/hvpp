@@ -58,7 +58,77 @@ namespace memory_manager
   object_t<ia32::mtrr> memory_type_range_registers;
   object_t<spinlock> lock;
 
-  void initialize(void* address, size_t size) noexcept
+  void initialize() noexcept
+  {
+    //
+    // Initialize physical memory descriptor and MTRRs.
+    //
+    memory_descriptor.initialize();
+    memory_type_range_registers.initialize();
+
+    //
+    // Initialize lock.
+    //
+    lock.initialize();
+  }
+
+  void destroy() noexcept
+  {
+    //
+    // Destroy all objects. Note that this method doesn't acquire the lock and
+    // assumes all allocations has been already freed.
+    //
+    memory_type_range_registers.destroy();
+    memory_descriptor.destroy();
+    lock.destroy();
+
+    //
+    // If no memory has been assigned - leave.
+    //
+    if (!base_address)
+    {
+      return;
+    }
+
+    //
+    // Mark memory of page_bitmap and page_allocation_map as freed.
+    // Note that everything "free" does is clear bits in page_bitmap and sets 0
+    // to particular page_allocation_map items.
+    //
+    // These two calls are needed to assure that the next two asserts below will
+    // pass.
+    //
+    free(page_bitmap->buffer());
+    free(page_allocation_map);
+
+    //
+    // Checks for memory leaks.
+    //
+    hvpp_assert(page_bitmap->all_clear());
+
+    //
+    // Checks for allocator corruption.
+    //
+    hvpp_assert(std::all_of(
+      page_allocation_map,
+      page_allocation_map + page_allocation_map_size / sizeof(pgmap_t),
+      [](auto page_count) { return page_count == 0; }));
+
+    base_address = nullptr;
+    available_size = 0;
+
+    page_bitmap.destroy();
+    page_bitmap_buffer_size = 0;
+
+    page_allocation_map = nullptr;
+    page_allocation_map_size = 0;
+
+    last_page_offset = 0;
+    number_of_allocated_bytes = 0;
+    number_of_free_bytes = 0;
+  }
+
+  void assign(void* address, size_t size) noexcept
   {
     if (size < ia32::page_size * 3)
     {
@@ -122,7 +192,8 @@ namespace memory_manager
     page_bitmap_buffer_size = static_cast<int>(ia32::round_to_pages(size / ia32::page_size / 8));
     memset(page_bitmap_buffer, 0, page_bitmap_buffer_size);
 
-    page_bitmap.initialize(page_bitmap_buffer, page_bitmap_buffer_size * 8);
+    int page_bitmap_size_in_bits = static_cast<int>(size / ia32::page_size);
+    page_bitmap.initialize(page_bitmap_buffer, page_bitmap_size_in_bits);
 
     //
     // Construct the page allocation map.
@@ -134,67 +205,36 @@ namespace memory_manager
     //
     // Compute available memory.
     //
-    base_address = reinterpret_cast<uint8_t*>(page_allocation_map) + page_allocation_map_size;
-    available_size = size
-      - page_bitmap_buffer_size
-      - page_allocation_map_size;
+    int reserved_bytes = static_cast<int>(page_bitmap_buffer_size + page_allocation_map_size);
 
+    base_address = reinterpret_cast<uint8_t*>(address);
+    available_size = size - reserved_bytes;
+
+    //
+    // Mark memory of page_bitmap and page_allocation_map as allocated.
+    // The return value of these allocations should return the exact address of
+    // page_bitmap_buffer and page_allocation_map.
+    //
+    void* page_bitmap_buffer_tmp  = allocate(page_bitmap_buffer_size);
+    void* page_allocation_map_tmp = allocate(page_allocation_map_size);
+
+    hvpp_assert(reinterpret_cast<uintptr_t>(page_bitmap_buffer)  == reinterpret_cast<uintptr_t>(page_bitmap_buffer_tmp));
+    hvpp_assert(reinterpret_cast<uintptr_t>(page_allocation_map) == reinterpret_cast<uintptr_t>(page_allocation_map_tmp));
+
+    (void)page_bitmap_buffer_tmp;
+    (void)page_allocation_map_tmp;
 
     //
     // Initialize memory pool with garbage. This should help with debugging
     // uninitialized variables and class members.
     //
-    memset(base_address, 0xcc, available_size);
+    memset(base_address + reserved_bytes, 0xcc, available_size);
 
     //
     // Set initial values of allocated/free bytes.
     //
     number_of_allocated_bytes = 0;
     number_of_free_bytes = size;
-
-    //
-    // Initialize physical memory descriptor and MTRRs.
-    //
-    lock.initialize();
-    memory_descriptor.initialize();
-    memory_type_range_registers.initialize();
-  }
-
-  void destroy() noexcept
-  {
-    //
-    // Destroy all objects. Note that this method doesn't lock and assumes
-    // all allocations has been already freed.
-    //
-    memory_type_range_registers.destroy();
-    memory_descriptor.destroy();
-    lock.destroy();
-
-    //
-    // Checks for memory leaks.
-    //
-    hvpp_assert(page_bitmap->all_clear());
-
-    //
-    // Checks for allocator corruption.
-    //
-    hvpp_assert(std::all_of(
-      page_allocation_map,
-      page_allocation_map + page_allocation_map_size / sizeof(pgmap_t),
-      [](auto page_count) { return page_count == 0; }));
-
-    base_address = nullptr;
-    available_size = 0;
-
-    page_bitmap.destroy();
-    page_bitmap_buffer_size = 0;
-
-    page_allocation_map = nullptr;
-    page_allocation_map_size = 0;
-
-    last_page_offset = 0;
-    number_of_allocated_bytes = 0;
-    number_of_free_bytes = 0;
   }
 
   void* allocate(size_t size) noexcept

@@ -9,6 +9,11 @@
 
 namespace mp {
 
+inline uint32_t cpu_count() noexcept
+{
+  return detail::cpu_count();
+}
+
 inline uint32_t cpu_index() noexcept
 {
   return detail::cpu_index();

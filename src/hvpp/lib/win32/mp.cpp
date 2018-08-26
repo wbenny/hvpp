@@ -6,6 +6,11 @@
 
 namespace mp::detail {
 
+uint32_t cpu_count() noexcept
+{
+  return KeQueryActiveProcessorCountEx(0);
+}
+
 uint32_t cpu_index() noexcept
 {
   return KeGetCurrentProcessorNumberEx(NULL);

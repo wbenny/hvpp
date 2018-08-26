@@ -23,7 +23,7 @@ class hypervisor
     void start_ipi_callback() noexcept;
     void stop_ipi_callback() noexcept;
 
-    vcpu_t vcpu_[32];
+    vcpu_t* vcpu_list_;
     vmexit_handler* handler_;
     bool check_;
 };

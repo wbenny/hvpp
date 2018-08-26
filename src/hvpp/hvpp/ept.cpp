@@ -94,7 +94,6 @@ void ept_t::map_identity() noexcept
   bitmap pfn_map(_4gb / page_size);
   int pfn;
 
-  pfn = 0;
   for (auto range : memory_manager::physical_memory_descriptor())
   {
     for (auto pa : range)
@@ -125,7 +124,6 @@ void ept_t::map_identity() noexcept
       pfn_map.set(pfn, _2mb_pfn_count);
     }
   }
-
 
   //
   // Use 4KB pages for the rest.

@@ -4,8 +4,9 @@
 
 namespace memory_manager
 {
-  void initialize(void* base_address, size_t size) noexcept;
+  void initialize() noexcept;
   void destroy() noexcept;
+  void assign(void* address, size_t size) noexcept;
 
   void* allocate(size_t size) noexcept;
   void free(void* address) noexcept;

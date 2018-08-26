@@ -100,14 +100,7 @@ Compile **hvpp** using Visual Studio 2017. Solution file is included. The only r
 
 ### Usage
 
-Prepare VMWare virtual machine with following configuration:
-- 2 cores
-- 2GB of RAM
-- Windows 10 x64 installed
-- optionally VMWare Tools
-
-> Important note: VM configurations with more resources (more VCPUs and/or RAM) might require some changes in code (see
- [Remarks](#remarks) section).
+> You can run **hvpp** on Windows 7 or higher. Windows 10 is recommended though, because it supports **TraceLogging**.
 
 Enable [Test-Signing][test-signing] boot configuration option (note that you'll need administrative privileges to use
 `bcdedit` and `sc` commands):
@@ -227,9 +220,6 @@ When you decide you want to turn off the **hvpp**, just execute:
 - **hvpp** is designed to run only on Windows - future work might focus on Linux.
 - **hvpp** currently doesn't exit VMX mode on sleep or hibernate ([S3 and S4][global-states] power states) - Intel
   Manual says we should do so - this is known limitation.
-- **hvpp** by default preallocates 256MB of non-pageable memory for it's own use (see `HvppMemorySize` in
-  [main.cpp](src/hvpp/main.cpp)) - this should cover creation of EPT for systems with 4 logical cores and 8GB of RAM.
-  If your PC or VM has more resources, it might not be enough and you'd want to increase this value.
 
 ### License
 

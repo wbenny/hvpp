@@ -1,7 +1,9 @@
 #pragma once
 #include "win32/memory.h"
+#include "lib/log.h"
 
 #include <cstdint>
+#include <numeric>
 
 namespace ia32 {
 
@@ -210,6 +212,27 @@ class physical_memory_descriptor
     const memory_range* begin() const noexcept { return &range_[0]; }
     const memory_range* end()   const noexcept { return &range_[size()]; }
     size_t              size()  const noexcept { return count_; }
+
+    size_t total_physical_memory_size() const noexcept
+    {
+      return std::accumulate(begin(), end(), size_t(0), [](auto sum, auto next) {
+        return sum + next.size();
+      });
+    }
+
+    void dump() const noexcept
+    {
+      hvpp_info("Physical memory ranges (%i)", count_);
+
+      for (int i = 0; i < count_; ++i)
+      {
+        hvpp_info(
+          "  %2i) [%p - %p] (%8u kb)", i,
+          range_[i].begin(),
+          range_[i].end(),
+          range_[i].size() / 1024);
+      }
+    }
 
   private:
     void check_physical_memory() noexcept;
