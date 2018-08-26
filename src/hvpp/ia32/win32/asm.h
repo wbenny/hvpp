@@ -103,6 +103,7 @@ void                ia32_asm_inv_vpid           (_In_ unsigned long type, _In_ v
 #define             ia32_asm_read_xcr           _xgetbv
 #define             ia32_asm_write_xcr          _xsetbv
 
+#define             ia32_asm_popcnt             __popcnt64
 #define             ia32_asm_clear_ts           __clts
 #define             ia32_asm_wb_invd            __wbinvd
 
@@ -147,3 +148,17 @@ unsigned char      ia32_asm_bts(_In_ void* base, _In_ unsigned long offset) noex
 #ifdef __cplusplus
 }
 #endif
+
+//
+// This macro expands to code which will cause compiler to print error message
+// which includes size of the object.
+//
+#define static_sizeof(object)                 \
+  do                                          \
+  {                                           \
+    switch (*reinterpret_cast<int*>(nullptr)) \
+    {                                         \
+      case sizeof(object): break;             \
+      case sizeof(object): break;             \
+    }                                         \
+  } while (0)
