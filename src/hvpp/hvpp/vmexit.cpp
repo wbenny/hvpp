@@ -286,7 +286,37 @@ void vmexit_handler::handle_execute_invd(vcpu_t& vp) noexcept
 {
   (void)(vp);
 
-  ia32_asm_invd();
+  //
+  // The INVD instruction invalidates all internal cache entries, then generates a special-function bus cycle that indicates that
+  // external caches also should be invalidated. The INVD instruction should be used with care. It does not force a
+  // write-back of modified cache lines; therefore, data stored in the caches and not written back to system memory
+  // will be lost. Unless there is a specific requirement or benefit to invalidating the caches without writing back the
+  // modified lines (such as, during testing or fault recovery where cache coherency with main memory is not a
+  // concern), software should use the WBINVD instruction.
+  // (ref: Vol3A[11.5.5(Cache Management Instructions)])
+  //
+  // TL;DR:
+  //   INVD can be dangerous, as it doesn't write the cache content to the RAM.
+  //   Because of this, if we would perform this instruction, the system would
+  //   most likely crash after some time. We can either ignore the instruction
+  //   or perform WBINVD - which is what other hypervisors do too.
+  //
+  //   Note that INVD instruction does not occur in whole NTOSKRNL and based on
+  //   articles below, the occurence of this instruction should be rare.
+  //   The use of this instruction is:
+  //     - historical (Cache-as-RAM)
+  //     - in boot phase/in firmware (shouldn't apply to us, as we're already
+  //       booted)
+  //     - related to DMA
+  //
+  // See also:
+  //   - https://stackoverflow.com/questions/41775371/what-use-is-the-invd-instruction
+  //   - https://forum.osdev.org/viewtopic.php?f=1&t=22942
+  //   - https://sites.utexas.edu/jdm4372/2013/05/30/coherence-with-cached-memory-mapped-io/
+  //   - https://groups.google.com/forum/#!topic/comp.lang.asm.x86/otIjgt_-sKM
+  //
+
+  ia32_asm_wb_invd();
 }
 
 void vmexit_handler::handle_execute_rdtsc(vcpu_t& vp) noexcept
