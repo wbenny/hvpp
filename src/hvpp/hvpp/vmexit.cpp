@@ -465,8 +465,8 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
 
   if (vp.guest_cs().access.descriptor_privilege_level != 0)
   {
-    __debugbreak();
-    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection));
+    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{ 0 }));
+    vp.suppress_rip_adjust();
     return;
   }
 
@@ -478,17 +478,21 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
   // (ref: Vol3B[17.2.2(Debug Registers DR4 and DR5)])
   //
 
-  if (vp.guest_cr4().debugging_extensions && (
-      exit_qualification.dr_number == 4 ||
-      exit_qualification.dr_number == 5))
+  if (exit_qualification.dr_number == 4 ||
+      exit_qualification.dr_number == 5)
   {
-    __debugbreak();
-    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::invalid_opcode));
-    return;
+    if (vp.guest_cr4().debugging_extensions)
+    {
+      vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::invalid_opcode));
+      vp.suppress_rip_adjust();
+      return;
+    }
+    else
+    {
+      exit_qualification.dr_number += 2;
+    }
   }
 
-  //
-  // Blatantly copied from ksm. This is what Intel Manual says:
   //
   // Enables (when set) debug-register protection, which causes a
   // debug exception to be generated prior to any MOV instruction that accesses a debug register.When such a
@@ -503,16 +507,34 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
 
   if (vp.guest_dr7().general_detect)
   {
-    __debugbreak();
-
     auto dr6 = read<dr6_t>();
     dr6.breakpoint_condition = 0;
-    dr6.restricted_transactional_memory = true;
     dr6.debug_register_access_detected = true;
 
     write<dr6_t>(dr6);
 
     vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::debug));
+
+    auto dr7 = vp.guest_dr7();
+    dr7.general_detect = false;
+    vp.guest_dr7(dr7);
+
+    vp.suppress_rip_adjust();
+    return;
+  }
+
+  //
+  // In 64-bit mode, the upper 32 bits of DR6 and DR7 are reserved and must be written with zeros. Writing 1 to any of
+  // the upper 32 bits results in a #GP(0) exception.
+  // (ref: Vol3B[17.2.6(Debug Registers and Intel® 64 Processors)])
+  //
+  if (exit_qualification.access_type == vmx::exit_qualification_mov_dr_t::access_to_dr && (
+      exit_qualification.dr_number == 6 ||
+      exit_qualification.dr_number == 7) &&
+      (gp_register >> 32) != 0)
+  {
+    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{ 0 }));
+    vp.suppress_rip_adjust();
     return;
   }
 
@@ -525,37 +547,8 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
         case 1: write<dr1_t>(dr1_t{ gp_register }); break;
         case 2: write<dr2_t>(dr2_t{ gp_register }); break;
         case 3: write<dr3_t>(dr3_t{ gp_register }); break;
-        case 4: write<dr4_t>(dr4_t{ gp_register }); break;
-        case 5: write<dr5_t>(dr5_t{ gp_register }); break;
-
-        //
-        // In 64-bit mode, the upper 32 bits of DR6 and DR7 are reserved and must be written with zeros. Writing 1 to any of
-        // the upper 32 bits results in a #GP(0) exception.
-        // (ref: Vol3B[17.2.6(Debug Registers and Intel® 64 Processors)])
-        //
-
-        case 6:
-          if ((gp_register >> 32) == 0)
-          {
-            write<dr6_t>(dr6_t{ gp_register });
-          }
-          else
-          {
-            vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection));
-          }
-          break;
-
-        case 7:
-          if ((gp_register >> 32) == 0)
-          {
-            vp.guest_dr7(dr7_t{ gp_register });
-          }
-          else
-          {
-            vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection));
-          }
-          break;
-
+        case 6: write<dr6_t>(vmx::adjust(dr6_t{ gp_register })); break;
+        case 7: vp.guest_dr7(vmx::adjust(dr7_t{ gp_register })); break;
         default:
           break;
       }
@@ -568,8 +561,6 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
         case 1: gp_register = read<dr1_t>().flags; break;
         case 2: gp_register = read<dr2_t>().flags; break;
         case 3: gp_register = read<dr3_t>().flags; break;
-        case 4: gp_register = read<dr4_t>().flags; break;
-        case 5: gp_register = read<dr5_t>().flags; break;
         case 6: gp_register = read<dr6_t>().flags; break;
         case 7: gp_register = vp.guest_dr7().flags; break;
         default:

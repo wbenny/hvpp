@@ -45,6 +45,12 @@ auto adjust(T desired) noexcept
     std::is_same_v<T, cr0_t>                   ||
     std::is_same_v<T, cr4_t>;
 
+  constexpr bool is_dr6 =
+    std::is_same_v<T, dr6_t>;
+
+  constexpr bool is_dr7 =
+    std::is_same_v<T, dr7_t>;
+
   constexpr bool is_vmx_ctl_msr =
     std::is_same_v<T, msr::vmx_pinbased_ctls_t>  ||
     std::is_same_v<T, msr::vmx_procbased_ctls_t> ||
@@ -54,7 +60,8 @@ auto adjust(T desired) noexcept
   constexpr bool is_vmx_procbased_ctls2_msr =
     std::is_same_v<T, msr::vmx_procbased_ctls2_t>;
 
-  static_assert(is_control_register || is_vmx_ctl_msr || is_vmx_procbased_ctls2_msr,
+  static_assert(is_control_register || is_dr6|| is_dr7 || is_vmx_ctl_msr ||
+                is_vmx_procbased_ctls2_msr,
                 "type is not adjustable");
 
   if constexpr (is_control_register)
@@ -67,8 +74,26 @@ auto adjust(T desired) noexcept
 
     desired.flags |= cr_fixed0.flags;
     desired.flags &= cr_fixed1.flags;
-
-    return desired;
+  }
+  else if constexpr (is_dr6)
+  {
+    //
+    // x |= ~x will set all bits of the bitfield to 1's. It would be prettier to
+    // just use ~0, but compilers would complain about value not fitting into
+    // bitfield.
+    //
+    // Vol3B[17.2(Debug Registers)] describes which reserved fields should be
+    // set to 0 and 1 respectively.
+    //
+    desired.reserved_1 |= ~desired.reserved_1;
+    desired.reserved_2 = 0;
+    desired.reserved_3 |= ~desired.reserved_3;
+  }
+  else if constexpr (is_dr7)
+  {
+    desired.reserved_1 |= ~desired.reserved_1;
+    desired.reserved_2 = 0;
+    desired.reserved_3 = 0;
   }
   else if constexpr (is_vmx_ctl_msr)
   {
@@ -77,18 +102,16 @@ auto adjust(T desired) noexcept
 
     desired.flags |= true_ctls.allowed_0_settings;
     desired.flags &= true_ctls.allowed_1_settings;
-
-    return desired;
   }
-  else if constexpr(is_vmx_procbased_ctls2_msr)
+  else if constexpr (is_vmx_procbased_ctls2_msr)
   {
     auto true_ctls = msr::read<msr::vmx_true_ctls_t>(T::msr_id);
 
     desired.flags |= true_ctls.allowed_0_settings;
     desired.flags &= true_ctls.allowed_1_settings;
-
-    return desired;
   }
+
+  return desired;
 }
 
 inline error_code on(pa_t pa) noexcept
