@@ -234,25 +234,27 @@ This software is open-source under the MIT license. See the LICENSE.txt file in 
 
 ### Similar work
 
-**SimpleVisor:**    https://github.com/ionescu007/SimpleVisor
+**SimpleVisor:**            https://github.com/ionescu007/SimpleVisor
 
-**HyperPlatform:**  https://github.com/tandasat/HyperPlatform
+**HyperPlatform:**          https://github.com/tandasat/HyperPlatform
 
-**HyperBone:**      https://github.com/DarthTon/HyperBone
+**HyperBone:**              https://github.com/DarthTon/HyperBone
 
-**Bareflank:**      https://github.com/Bareflank/hypervisor
+**Bareflank:**              https://github.com/Bareflank/hypervisor
 
-**ksm:**            https://github.com/asamy/ksm
+**ksm:**                    https://github.com/asamy/ksm
 
-**MoRE:**           https://github.com/ainfosec/MoRE
+**MoRE:**                   https://github.com/ainfosec/MoRE
 
-**hyperdbg:**       https://github.com/rmusser01/hyperdbg
+**hyperdbg:**               https://github.com/rmusser01/hyperdbg
 
-**virtdbg:**        https://github.com/upring/virtdbg
+**virtdbg:**                https://github.com/upring/virtdbg
 
-**BluePill:**       https://invisiblethingslab.com/resources/bh07/nbp-0.32-public.zip
+**BluePill:**               https://invisiblethingslab.com/resources/bh07/nbp-0.32-public.zip
 
-**Phrack #69:**     http://www.phrack.org/issues/69/15.html
+**Phrack #69:**             http://www.phrack.org/issues/69/15.html
+
+**NOVA Microhypervisor:**   https://github.com/udosteinberg/NOVA
 
 Finally, I'd especially like to suggest reading interesting writings from Satoshi Tanda ([github](https://github.com/tandasat), [twitter](https://twitter.com/standa_t)):
 - http://tandasat.github.io/HyperPlatform/
