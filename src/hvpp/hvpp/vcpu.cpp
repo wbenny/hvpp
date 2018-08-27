@@ -172,6 +172,24 @@ void vcpu_t::terminate() noexcept
     write<cr3_t>(guest_cr3());
 
     //
+    // Software can use the INVVPID instruction with the “all-context” INVVPID
+    // type immediately after execution of the VMXON instruction or immediately
+    // prior to execution of the VMXOFF instruction. Either prevents
+    // potentially undesired retention of information cached from paging
+    // structures between separate uses of VMX operation.
+    // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
+    //
+    // Software can use the INVEPT instruction with the “all-context” INVEPT
+    // type immediately after execution of the VMXON instruction or immediately
+    // prior to execution of the VMXOFF instruction. Either prevents
+    // potentially undesired retention of information cached from EPT paging
+    // structures between separate uses of VMX operation.
+    // (ref: Vol3C[28.3.3.4(Guidelines for Use of the INVEPT Instruction)])
+    //
+    vmx::invvpid_all_contexts();
+    vmx::invept_all_contexts();
+
+    //
     // Turn off VMX-root mode on this logical processor.
     //
     // This instruction brings us back to ring 0 from the "ring -1".
@@ -235,9 +253,6 @@ void vcpu_t::setup() noexcept
 
   handler_->setup(*this);
 
-  vmx::invept(vmx::invept_t::all_context);
-  vmx::invvpid(vmx::invvpid_t::all_context);
-
   vmx::vmlaunch();
 
   //
@@ -275,6 +290,24 @@ void vcpu_t::load_vmxon() noexcept
   if (vmx::on(pa_t::from_va(&vmxon_)) == vmx::error_code::success)
   {
     state_ = vcpu_state::initializing;
+
+    //
+    // Software can use the INVVPID instruction with the “all-context” INVVPID
+    // type immediately after execution of the VMXON instruction or immediately
+    // prior to execution of the VMXOFF instruction. Either prevents
+    // potentially undesired retention of information cached from paging
+    // structures between separate uses of VMX operation.
+    // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
+    //
+    // Software can use the INVEPT instruction with the “all-context” INVEPT
+    // type immediately after execution of the VMXON instruction or immediately
+    // prior to execution of the VMXOFF instruction. Either prevents
+    // potentially undesired retention of information cached from EPT paging
+    // structures between separate uses of VMX operation.
+    // (ref: Vol3C[28.3.3.4(Guidelines for Use of the INVEPT Instruction)])
+    //
+    vmx::invvpid_all_contexts();
+    vmx::invept_all_contexts();
   }
   else
   {

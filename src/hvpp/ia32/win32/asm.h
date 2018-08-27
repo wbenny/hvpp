@@ -46,8 +46,8 @@ void                ia32_asm_invd               ()                            no
 void                ia32_asm_halt               ()                            noexcept;
 void                ia32_asm_write_msw          (_In_ unsigned short msw)     noexcept;
 unsigned long long  ia32_asm_vmx_vmcall         (_In_ unsigned long long rcx, _In_ unsigned long long rdx, _In_ unsigned long long r8, _In_ unsigned long long r9) noexcept;
-void                ia32_asm_inv_ept            (_In_ unsigned long type, _In_ void* descriptor) noexcept;
-void                ia32_asm_inv_vpid           (_In_ unsigned long type, _In_ void* descriptor) noexcept;
+unsigned char       ia32_asm_inv_ept            (_In_ unsigned long type, _In_ void* descriptor) noexcept;
+unsigned char       ia32_asm_inv_vpid           (_In_ unsigned long type, _In_ void* descriptor) noexcept;
 
 //
 // MSVC intrinsics.

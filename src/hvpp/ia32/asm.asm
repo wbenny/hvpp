@@ -25,6 +25,10 @@ INCLUDE ksamd64.inc
 
 .CODE
 
+    VMX_ERROR_CODE_SUCCESS              = 0
+    VMX_ERROR_CODE_FAILED_WITH_STATUS   = 1
+    VMX_ERROR_CODE_FAILED               = 2
+
     ia32_asm_read_cs PROC
         mov    ax, cs
         ret
@@ -167,11 +171,29 @@ INCLUDE ksamd64.inc
 
     ia32_asm_inv_ept PROC
         invept  rcx, oword ptr [rdx]
+        jz @jz
+        jc @jc
+        xor     rax, rax
+        ret
+
+@jz:    mov     rax, VMX_ERROR_CODE_FAILED_WITH_STATUS
+        ret
+
+@jc:    mov     rax, VMX_ERROR_CODE_FAILED
         ret
     ia32_asm_inv_ept ENDP
 
     ia32_asm_inv_vpid PROC
         invvpid rcx, oword ptr [rdx]
+        jz @jz
+        jc @jc
+        xor     rax, rax
+        ret
+
+@jz:    mov     rax, VMX_ERROR_CODE_FAILED_WITH_STATUS
+        ret
+
+@jc:    mov     rax, VMX_ERROR_CODE_FAILED
         ret
     ia32_asm_inv_vpid ENDP
 

@@ -377,13 +377,43 @@ void vmexit_handler::handle_mov_cr(vcpu_t& vp) noexcept
                   cr3.pcid_invalidate = false;
                 }
                 vp.guest_cr3(cr3);
-                vmx::invvpid(vmx::invvpid_t::all_context);
+
+                //
+                // Some instructions invalidate all entries in the TLBs and paging-structure caches—except for global translations.
+                // An example is the MOV to CR3 instruction.
+                // Emulation of such an instruction may require execution of the INVVPID instruction as follows:
+                //   - The INVVPID type is single-context-retaining-globals (3).
+                //   - The VPID in the INVVPID descriptor is the one assigned to the virtual processor whose execution is being
+                //     emulated.
+                // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
+                //
+                vmx::invvpid_single_context_retaining_globals(vp.vcpu_id());
             }
           break;
 
         case 4:
-          vp.guest_cr4(cr4_t{ gp_register });
-          vp.cr4_shadow(cr4_t{ gp_register });
+          {
+            //
+            // Some instructions invalidate all entries in the TLBs and paging-structure caches—including for global translations.
+            // An example is the MOV to CR4 instruction if the value of value of bit 4 (page global enable—PGE) is
+            // changing. Emulation of such an instruction may require execution of the INVVPID instruction as follows :
+            //   - The INVVPID type is single - context(1).
+            //   - The VPID in the INVVPID descriptor is the one assigned to the virtual processor whose execution is being
+            //     emulated.
+            // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
+            //
+
+            cr4_t new_cr4 = cr4_t{ gp_register };
+            bool pge_changed = new_cr4.page_global_enable != vp.guest_cr4().page_global_enable;
+
+            vp.guest_cr4(new_cr4);
+            vp.cr4_shadow(new_cr4);
+
+            if (pge_changed)
+            {
+              vmx::invvpid_single_context(vp.vcpu_id());
+            }
+          }
           break;
 
         case 8:

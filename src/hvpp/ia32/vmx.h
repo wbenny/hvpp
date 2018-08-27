@@ -33,9 +33,9 @@ union u64_t
 
 enum class error_code
 {
-  success = 0,
+  success            = 0,
   failed_with_status = 1,
-  failed = 2
+  failed             = 2
 };
 
 template <typename T>
@@ -189,14 +189,14 @@ inline TResult vmcall(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3
 enum class invept_t : uint32_t
 {
   single_context                    = 0x00000001,
-  all_context                       = 0x00000002,
+  all_contexts                      = 0x00000002,
 };
 
 enum class invvpid_t : uint32_t
 {
   individual_address                = 0x00000000,
   single_context                    = 0x00000001,
-  all_context                       = 0x00000002,
+  all_contexts                      = 0x00000002,
   single_context_retaining_globals  = 0x00000003,
 };
 
@@ -220,7 +220,7 @@ struct invvpid_desc_t
 
 static_assert(sizeof(invvpid_desc_t) == 16);
 
-inline void invept(invept_t type, invept_desc_t* descriptor = nullptr) noexcept
+inline error_code invept(invept_t type, invept_desc_t* descriptor = nullptr) noexcept
 {
   if (!descriptor)
   {
@@ -228,10 +228,21 @@ inline void invept(invept_t type, invept_desc_t* descriptor = nullptr) noexcept
     descriptor = &zero_descriptor;
   }
 
-  ia32_asm_inv_ept(static_cast<uint32_t>(type), descriptor);
+  return static_cast<error_code>(ia32_asm_inv_ept(static_cast<uint32_t>(type), descriptor));
 }
 
-inline void invvpid(invvpid_t type, invvpid_desc_t* descriptor = nullptr) noexcept
+inline error_code invept_single_context(ept_ptr_t ept_pointer) noexcept
+{
+  invept_desc_t descriptor = { ept_pointer, 0 };
+  return invept(invept_t::single_context, &descriptor);
+}
+
+inline error_code invept_all_contexts() noexcept
+{
+  return invept(invept_t::all_contexts);
+}
+
+inline error_code invvpid(invvpid_t type, invvpid_desc_t* descriptor = nullptr) noexcept
 {
   if (!descriptor)
   {
@@ -239,7 +250,30 @@ inline void invvpid(invvpid_t type, invvpid_desc_t* descriptor = nullptr) noexce
     descriptor = &zero_descriptor;
   }
 
-  ia32_asm_inv_vpid(static_cast<uint32_t>(type), descriptor);
+  return static_cast<error_code>(ia32_asm_inv_vpid(static_cast<uint32_t>(type), descriptor));
+}
+
+inline error_code invvpid_individual_address(uint16_t vpid, uint64_t linear_address) noexcept
+{
+  invvpid_desc_t descriptor = { vpid, 0, 0, linear_address };
+  return invvpid(invvpid_t::individual_address, &descriptor);
+}
+
+inline error_code invvpid_single_context(uint16_t vpid) noexcept
+{
+  invvpid_desc_t descriptor = { vpid, 0, 0, 0 };
+  return invvpid(invvpid_t::single_context, &descriptor);
+}
+
+inline error_code invvpid_all_contexts() noexcept
+{
+  return invvpid(invvpid_t::all_contexts);
+}
+
+inline error_code invvpid_single_context_retaining_globals(uint16_t vpid) noexcept
+{
+  invvpid_desc_t descriptor = { vpid, 0, 0, 0 };
+  return invvpid(invvpid_t::single_context_retaining_globals, &descriptor);
 }
 
 }

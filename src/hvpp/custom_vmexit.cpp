@@ -118,6 +118,12 @@ void custom_vmexit_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
       // Set execute-only access.
       //
       vp.ept().map_4kb(data.page_exec, data.page_exec, epte_t::access_type::execute);
+
+      //
+      // We've changed EPT structure - mappings derived from EPT need to be
+      // invalidated.
+      //
+      vmx::invept_single_context(vp.ept().ept_pointer());
       break;
 
     case 0xc2:
@@ -127,15 +133,18 @@ void custom_vmexit_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
       // Set back read-write-execute access.
       //
       vp.ept().map_4kb(data.page_exec, data.page_exec, epte_t::access_type::read_write_execute);
+
+      //
+      // We've changed EPT structure - mappings derived from EPT need to be
+      // invalidated.
+      //
+      vmx::invept_single_context(vp.ept().ept_pointer());
       break;
 
     default:
       vmexit_base_handler::handle_execute_vmcall(vp);
       return;
   }
-
-  vmx::invept(vmx::invept_t::all_context);
-  vmx::invvpid(vmx::invvpid_t::all_context);
 }
 
 void custom_vmexit_handler::handle_ept_violation(vcpu_t& vp) noexcept
@@ -171,8 +180,28 @@ void custom_vmexit_handler::handle_ept_violation(vcpu_t& vp) noexcept
     vp.ept().map_4kb(data.page_exec, data.page_exec, epte_t::access_type::execute);
   }
 
-  vmx::invept(vmx::invept_t::all_context);
-  vmx::invvpid(vmx::invvpid_t::all_context);
+  //
+  // An EPT violation invalidates any guest-physical mappings (associated with the current EP4TA) that would be
+  // used to translate the guest-physical address that caused the EPT violation. If that guest-physical address was
+  // the translation of a linear address, the EPT violation also invalidates any combined mappings for that linear
+  // address associated with the current PCID, the current VPID and the current EP4TA.
+  // (ref: Vol3C[28.3.3.1(Operations that Invalidate Cached Mappings)])
+  //
+  //
+  // TL;DR:
+  //   We don't need to call INVEPT (nor INVVPID) here, because CPU invalidates
+  //   mappings for the accessed linear address itself.
+  //
+  //   Note1:
+  //     In the paragraph above, "EP4TA" is the value of bits 51:12 of EPTP.
+  //     These 40 bits contain the address of the EPT-PML4-table (the notation
+  //     EP4TA refers to those 40 bits).
+  //
+  //   Note2:
+  //     If we would change any other EPT structure, INVEPT might be needed.
+  //
+
+  // vmx::invept_all_contexts();
 
   //
   // Make the instruction which fetched the memory to be executed again (this

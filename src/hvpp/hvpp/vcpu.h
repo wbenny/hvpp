@@ -133,7 +133,10 @@ class vcpu_t
     // Control state
     //
 
+  public:
     auto vcpu_id() const noexcept -> uint16_t;
+
+  private:
     void vcpu_id(uint16_t virtual_processor_identifier) noexcept;
     auto ept_pointer() const noexcept -> ept_ptr_t;
     void ept_pointer(ept_ptr_t ept_pointer) noexcept;
