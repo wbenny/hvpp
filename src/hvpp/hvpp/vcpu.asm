@@ -28,10 +28,10 @@ INCLUDE ia32/common.inc
 ;
 ; Useful definitions.
 ;
-    VCPU_OFFSET                = -8000h             ; -vcpu_stack_size
-    VCPU_LAUNCH_CONTEXT_OFFSET =  0
-    VCPU_EXIT_CONTEXT_OFFSET   =  144               ; sizeof context
-    SHADOW_SPACE               =  20h
+    VCPU_OFFSET                         = -8000h             ; -vcpu_stack_size
+    VCPU_LAUNCH_CONTEXT_OFFSET          =  0
+    VCPU_EXIT_CONTEXT_OFFSET            =  144               ; sizeof context
+    SHADOW_SPACE                        =  20h
 
 ;
 ; Externally used symbols.
@@ -56,7 +56,8 @@ INCLUDE ia32/common.inc
 ;
 ; Routine description:
 ;
-;   Determines virtual cpu context from the stack pointer and calls vcpu_t::entry_guest() method.
+;   Determines virtual cpu context from the stack pointer and calls
+;   vcpu_t::entry_guest() method.
 ;
 ;--
 
@@ -90,7 +91,8 @@ INCLUDE ia32/common.inc
 ;
 ; Routine description:
 ;
-;   This method captures current CPU context and calls vcpu_t::entry_host() method.
+;   This method captures current CPU context and calls vcpu_t::entry_host()
+;   method.
 ;
 ;--
 

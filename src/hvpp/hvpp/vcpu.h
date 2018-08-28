@@ -20,7 +20,7 @@ struct interrupt_info_t
   public:
     interrupt_info_t(vmx::interrupt_type intr_type, exception_vector expt_vector,
                      int rip_adjust = -1) noexcept
-      : interrupt_info_t(intr_type, expt_vector, exception_error_code_t{ 0 }, false, rip_adjust) { }
+      : interrupt_info_t(intr_type, expt_vector, exception_error_code_t{}, false, rip_adjust) { }
 
     interrupt_info_t(vmx::interrupt_type intr_type, exception_vector expt_vector,
                      exception_error_code_t expt_code, int rip_adjust = -1) noexcept

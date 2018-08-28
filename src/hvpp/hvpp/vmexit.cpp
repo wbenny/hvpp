@@ -465,7 +465,7 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
 
   if (vp.guest_cs().access.descriptor_privilege_level != 0)
   {
-    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{ 0 }));
+    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
     vp.suppress_rip_adjust();
     return;
   }
@@ -533,7 +533,7 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
       exit_qualification.dr_number == 7) &&
       (gp_register >> 32) != 0)
   {
-    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{ 0 }));
+    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
     vp.suppress_rip_adjust();
     return;
   }

@@ -384,7 +384,7 @@ void vcpu_t::setup_guest() noexcept
   //
   // By default we won't force VM-exit on any external interrupts.
   //
-  pin_based_controls(msr::vmx_pinbased_ctls_t{ 0 });
+  pin_based_controls(msr::vmx_pinbased_ctls_t{});
 
   //
   // By default we want to use secondary processor based controls and MSR bitmaps.
@@ -393,7 +393,7 @@ void vcpu_t::setup_guest() noexcept
   // we would get VM-exit for each MSR access (both read & write). This is not
   // always desirable.
   //
-  msr::vmx_procbased_ctls_t procbased_ctls{ 0 };
+  msr::vmx_procbased_ctls_t procbased_ctls{};
   procbased_ctls.activate_secondary_controls = true;
   procbased_ctls.use_msr_bitmaps = true;
   processor_based_controls(procbased_ctls);
@@ -403,7 +403,7 @@ void vcpu_t::setup_guest() noexcept
   // Also, enable RDTSCP, XSAVES and INVPCID instructions to be run by guest
   // (otherwise they would cause #UD). These are needed by Windows 10.
   //
-  msr::vmx_procbased_ctls2_t procbased_ctls2{ 0 };
+  msr::vmx_procbased_ctls2_t procbased_ctls2{};
   procbased_ctls2.enable_ept = true;
   procbased_ctls2.enable_vpid = true;
   procbased_ctls2.enable_rdtscp = true;
@@ -414,11 +414,11 @@ void vcpu_t::setup_guest() noexcept
   //
   // By default we want each VM-entry and VM-exit in 64bit mode.
   //
-  msr::vmx_entry_ctls_t entry_ctls{ 0 };
+  msr::vmx_entry_ctls_t entry_ctls{};
   entry_ctls.ia32e_mode_guest = true;
   vm_entry_controls(entry_ctls);
 
-  msr::vmx_exit_ctls_t exit_ctls{ 0 };
+  msr::vmx_exit_ctls_t exit_ctls{};
   exit_ctls.ia32e_mode_host = true;
   vm_exit_controls(exit_ctls);
 
@@ -428,7 +428,7 @@ void vcpu_t::setup_guest() noexcept
   //   0x00000000 - 0x00001fff and
   //   0x80000000 - 0x80001fff
   //
-  msr_bitmap(vmx::msr_bitmap_t{ 0 });
+  msr_bitmap(vmx::msr_bitmap_t{});
 
   //
   // By default set initial stack and initial instruction pointer to VCPU's

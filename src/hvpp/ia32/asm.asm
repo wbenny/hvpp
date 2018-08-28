@@ -8,8 +8,8 @@
 ;
 ; Abstract:
 ;
-;   Contains functions to access Intel CPU instructions which are not
-;   exported by intrin.h.
+;   Contains functions to access Intel CPU instructions which are not exported
+;   by intrin.h.
 ;
 ; Author:
 ;
@@ -143,7 +143,7 @@ INCLUDE ksamd64.inc
     ia32_asm_halt ENDP
 
     ia32_asm_write_msw PROC
-        lmsw ax
+        lmsw    ax
         ret
     ia32_asm_write_msw ENDP
 

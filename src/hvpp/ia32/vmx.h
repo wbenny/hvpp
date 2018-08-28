@@ -138,7 +138,7 @@ inline error_code vmresume() noexcept
 template <typename T>
 inline error_code vmread(vmcs_t::field vmcs_field, T& value) noexcept
 {
-  detail::u64_t<T> u{ 0 };
+  detail::u64_t<T> u{};
 
   auto result = static_cast<error_code>(ia32_asm_vmx_vmread(static_cast<uint64_t>(vmcs_field), &u.as_uint64_t));
 
@@ -150,7 +150,7 @@ inline error_code vmread(vmcs_t::field vmcs_field, T& value) noexcept
 template <typename T>
 inline error_code vmwrite(vmcs_t::field vmcs_field, T value) noexcept
 {
-  detail::u64_t<T> u{ 0 };
+  detail::u64_t<T> u{};
 
   u.as_value = value;
 
@@ -166,11 +166,11 @@ template <
 >
 inline TResult vmcall(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3(), TArg4 r9 = TArg4()) noexcept
 {
-  detail::u64_t<TArg1>   a1{ 0 };
-  detail::u64_t<TArg2>   a2{ 0 };
-  detail::u64_t<TArg3>   a3{ 0 };
-  detail::u64_t<TArg4>   a4{ 0 };
-  detail::u64_t<TResult> r{ 0 };
+  detail::u64_t<TArg1>   a1{};
+  detail::u64_t<TArg2>   a2{};
+  detail::u64_t<TArg3>   a3{};
+  detail::u64_t<TArg4>   a4{};
+  detail::u64_t<TResult> r {};
 
   a1.as_value = rcx;
   a2.as_value = rdx;
@@ -224,7 +224,7 @@ inline void invept(invept_t type, invept_desc_t* descriptor = nullptr) noexcept
 {
   if (!descriptor)
   {
-    static invept_desc_t zero_descriptor = { 0 };
+    static invept_desc_t zero_descriptor{};
     descriptor = &zero_descriptor;
   }
 
@@ -235,7 +235,7 @@ inline void invvpid(invvpid_t type, invvpid_desc_t* descriptor = nullptr) noexce
 {
   if (!descriptor)
   {
-    static invvpid_desc_t zero_descriptor = { 0 };
+    static invvpid_desc_t zero_descriptor{};
     descriptor = &zero_descriptor;
   }
 

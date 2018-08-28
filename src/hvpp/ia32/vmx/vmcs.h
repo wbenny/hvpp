@@ -61,7 +61,7 @@ namespace detail
     // Visual Studio has some problems understanding bitfields
     // in constexpr functions... let's just use good ol' bit operations.
     //
-    // vmcs_componing_encoding result{ 0 };
+    // vmcs_componing_encoding result{};
     // result.access_type = static_cast<uint16_t>(access_type);
     // result.type        = static_cast<uint16_t>(type);
     // result.width       = static_cast<uint16_t>(width);

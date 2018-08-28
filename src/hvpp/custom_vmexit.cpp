@@ -38,13 +38,13 @@ void custom_vmexit_handler::setup(vcpu_t& vp) noexcept
   procbased_ctls2.descriptor_table_exiting = true;
   vp.processor_based_controls2(procbased_ctls2);
 
-  vmx::msr_bitmap_t msr_bitmap{ 0 };
+  vmx::msr_bitmap_t msr_bitmap{};
   memset(msr_bitmap.data, 0xff, sizeof(msr_bitmap));
   vp.msr_bitmap(msr_bitmap);
 
   if (procbased_ctls.use_io_bitmaps)
   {
-    vmx::io_bitmap_t io_bitmap{ 0 };
+    vmx::io_bitmap_t io_bitmap{};
     memset(io_bitmap.data, 0xff, sizeof(io_bitmap));
     vp.io_bitmap(io_bitmap);
   }
