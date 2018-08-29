@@ -113,15 +113,25 @@ void ept_t::map_identity() noexcept
   pfn = 0;
   while ((pfn = pfn_map.find_first_clear(pfn, _2mb_pfn_count)) != -1)
   {
-    //
-    // Check if the page is aligned to 2MB boundary.
-    //
-    if (!(pfn % _2mb_pfn_count))
+    int remainder = pfn % _2mb_pfn_count;
+
+    if (remainder == 0)
     {
+      //
+      // Page is aligned to 2MB boundary - make 2MB page.
+      //
       auto pa = pa_t::from_pfn(pfn);
       map_2mb(pa, pa);
 
       pfn_map.set(pfn, _2mb_pfn_count);
+    }
+    else
+    {
+      //
+      // Page is not aligned to 2MB boundary - skip all PFNs up to next 2MB
+      // boundary.
+      //
+      pfn += _2mb_pfn_count - remainder;
     }
   }
 
