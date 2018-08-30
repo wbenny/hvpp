@@ -52,8 +52,8 @@ read and navigate through 5000 pages with browser's built-in PDF reader.
   and any memory in first 4GB range which is not backed by actual physical memory.
 - Simple pass-through VM-exit handler, which can handle:
   - exceptions or [NMIs][nmi]
-  - `CPUID`, `(WB)INVD`, `RDTSC(P)`, `MOV CR`, `MOV DR`, `IN/OUT`, `RDMSR`, `WRMSR`, `SGDT`, `SIDT`, `LGDT`, `LIDT`,
-    `SLDT`, `STR`, `LLDT`, `LTR` and `XSETBV` instructions
+  - `CPUID`, `(WB)INVD`, `INVLPG`, `RDTSC(P)`, `MOV CR`, `MOV DR`, `IN/OUT`, `RDMSR`, `WRMSR`, `SGDT`, `SIDT`, `LGDT`,
+    `LIDT`, `SLDT`, `STR`, `LLDT`, `LTR`, `XSETBV` and `INVPCID` instructions
   - `VMCALL` instruction (used for termination of **hvpp**)
   - `VMCLEAR`, `VMLAUNCH`, `VMRESUME`, `VMPTRLD`, `VMPTRST`, `VMREAD`, `VMWRITE`, `VMFUNC`, `VMXOFF`, `VMXON`, `INVEPT`
     and `INVVPID` instructions raise **#UD** (invalid opcode exception)
@@ -70,7 +70,7 @@ read and navigate through 5000 pages with browser's built-in PDF reader.
   frequency logging (10'000+ per second) and it can be used from any IRQL - which makes it a perfect candidate even
   for logging in VM-exit handlers.
   - **hvpp** already includes tracing VM-exit handler (see [vmexit_stats.cpp](src/hvpp/hvpp/vmexit_stats.cpp)). You can
-    enable it by uncommenting line with `#define HVPP_WITH_STATS` in [config.h](src/hvpp/hvpp/config.h).
+    enable it by uncommenting line with `#define HVPP_ENABLE_STATS` in [config.h](src/hvpp/hvpp/config.h).
 - Various reimplemented classes and functions - such as bitmaps and spinlocks - to avoid calling kernel functions.
 - Included simple application (**hvppctrl**) which should demonstrate `CPUID` instruction interception, hiding hooks
   in user-mode applications via EPT and communication with **hvpp** via `VMCALL`

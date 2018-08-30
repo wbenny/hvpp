@@ -16,4 +16,4 @@
 // Use vmexit_stats_handler instead of vmexit_handler as a base class for
 // custom_vmexit_handler.
 //
-#define HVPP_WITH_STATS
+#define HVPP_ENABLE_STATS

@@ -7,7 +7,7 @@
 using namespace ia32;
 using namespace hvpp;
 
-#ifdef HVPP_WITH_STATS
+#ifdef HVPP_ENABLE_STATS
 using vmexit_base_handler = vmexit_stats_handler;
 #else
 using vmexit_base_handler = vmexit_handler;
