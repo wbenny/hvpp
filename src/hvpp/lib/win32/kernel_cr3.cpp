@@ -2,8 +2,9 @@
 
 #include <ntddk.h>
 
-#define PCID_KERNEL 0
-#define PCID_USER   1
+#define PCID_NONE   0x000
+#define PCID_USER   0x001 // KeMakeUserDirectoryTableBase
+#define PCID_KERNEL 0x002 // KeMakeKernelDirectoryTableBase
 
 ia32::cr3_t kernel_cr3(ia32::cr3_t cr3) noexcept
 {
@@ -12,7 +13,7 @@ ia32::cr3_t kernel_cr3(ia32::cr3_t cr3) noexcept
   // identifier) as a mitigation against Meltdown vulnerability.
   //
   // Note that the CPU must support the PCID capability (CPUID[1].ECX[17])
-  // and the PCID must be enabled via CR4.PCID[17]
+  // and the PCID must be enabled via CR4.PCIDE[17].
   //
   // (ref: https://blogs.technet.microsoft.com/srd/2018/03/23/kva-shadow-mitigating-meltdown-on-windows/)
   //
@@ -25,26 +26,53 @@ ia32::cr3_t kernel_cr3(ia32::cr3_t cr3) noexcept
     UCHAR Data[1];
   };
 
-  //
-  // Check if the VM-exit has been performed in kernel mode or user mode.
-  //
-  if (cr3.pcid == PCID_KERNEL)
+  if (cr3.pcid == PCID_NONE)
   {
     //
-    // If PCID == 0, the CR3 should already contain such PML4, which allows
-    // us to access kernel space.
+    // PCID is not in use - we can just return the original CR3. When PCID is
+    // not in use, CR3 is same for both user-mode and kernel-mode.
     //
+    // Note that this check relies on totally undocumented Windows internals.
+    // More correct would be to check if CR4.PCIDE[17] == 0.
+    //
+
     return cr3;
   }
 
+#if 0
+  if (cr3.pcid == PCID_KERNEL)
+  {
+    //
+    // CR3 already contains such PML4, which allows us to access kernel-mode
+    // address space. We can just reuse it.
+    //
+    // Note that this check relies on totally undocumented Windows internals.
+    // If Microsoft decides to change the PCID_KERNEL value, we would end up
+    // in trouble.
+    //
+
+    return cr3;
+  }
+#endif
+
   //
-  // The VM-exit comes from user mode - user mode CR3 doesn't have mapped
-  // the kernel space in the virtual address space. If we would switched
-  // into the user mode CR3, we would get instantaneous #GP (as the user
-  // mode doesn't have privilege to execute instructions from kernel mode
-  // where we're currently executing. We will fetch the "real" CR3 of the
-  // kernel from the PsGetCurrentProcess()->DirectoryTableBase field.
+  // If the VM-exit comes from user-mode, then the guest CR3 doesn't have mapped
+  // kernel-mode address space. If we would switched into the user-mode CR3,
+  // we would get instantaneous #GP because the user mode doesn't have privilege
+  // to execute instructions from kernel-mode where we're currently executing.
+  // We will fetch the "real" CR3 of the kernel from the
+  // PsGetCurrentProcess()->DirectoryTableBase field.
   //
+  // If the VM-exit comes from kernel-mode, then the guest CR3 should be the
+  // same CR3 as in the PsGetCurrentProcess()->DirectoryTableBase field.
+  //
+  // Note that although this still relies on undocumented KPROCESS structure
+  // fields, the position of "DirectoryTableBase" field didn't ever change,
+  // so let's be confident and just use it.
+  //
+#if 0
+  hvpp_assert(cr3.pcid == PCID_USER);
+#endif
 
   auto kprocess = reinterpret_cast<NT_KPROCESS*>(PsGetCurrentProcess());
   return ia32::cr3_t{ kprocess->DirectoryTableBase };
