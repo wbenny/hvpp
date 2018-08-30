@@ -137,7 +137,7 @@ void vmexit_handler::handle_task_switch(vcpu_t& vp)                             
 void vmexit_handler::handle_execute_getsec(vcpu_t& vp)                          noexcept { handle_fallback(vp); }
 void vmexit_handler::handle_execute_hlt(vcpu_t& vp)                             noexcept { handle_fallback(vp); }
 // void vmexit_handler::handle_execute_invd(vcpu_t& vp)                            noexcept { handle_fallback(vp); }
-void vmexit_handler::handle_execute_invlpg(vcpu_t& vp)                          noexcept { handle_fallback(vp); }
+// void vmexit_handler::handle_execute_invlpg(vcpu_t& vp)                          noexcept { handle_fallback(vp); }
 void vmexit_handler::handle_execute_rdpmc(vcpu_t& vp)                           noexcept { handle_fallback(vp); }
 // void vmexit_handler::handle_execute_rdtsc(vcpu_t& vp)                           noexcept { handle_fallback(vp); }
 void vmexit_handler::handle_execute_rsm_in_smm(vcpu_t& vp)                      noexcept { handle_fallback(vp); }
@@ -178,7 +178,7 @@ void vmexit_handler::handle_execute_invvpid(vcpu_t& vp)                         
 // void vmexit_handler::handle_execute_xsetbv(vcpu_t& vp)                          noexcept { handle_fallback(vp); }
 void vmexit_handler::handle_apic_write(vcpu_t& vp)                              noexcept { handle_fallback(vp); }
 void vmexit_handler::handle_execute_rdrand(vcpu_t& vp)                          noexcept { handle_fallback(vp); }
-void vmexit_handler::handle_execute_invpcid(vcpu_t& vp)                         noexcept { handle_fallback(vp); }
+// void vmexit_handler::handle_execute_invpcid(vcpu_t& vp)                         noexcept { handle_fallback(vp); }
 void vmexit_handler::handle_execute_vmfunc(vcpu_t& vp)                          noexcept { handle_execute_vm_fallback(vp); }
 void vmexit_handler::handle_execute_encls(vcpu_t& vp)                           noexcept { handle_fallback(vp); }
 void vmexit_handler::handle_execute_rdseed(vcpu_t& vp)                          noexcept { handle_fallback(vp); }
@@ -317,6 +317,24 @@ void vmexit_handler::handle_execute_invd(vcpu_t& vp) noexcept
   //
 
   ia32_asm_wb_invd();
+}
+
+void vmexit_handler::handle_execute_invlpg(vcpu_t& vp) noexcept
+{
+  auto linear_address = vp.exit_qualification().linear_address;
+
+  //
+  // Invalidate all mappings to the address associated with the VPID of the
+  // guest. Calling INVLPG wouldn't be dangerous here - but it's unnecessary,
+  // because:
+  //   - that would've been superfluous
+  //   - if hypervisor happened to have different address space (i.e. it
+  //     wouldn't be "identity-mapped" with current OS) in which it would
+  //     legitimately used "linear_address" (for some variable/stack/etc...),
+  //     we would be causing unnecessary flush of that TLB entry
+  //
+
+  vmx::invvpid_individual_address(vp.vcpu_id(), linear_address);
 }
 
 void vmexit_handler::handle_execute_rdtsc(vcpu_t& vp) noexcept
@@ -933,6 +951,99 @@ void vmexit_handler::handle_execute_vm_fallback(vcpu_t& vp) noexcept
   vp.inject(
     interrupt_info_t(vmx::interrupt_type::hardware_exception,
                      exception_vector::invalid_opcode));
+}
+
+void vmexit_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
+{
+  auto instruction_info = vp.exit_instruction_info().invalidate;
+  void* guest_va = vp.exit_instruction_info_guest_va();
+
+  invpcid_t type = static_cast<invpcid_t>(vp.exit_context().gp_register[instruction_info.register_2]);
+  invpcid_desc_t descriptor;
+
+  //
+  // Error checking according to:
+  // Vol2A[(INVPCID—Invalidate Process-Context Identifier)]
+  // "64-Bit Mode Exceptions"
+  //
+
+  //
+  // #GP(0) ... If an invalid type is specified in the register operand, i.e.,
+  // INVPCID_TYPE > 3.
+  //
+  if (type > invpcid_t::all_contexts_retaining_globals)
+  {
+    goto inject_general_protection;
+  }
+
+  //
+  // TODO: fetch the descriptor safely, inject #PF on error.
+  //
+  memcpy(&descriptor, guest_va, sizeof(descriptor));
+
+  //
+  // #GP(0) ... If bits 63:12 of INVPCID_DESC are not all zero.
+  //
+  if (descriptor.reserved != 0)
+  {
+    goto inject_general_protection;
+  }
+
+  //
+  // #GP(0) ... If CR4.PCIDE=0, INVPCID_TYPE is either 0 or 1, and
+  // INVPCID_DESC[11:0] is not zero.
+  //
+  if ((type == invpcid_t::individual_address ||
+       type == invpcid_t::single_context) &&
+       descriptor.pcid != 0 &&
+       !vp.guest_cr4().pcid_enable)
+  {
+    goto inject_general_protection;
+  }
+
+  //
+  // Emulate INVPCID instruction using IVVPID instruction.
+  //
+  // Note that when type == invpcid_t::single_context, the INVVPID we call will
+  // unfortunatelly invalidate TLB entries for all PCIDs. That's because there
+  // isn't such instruction which would invalidate TLB entries based on
+  // [ PCID, VPID ] pair.
+  //
+  // We would be probably fine if we just straight executed the INVPCID
+  // instruction here, as we're virtualizing just single OS. That way we would
+  // be risking invalidation of ours (hypervisors) cached TLB entries, but that
+  // shouldn't cause any serious problems.
+  //
+
+  switch (type)
+  {
+    case invpcid_t::individual_address:
+      //
+      // TODO:
+      // #GP(0) ... If INVPCID_TYPE is 0 and the linear address in
+      // INVPCID_DESC[127:64] is not canonical.
+      //
+      vmx::invvpid_individual_address(vp.vcpu_id(), descriptor.linear_address);
+      break;
+
+    case invpcid_t::single_context:
+      vmx::invvpid_single_context(vp.vcpu_id());
+      break;
+
+    case invpcid_t::all_contexts:
+      vmx::invvpid_single_context(vp.vcpu_id());
+      break;
+
+    case invpcid_t::all_contexts_retaining_globals:
+      vmx::invvpid_single_context_retaining_globals(vp.vcpu_id());
+      break;
+  }
+
+  return;
+
+inject_general_protection:
+  vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
+  vp.suppress_rip_adjust();
 }
 
 }

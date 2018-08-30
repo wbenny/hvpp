@@ -94,6 +94,14 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       hv_trace_if_enabled("exit_reason::execute_cpuid: 0x%08x", vp.exit_context().eax);
       break;
 
+    case vmx::exit_reason::execute_invd:
+      hv_trace_if_enabled("exit_reason::execute_invd");
+      break;
+
+    case vmx::exit_reason::execute_invlpg:
+      hv_trace_if_enabled("exit_reason::execute_invlpg: 0x%p", vp.exit_qualification().linear_address);
+      break;
+
     case vmx::exit_reason::execute_rdtsc:
       hv_trace_if_enabled("exit_reason::execute_rdtsc");
       break;
@@ -246,6 +254,10 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       hv_trace_if_enabled("exit_reason::execute_xsetbv: [0x%08x] -> %p",
         vp.exit_context().ecx,
         vp.exit_context().rdx << 32 | vp.exit_context().rax);
+      break;
+
+    case vmx::exit_reason::execute_invpcid:
+      hv_trace_if_enabled("exit_reason::execute_invpcid");
       break;
   }
 }

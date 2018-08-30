@@ -38,7 +38,6 @@ struct instruction_info_invalidate_t
       uint64_t base_register_invalid : 1;
       uint64_t register_2 : 4;
     };
-
   };
 };
 

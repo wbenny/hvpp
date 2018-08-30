@@ -210,11 +210,8 @@ static_assert(sizeof(invept_desc_t) == 16);
 
 struct invvpid_desc_t
 {
-  uint16_t vpid;
-
-  uint16_t reserved1;
-  uint32_t reserved2;
-
+  uint64_t vpid : 16;
+  uint64_t reserved : 48;
   uint64_t linear_address;
 };
 
@@ -255,13 +252,13 @@ inline error_code invvpid(invvpid_t type, invvpid_desc_t* descriptor = nullptr) 
 
 inline error_code invvpid_individual_address(uint16_t vpid, uint64_t linear_address) noexcept
 {
-  invvpid_desc_t descriptor = { vpid, 0, 0, linear_address };
+  invvpid_desc_t descriptor = { vpid, 0, linear_address };
   return invvpid(invvpid_t::individual_address, &descriptor);
 }
 
 inline error_code invvpid_single_context(uint16_t vpid) noexcept
 {
-  invvpid_desc_t descriptor = { vpid, 0, 0, 0 };
+  invvpid_desc_t descriptor = { vpid, 0, 0 };
   return invvpid(invvpid_t::single_context, &descriptor);
 }
 
@@ -272,7 +269,7 @@ inline error_code invvpid_all_contexts() noexcept
 
 inline error_code invvpid_single_context_retaining_globals(uint16_t vpid) noexcept
 {
-  invvpid_desc_t descriptor = { vpid, 0, 0, 0 };
+  invvpid_desc_t descriptor = { vpid, 0, 0 };
   return invvpid(invvpid_t::single_context_retaining_globals, &descriptor);
 }
 
