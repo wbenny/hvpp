@@ -94,6 +94,10 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       hv_trace_if_enabled("exit_reason::execute_cpuid: 0x%08x", vp.exit_context().eax);
       break;
 
+    case vmx::exit_reason::execute_rdtsc:
+      hv_trace_if_enabled("exit_reason::execute_rdtsc");
+      break;
+
     case vmx::exit_reason::mov_cr:
       switch (vp.exit_qualification().mov_cr.access_type)
       {
@@ -152,22 +156,6 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       }
       break;
 
-    case vmx::exit_reason::gdtr_idtr_access:
-      stats_.gdtr_idtr[vp.exit_instruction_info().gdtr_idtr_access.instruction] += 1;
-
-      hv_trace_if_enabled(
-        "exit_reason::gdtr_idtr_access: %s",
-        vmx::instruction_info_gdtr_idtr_to_string(vp.exit_instruction_info().gdtr_idtr_access.instruction));
-      break;
-
-    case vmx::exit_reason::ldtr_tr_access:
-      stats_.ldtr_tr[vp.exit_instruction_info().ldtr_tr_access.instruction] += 1;
-
-      hv_trace_if_enabled(
-        "exit_reason::ldtr_tr_access: %s",
-        vmx::instruction_info_ldtr_tr_to_string(vp.exit_instruction_info().ldtr_tr_access.instruction));
-      break;
-
     case vmx::exit_reason::execute_io_instruction:
       switch (vp.exit_qualification().io_instruction.access_type)
       {
@@ -223,6 +211,42 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
 
       hv_trace_if_enabled("exit_reason::execute_wrmsr: 0x%08x", vp.exit_context().ecx);
       break;
+
+    case vmx::exit_reason::gdtr_idtr_access:
+      stats_.gdtr_idtr[vp.exit_instruction_info().gdtr_idtr_access.instruction] += 1;
+
+      hv_trace_if_enabled(
+        "exit_reason::gdtr_idtr_access: %s",
+        vmx::instruction_info_gdtr_idtr_to_string(vp.exit_instruction_info().gdtr_idtr_access.instruction));
+      break;
+
+    case vmx::exit_reason::ldtr_tr_access:
+      stats_.ldtr_tr[vp.exit_instruction_info().ldtr_tr_access.instruction] += 1;
+
+      hv_trace_if_enabled(
+        "exit_reason::ldtr_tr_access: %s",
+        vmx::instruction_info_ldtr_tr_to_string(vp.exit_instruction_info().ldtr_tr_access.instruction));
+      break;
+
+    case vmx::exit_reason::ept_violation:
+      //
+      // Do not trace.
+      //
+      break;
+
+    case vmx::exit_reason::execute_rdtscp:
+      hv_trace_if_enabled("exit_reason::execute_rdtscp");
+      break;
+
+    case vmx::exit_reason::execute_wbinvd:
+      hv_trace_if_enabled("exit_reason::execute_wbinvd");
+      break;
+
+    case vmx::exit_reason::execute_xsetbv:
+      hv_trace_if_enabled("exit_reason::execute_xsetbv: [0x%08x] -> %p",
+        vp.exit_context().ecx,
+        vp.exit_context().rdx << 32 | vp.exit_context().rax);
+      break;
   }
 }
 
@@ -236,6 +260,7 @@ void vmexit_stats_handler::stats_t::dump() const noexcept
       hvpp_info("  %s: %u",
         vmx::exit_reason_to_string(static_cast<vmx::exit_reason>(exit_reason_index)),
         vmexit[exit_reason_index]);
+
       switch (static_cast<vmx::exit_reason>(exit_reason_index))
       {
         case vmx::exit_reason::exception_or_nmi:
