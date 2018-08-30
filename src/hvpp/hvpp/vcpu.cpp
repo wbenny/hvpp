@@ -179,6 +179,9 @@ void vcpu_t::terminate() noexcept
     // structures between separate uses of VMX operation.
     // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
     //
+    vmx::invvpid_all_contexts();
+
+    //
     // Software can use the INVEPT instruction with the “all-context” INVEPT
     // type immediately after execution of the VMXON instruction or immediately
     // prior to execution of the VMXOFF instruction. Either prevents
@@ -186,7 +189,6 @@ void vcpu_t::terminate() noexcept
     // structures between separate uses of VMX operation.
     // (ref: Vol3C[28.3.3.4(Guidelines for Use of the INVEPT Instruction)])
     //
-    vmx::invvpid_all_contexts();
     vmx::invept_all_contexts();
 
     //
@@ -299,6 +301,9 @@ void vcpu_t::load_vmxon() noexcept
     // structures between separate uses of VMX operation.
     // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
     //
+    vmx::invvpid_all_contexts();
+
+    //
     // Software can use the INVEPT instruction with the “all-context” INVEPT
     // type immediately after execution of the VMXON instruction or immediately
     // prior to execution of the VMXOFF instruction. Either prevents
@@ -306,7 +311,6 @@ void vcpu_t::load_vmxon() noexcept
     // structures between separate uses of VMX operation.
     // (ref: Vol3C[28.3.3.4(Guidelines for Use of the INVEPT Instruction)])
     //
-    vmx::invvpid_all_contexts();
     vmx::invept_all_contexts();
   }
   else
@@ -394,12 +398,38 @@ void vcpu_t::setup_host() noexcept
 void vcpu_t::setup_guest() noexcept
 {
   //
-  // VPIDs are similar thing to PCID (Process-Context Identifiers), in that they
-  // help with caching. This VPID must be unique just within single logical core.
-  // Because we use just single "guest", we can set VPID to 1 on each VCPU.
+  // VPIDs provide a way for software to identify to the processor the address
+  // spaces for different “virtual processors.” The processor may use this
+  // identification to maintain concurrently information for multiple address
+  // spaces in its TLBs and paging-structure caches, even when non-zero PCIDs are
+  // not being used. See Section 28.1 for details.
+  // (ref: Vol3A[4.11.2(VMX Support for Address Translation)]
   //
-  // Note that if vmx_procbased_ctls2_t.enable_vpid == 1, then VPID cannot be 0,
-  // because VPID 0 is reserved for VMX root operation.
+  // Virtual-processor identifiers (VPIDs) introduce to VMX operation a facility
+  // by which a logical processor may cache information for multiple linear-
+  // address spaces. When VPIDs are used, VMX transitions may retain cached
+  // information and the logical processor switches to a different linear-address
+  // space.
+  //
+  // VPIDs and PCIDs can be used concurrently. When this is done, the processor
+  // associates cached information with both a VPID and a PCID. Such information
+  // is used only if the current VPID and PCID both match those associated with
+  // the cached information.
+  // (ref: Vol3C[28.1(Virtual Processor Identifiers (VPIDs))]
+  //
+  // TL;DR:
+  //   Intel provides VM managing software a simple way how to manage TLB for
+  //   multiple VMs. Each VCPU of a particular VM can have associated unique VPID
+  //   (VPID can be same for all VCPUs of one VM).
+  //
+  //   Imagine you have 2 or more VMs:
+  //     - if you enable VPIDs, you don't have to worry that VM1 accidentaly
+  //       fetches cached memory of VM2 (or even hypervisor itself)
+  //     - if you don't enable VPIDs, CPU assigns VPID=0 to all operations (VMX
+  //       root & VMX non-root) and flushes TLB on each transition for you
+  //
+  //   Also note that if you enable VPIDs, you can't assign VPID=0 to the guest
+  //   VMCS because VPID=0 is reserved for VMX root operation.
   //
   vcpu_id(1);
 
@@ -437,8 +467,8 @@ void vcpu_t::setup_guest() noexcept
   // (otherwise they would cause #UD). These are needed by Windows 10.
   //
   msr::vmx_procbased_ctls2_t procbased_ctls2{};
-  procbased_ctls2.enable_ept = true;
   procbased_ctls2.enable_vpid = true;
+  procbased_ctls2.enable_ept = true;
   procbased_ctls2.enable_rdtscp = true;
   procbased_ctls2.enable_xsaves = true;
   procbased_ctls2.enable_invpcid = true;
