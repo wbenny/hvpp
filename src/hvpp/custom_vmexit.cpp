@@ -32,6 +32,7 @@ void custom_vmexit_handler::setup(vcpu_t& vp) noexcept
   procbased_ctls.mov_dr_exiting = true;
   procbased_ctls.cr3_load_exiting = true;
   procbased_ctls.cr3_store_exiting = true;
+  procbased_ctls.invlpg_exiting = true;
   vp.processor_based_controls(procbased_ctls);
 
   auto procbased_ctls2 = vp.processor_based_controls2();
