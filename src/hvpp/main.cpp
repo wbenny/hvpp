@@ -72,8 +72,9 @@ GlobalInitialize(
   memory_manager::initialize();
 
   //
-  // Print physical memory descriptor to the debugger.
+  // Print memory information to the debugger.
   //
+  memory_manager::mtrr().dump();
   memory_manager::physical_memory_descriptor().dump();
 
   //

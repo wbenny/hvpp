@@ -31,32 +31,33 @@ class mtrr
     memory_type type(pa_t pa) const noexcept
     {
       //
-      // If the MTRRs are not enabled (by setting the E flag in the IA32_MTRR_DEF_TYPE MSR),
-      // then all memory accesses are of the UC memory type.  If the MTRRs
-      // are enabled, then the memory type used for a memory access is
-      // determined as follows:
+      // If the MTRRs are not enabled (by setting the E flag in the
+      // IA32_MTRR_DEF_TYPE MSR), then all memory accesses are of the
+      // UC memory type.  If the MTRRs are enabled, then the memory
+      // type used for a memory access is determined as follows:
       //
       // 1. If the physical address falls within the first 1 MByte of
-      //    physical memory and fixed MTRRs are enabled, the processor uses
-      //    the memory type stored for the appropriate fixed-range MTRR.
+      //    physical memory and fixed MTRRs are enabled, the processor
+      //    uses the memory type stored for the appropriate fixed-range
+      //    MTRR.
       //
-      // 2. Otherwise, the processor attempts to match the physical address with
-      //    a memory type set by the variable-range MTRRs:
+      // 2. Otherwise, the processor attempts to match the physical
+      //    address with a memory type set by the variable-range MTRRs:
       //    -  If one variable memory range matches, the processor uses
-      //       the memory type stored in the IA32_MTRR_PHYSBASEn register for
-      //       that range.
+      //       the memory type stored in the IA32_MTRR_PHYSBASEn register
+      //       for that range.
       //
-      //    -  If two or more variable memory ranges match and the memory types
-      //       are identical, then that memory type is used.
+      //    -  If two or more variable memory ranges match and the memory
+      //       types are identical, then that memory type is used.
       //
-      //    -  If two or more variable memory ranges match and one of
-      //       the memory types is UC, the UC memory type is used.
+      //    -  If two or more variable memory ranges match and one of the
+      //       memory types is UC, the UC memory type is used.
       //
-      //    -  If two or more variable memory ranges match and the memory types
-      //       are WT and WB, the WT memory type is used.
+      //    -  If two or more variable memory ranges match and the memory
+      //       types are WT and WB, the WT memory type is used.
       //
-      //    -  For overlaps not defined by the above rules, processor behavior
-      //       is undefined.
+      //    -  For overlaps not defined by the above rules, processor
+      //       behavior is undefined.
       //
       // 3. If no fixed or variable memory range matches, the processor uses
       //    the default memory type.
@@ -91,6 +92,32 @@ class mtrr
 
       return result;
     }
+
+    void dump() const noexcept
+    {
+      auto dump_range = [](int i, const mtrr_range& mtrr) noexcept
+      {
+        hvpp_info(
+          "  %3i) %s [%p - %p] (%8u kb)", i,
+          memory_type_to_string(mtrr.type),
+          mtrr.range.begin(),
+          mtrr.range.end(),
+          mtrr.range.size() / 1024);
+      };
+
+      hvpp_info("Fixed MTRR ranges (%i)", fixed_count);
+      for (int i = 0; i < fixed_count; ++i)
+      {
+        dump_range(i, fixed_[i]);
+      }
+
+      hvpp_info("Variable MTRR ranges (%i)", variable_count_);
+      for (int i = 0; i < variable_count_; ++i)
+      {
+        dump_range(i, variable_[i]);
+      }
+    }
+
 
   private:
     void check_fixed() noexcept

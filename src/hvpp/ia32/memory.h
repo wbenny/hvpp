@@ -159,7 +159,7 @@ class physical_memory_descriptor
       for (int i = 0; i < count_; ++i)
       {
         hvpp_info(
-          "  %2i) [%p - %p] (%8u kb)", i,
+          "  %3i)    [%p - %p] (%8u kb)", i,
           range_[i].begin(),
           range_[i].end(),
           range_[i].size() / 1024);
