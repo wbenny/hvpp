@@ -31,23 +31,35 @@ class mtrr
     memory_type type(pa_t pa) const noexcept
     {
       //
-      // If the MTRRs are not enabled (by setting the E flag in the IA32_MTRR_DEF_TYPE MSR), then all memory accesses
-      // are of the UC memory type. If the MTRRs are enabled, then the memory type used for a memory access is determined
-      // as follows:
-      // 1. If the physical address falls within the first 1 MByte of physical memory and fixed MTRRs are enabled, the
-      //    processor uses the memory type stored for the appropriate fixed-range MTRR.
-      // 2. Otherwise, the processor attempts to match the physical address with a memory type set by the variable-range
-      //    MTRRs:
-      //    -  If one variable memory range matches, the processor uses the memory type stored in the
-      //       IA32_MTRR_PHYSBASEn register for that range.
-      //    -  If two or more variable memory ranges match and the memory types are identical, then that memory type
-      //       is used.
-      //    -  If two or more variable memory ranges match and one of the memory types is UC, the UC memory type
-      //       is used.
-      //    -  If two or more variable memory ranges match and the memory types are WT and WB, the WT memory type
-      //       is used.
-      //    -  For overlaps not defined by the above rules, processor behavior is undefined.
-      // 3. If no fixed or variable memory range matches, the processor uses the default memory type.
+      // If the MTRRs are not enabled (by setting the E flag in the IA32_MTRR_DEF_TYPE MSR),
+      // then all memory accesses are of the UC memory type.  If the MTRRs
+      // are enabled, then the memory type used for a memory access is
+      // determined as follows:
+      //
+      // 1. If the physical address falls within the first 1 MByte of
+      //    physical memory and fixed MTRRs are enabled, the processor uses
+      //    the memory type stored for the appropriate fixed-range MTRR.
+      //
+      // 2. Otherwise, the processor attempts to match the physical address with
+      //    a memory type set by the variable-range MTRRs:
+      //    -  If one variable memory range matches, the processor uses
+      //       the memory type stored in the IA32_MTRR_PHYSBASEn register for
+      //       that range.
+      //
+      //    -  If two or more variable memory ranges match and the memory types
+      //       are identical, then that memory type is used.
+      //
+      //    -  If two or more variable memory ranges match and one of
+      //       the memory types is UC, the UC memory type is used.
+      //
+      //    -  If two or more variable memory ranges match and the memory types
+      //       are WT and WB, the WT memory type is used.
+      //
+      //    -  For overlaps not defined by the above rules, processor behavior
+      //       is undefined.
+      //
+      // 3. If no fixed or variable memory range matches, the processor uses
+      //    the default memory type.
       //
       // (ref: Vol3A[11.11.4.1(MTRR Precedences)]
       //
@@ -63,8 +75,9 @@ class mtrr
             break;
           }
 
-          if ((result == memory_type::write_through || mtrr_item.type == memory_type::write_through) &&
-               result == memory_type::write_back)
+          if ( result == memory_type::write_back &&
+              (result == memory_type::write_through ||
+               mtrr_item.type == memory_type::write_through))
           {
             result = memory_type::write_through;
           }

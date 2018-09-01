@@ -55,8 +55,8 @@ INCLUDE ia32/common.inc
 ;   register state after the performed instruction.
 ;
 ;   This function assumes the port is provided in DX register of the CPU
-;   context (NOT immediate). If the port and DX differ, this function fails
-;   and returns 0.
+;   context (NOT immediate).  If the port and DX differ, this function
+;   fails and returns 0.
 ;
 ;   Note that because the function updates CPU context after the instruction
 ;   is done, the RCX should be automatically reset to 0 if rep_prefixed == 1.
@@ -83,10 +83,11 @@ INCLUDE ia32/common.inc
 ;
 ; Arguments:
 ;
-;   exit_qualification (rcx) - VMCS Exit qualification field for I/O instructions.
+;   exit_qualification (rcx) - VMCS Exit qualification field for I/O
+;                              instructions.
 ;
-;   context (rdx) - Pointer to the CPU context on which the I/O instruction will
-;                   be performed.
+;   context (rdx) - Pointer to the CPU context on which the I/O instruction
+;                   will be performed.
 ;
 ; Return Value:
 ;
@@ -134,9 +135,9 @@ INCLUDE ia32/common.inc
 
 ;
 ; Lower word of RDX (the DX part) must equal to the port provided in the
-; exit qualification. This is because in/out instruction either accepts
-; port number as immediate (e.g.: in eax, 0x1234) or only in DX  (e.g.:
-; in eax, dx). This also applies for ins/outs instructions, which operate
+; exit qualification.  This is because in/out instruction either accepts
+; port number as immediate (e.g.: in eax, 0x1234) or only in DX (e.g.:
+; in eax, dx).  This also applies for ins/outs instructions, which operate
 ; with strings.
 ;
 ; if ((context.rdx & 0xffff) != exit_qualification.port)

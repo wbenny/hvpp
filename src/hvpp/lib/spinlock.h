@@ -10,10 +10,10 @@
 #endif
 
 //
-// Based on my benchmarks, this simple implementation other (often
-// more complex) spinlock implementations - such as queue spinlocks,
-// ticket spinlocks, MCS locks. The only difference between this
-// implementation and completely naive spinlock is the "backoff".
+// Based on my benchmarks, this simple implementation beats other (often
+// more complex) spinlock implementations - such as queue spinlocks, ticket
+// spinlocks, MCS locks.  The only difference between this implementation
+// and completely naive spinlock is the "backoff".
 //
 // Also, benefit of this implementation is that we can use it with
 // STL lock guards, e.g.: std::lock_guard.

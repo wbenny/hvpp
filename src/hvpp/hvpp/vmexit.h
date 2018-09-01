@@ -9,8 +9,9 @@ class vcpu_t;
 
 //
 // Base VM-exit handler.
-// This handler tries to emulate what CPU normally does when trapped events and
-// instructions occur.
+//
+// This handler tries to emulate what CPU normally does when trapped events
+// and instructions occur.
 //
 
 class vmexit_handler

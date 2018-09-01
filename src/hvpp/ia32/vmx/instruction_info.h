@@ -45,10 +45,10 @@ struct instruction_info_gdtr_idtr_access_t
 {
   enum
   {
-    instruction_sgdt = 0,
-    instruction_sidt = 1,
-    instruction_lgdt = 2,
-    instruction_lidt = 3,
+    instruction_sgdt  = 0,
+    instruction_sidt  = 1,
+    instruction_lgdt  = 2,
+    instruction_lidt  = 3,
   };
 
   union
@@ -77,10 +77,10 @@ struct instruction_info_ldtr_tr_access_t
 {
   enum
   {
-    instruction_sldt = 0,
-    instruction_str  = 1,
-    instruction_lldt = 2,
-    instruction_ltr  = 3,
+    instruction_sldt  = 0,
+    instruction_str   = 1,
+    instruction_lldt  = 2,
+    instruction_ltr   = 3,
   };
 
   union
@@ -192,23 +192,23 @@ struct instruction_info_t
 {
   enum
   {
-    no_scaling = 0,
-    scale_by_2 = 1,
-    scale_by_4 = 2,
-    scale_by_8 = 3,
+    no_scaling        = 0,
+    scale_by_2        = 1,
+    scale_by_4        = 2,
+    scale_by_8        = 3,
   };
 
   enum
   {
-    size_16bit = 0,
-    size_32bit = 1,
-    size_64bit = 2,
+    size_16bit        = 0,
+    size_32bit        = 1,
+    size_64bit        = 2,
   };
 
   enum
   {
-    access_memory = 0,
-    access_register = 1,
+    access_memory     = 0,
+    access_register   = 1,
   };
 
   static constexpr uint64_t size_to_mask[] = {

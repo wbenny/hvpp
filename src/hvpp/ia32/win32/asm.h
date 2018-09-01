@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 //
-// ref: Vol2A[(INVPCID—Invalidate Process-Context Identifier)]
+// ref: Vol2A[(INVPCID-Invalidate Process-Context Identifier)]
 //
 
 enum class invpcid_t : uint32_t
@@ -53,10 +53,10 @@ void                ia32_asm_write_ldtr         (_In_ unsigned short ldt)     no
 unsigned long       ia32_asm_read_ar            (_In_ unsigned short selector)noexcept;
 
 //
-// This breaks release build. MSVC __segmentlimit in combination
-// with being in the "if constexpr" block generates invalid code.
+// This breaks release build. MSVC __segmentlimit in combination with being in
+// the "if constexpr" block generates invalid code.
 //
-// lsl instruction is replaced with custom asm implementation.
+// LSL instruction is replaced with custom asm implementation.
 //
 //#define           ia32_asm_read_sl            __segmentlimit
 unsigned long       ia32_asm_read_sl            (_In_ unsigned long seg)      noexcept;

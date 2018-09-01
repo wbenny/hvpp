@@ -77,36 +77,30 @@ GlobalInitialize(
   memory_manager::physical_memory_descriptor().dump();
 
   //
-  // Estimate required memory size. Make sure there's enough space for:
+  // Estimate required memory size.
+  // Make sure there's enough space for:
   //  - hypervisor instance
   //  - VCPU instance (for each logical processor)
-  //  - 4kb EPT entries for whole physical memory (for each logical processor)
+  //  - 2MB EPT entries for 512 GB of the physical
+  //    memory (for each logical processor)
   //
-  // To cover whole physical memory with 4kb page-table EPT entries, we need
-  // (PhysicalMemorySize / 512) bytes. This number doesn't take into account
-  // PD, PDPT and PML4 entries. We use that + additional 1/3 of the number of
-  // bytes needed for PT (page-table). It should be enough not only for EPT
-  // but also for eventual hooks or other memory allocations.
+  // If hypervisor begins to run out of memory, RequiredMemorySize
+  // is the right variable to adjust.
   //
-  // For those still wondering:
-  //   (PhysicalMemorySize / 512) + 33% ==
-  //   (PhysicalMemorySize / 512) * (1 + 1/3) ==
-  //   (PhysicalMemorySize / 384)
-  //
-  // If hypervisor begins to run out of memory, RequiredMemorySize is the right
-  // variable to adjust.
-  //
-  ULONG  ProcessorCount     = KeQueryActiveProcessorCountEx(0);
-  SIZE_T PhysicalMemorySize = memory_manager::physical_memory_descriptor().total_physical_memory_size();
-  SIZE_T RequiredMemorySize = sizeof(hypervisor)                            +
-                              (ProcessorCount * sizeof(vcpu_t))             +
-                              (ProcessorCount * (PhysicalMemorySize / 384));
+  ULONG  ProcessorCount       = KeQueryActiveProcessorCountEx(0);
+  SIZE_T EstimatedEptSize     = (512ull * 1024 * 1024 * 1024) /   // 512GB / 2MB
+                                (  2ull * 1024 * 1024       ) ;
+  SIZE_T AdditionalMemorySize = ( 16ull * 1024 * 1024       ) ;   // +16MB per core
+  SIZE_T RequiredMemorySize   = sizeof(hypervisor)            +
+              (ProcessorCount * sizeof(vcpu_t))               +
+              (ProcessorCount * EstimatedEptSize)             +
+              (ProcessorCount * AdditionalMemorySize);
 
   RequiredMemorySize = BYTES_TO_PAGES(RequiredMemorySize) * PAGE_SIZE;
 
   hvpp_info("ProcessorCount:      %u", ProcessorCount);
-  hvpp_info("PhysicalMemorySize:  %8" PRIu64 " kb", PhysicalMemorySize / 1024);
-  hvpp_info("RequiredMemorySize:  %8" PRIu64 " kb", RequiredMemorySize / 1024);
+  hvpp_info("RequiredMemorySize:  %" PRIu64 " MB", RequiredMemorySize / 1024
+                                                                       / 1024);
 
   //
   // Allocate memory.

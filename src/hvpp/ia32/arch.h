@@ -16,40 +16,40 @@ struct context_t
 {
   enum
   {
-    reg_rax =  0,
-    reg_rcx =  1,
-    reg_rdx =  2,
-    reg_rbx =  3,
-    reg_rsp =  4,
-    reg_rbp =  5,
-    reg_rsi =  6,
-    reg_rdi =  7,
-    reg_r8  =  8,
-    reg_r9  =  9,
-    reg_r10 = 10,
-    reg_r11 = 11,
-    reg_r12 = 12,
-    reg_r13 = 13,
-    reg_r14 = 14,
-    reg_r15 = 15,
+    reg_rax   =  0,
+    reg_rcx   =  1,
+    reg_rdx   =  2,
+    reg_rbx   =  3,
+    reg_rsp   =  4,
+    reg_rbp   =  5,
+    reg_rsi   =  6,
+    reg_rdi   =  7,
+    reg_r8    =  8,
+    reg_r9    =  9,
+    reg_r10   = 10,
+    reg_r11   = 11,
+    reg_r12   = 12,
+    reg_r13   = 13,
+    reg_r14   = 14,
+    reg_r15   = 15,
 
-    reg_min =  0,
-    reg_max = 15,
+    reg_min   =  0,
+    reg_max   = 15,
   };
 
   enum
   {
-    seg_es  = 0,
-    seg_cs  = 1,
-    seg_ss  = 2,
-    seg_ds  = 3,
-    seg_fs  = 4,
-    seg_gs  = 5,
-    seg_ldtr= 6,
-    seg_tr  = 7,
+    seg_es    = 0,
+    seg_cs    = 1,
+    seg_ss    = 2,
+    seg_ds    = 3,
+    seg_fs    = 4,
+    seg_gs    = 5,
+    seg_ldtr  = 6,
+    seg_tr    = 7,
 
-    seg_min = 0,
-    seg_max = 7,
+    seg_min   = 0,
+    seg_max   = 7,
   };
 
   union

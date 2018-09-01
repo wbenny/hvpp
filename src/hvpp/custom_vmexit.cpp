@@ -16,15 +16,15 @@ void custom_vmexit_handler::setup(vcpu_t& vp) noexcept
   auto procbased_ctls = vp.processor_based_controls();
 
   //
-  // Since VMWare handles rdtsc(p) instructions by its own magical way, we'll
-  // disable our own handling. Setting this in VMWare makes the guest OS
-  // completely bananas.
+  // Since VMWare handles rdtsc(p) instructions by its own
+  // magical way, we'll disable our own handling.  Setting
+  // this in VMWare makes the guest OS completely bananas.
   //
   // procbased_ctls.rdtsc_exiting = true;
 
   //
-  // Use either "use_io_bitmaps" or "unconditional_io_exiting", try to avoid
-  // using both of them.
+  // Use either "use_io_bitmaps" or "unconditional_io_exiting",
+  // try to avoid using both of them.
   //
 
   // procbased_ctls.use_io_bitmaps = true;
@@ -55,24 +55,37 @@ void custom_vmexit_handler::setup(vcpu_t& vp) noexcept
   vp.exception_bitmap(vmx::exception_bitmap_t{ ~0ul });
 
   //
-  // VM-execution control fields include guest/host masks and read shadows for the CR0 and CR4 registers. These
-  // fields control executions of instructions that access those registers (including CLTS, LMSW, MOV CR, and SMSW).
-  // They are 64 bits on processors that support Intel 64 architecture and 32 bits on processors that do not.
-  // In general, bits set to 1 in a guest/host mask correspond to bits "owned" by the host:
-  //   - Guest attempts to set them (using CLTS, LMSW, or MOV to CR) to values differing from the corresponding bits
-  //     in the corresponding read shadow cause VM exits.
-  //   - Guest reads (using MOV from CR or SMSW) return values for these bits from the corresponding read shadow.
-  // Bits cleared to 0 correspond to bits "owned" by the guest; guest attempts to modify them succeed and guest reads
-  // return values for these bits from the control register itself.
+  // VM-execution control fields include guest/host masks
+  // and read shadows for the CR0 and CR4 registers.
+  // These fields control executions of instructions that
+  // access those registers (including CLTS, LMSW, MOV CR,
+  // and SMSW).
+  // They are 64 bits on processors that support Intel 64
+  // architecture and 32 bits on processors that do not.
+  //
+  // In general, bits set to 1 in a guest/host mask correspond
+  // to bits "owned" by the host:
+  //   - Guest attempts to set them (using CLTS, LMSW, or
+  //     MOV to CR) to values differing from the corresponding
+  //     bits in the corresponding read shadow cause VM exits.
+  //   - Guest reads (using MOV from CR or SMSW) return values
+  //     for these bits from the corresponding read shadow.
+  //
+  // Bits cleared to 0 correspond to bits "owned" by the
+  // guest; guest attempts to modify them succeed and guest
+  // reads return values for these bits from the control
+  // register itself.
   // (ref: Vol3C[24.6.6(Guest/Host Masks and Read Shadows for CR0 and CR4)])
   //
   // TL;DR:
-  //   When bit in guest/host mask is set, write to the control register causes VM-exit.
-  //   Mov FROM CR0 and CR4 returns values in the shadow register values.
+  //   When bit in guest/host mask is set, write to the control
+  //   register causes VM-exit.  Mov FROM CR0 and CR4 returns
+  //   values in the shadow register values.
   //
-  // Note that SHADOW register value and REAL register value may differ. The guest will behave according
-  // to the REAL control register value. Only read from that register will return the fake (aka "shadow")
-  // value.
+  // Note that SHADOW register value and REAL register value may
+  // differ.  The guest will behave according to the REAL control
+  // register value.  Only read from that register will return the
+  // fake (aka "shadow") value.
   //
 
   vp.cr0_guest_host_mask(cr0_t{ ~0ull });
@@ -135,14 +148,15 @@ void custom_vmexit_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
       hvpp_trace("vmcall (unhook)");
 
       //
-      // Merge the 4kb pages back to the original 2MB large page. Note that this
-      // will also automatically set the access rights to read_write_execute.
+      // Merge the 4kb pages back to the original 2MB large page.
+      // Note that this will also automatically set the access
+      // rights to read_write_execute.
       //
       vp.ept().join_4kb_to_2mb(data.page_exec & ept_pd_t::mask, data.page_exec & ept_pd_t::mask);
 
       //
-      // We've changed EPT structure - mappings derived from EPT need to be
-      // invalidated.
+      // We've changed EPT structure - mappings derived from EPT
+      // need to be invalidated.
       //
       vmx::invept_single_context(vp.ept().ept_pointer());
       break;
@@ -164,10 +178,10 @@ void custom_vmexit_handler::handle_ept_violation(vcpu_t& vp) noexcept
   if (exit_qualification.data_read || exit_qualification.data_write)
   {
     //
-    // Someone requested read or write access to the guest_pa, but the page
-    // has execute-only access.
-    // Map the page with "data.page_read" we've saved before in VMCALL handler
-    // and set the access to RW.
+    // Someone requested read or write access to the guest_pa,
+    // but the page has execute-only access.  Map the page with
+    // the "data.page_read" we've saved before in the VMCALL
+    // handler and set the access to RW.
     //
     hvpp_trace("data_read LA: 0x%p PA: 0x%p", guest_la, guest_pa.value());
 
@@ -176,10 +190,10 @@ void custom_vmexit_handler::handle_ept_violation(vcpu_t& vp) noexcept
   else if (exit_qualification.data_execute)
   {
     //
-    // Someone requested execute access to the guest_pa, but the page has only
-    // read-write access.
-    // Map the page with "data.page_execute" we've saved before in VMCALL handler
-    // and set the access to execute-only.
+    // Someone requested execute access to the guest_pa, but
+    // the page has only read-write access.  Map the page with
+    // the "data.page_execute" we've saved before in the VMCALL
+    // handler and set the access to execute-only.
     //
     hvpp_trace("data_execute LA: 0x%p PA: 0x%p", guest_la, guest_pa.value());
 
@@ -187,31 +201,35 @@ void custom_vmexit_handler::handle_ept_violation(vcpu_t& vp) noexcept
   }
 
   //
-  // An EPT violation invalidates any guest-physical mappings (associated with the current EP4TA) that would be
-  // used to translate the guest-physical address that caused the EPT violation. If that guest-physical address was
-  // the translation of a linear address, the EPT violation also invalidates any combined mappings for that linear
-  // address associated with the current PCID, the current VPID and the current EP4TA.
+  // An EPT violation invalidates any guest-physical mappings
+  // (associated with the current EP4TA) that would be used to
+  // translate the guest-physical address that caused the EPT
+  // violation.  If that guest-physical address was the translation
+  // of a linear address, the EPT violation also invalidates
+  // any combined mappings for that linear address associated
+  // with the current PCID, the current VPID and the current EP4TA.
   // (ref: Vol3C[28.3.3.1(Operations that Invalidate Cached Mappings)])
   //
   //
   // TL;DR:
-  //   We don't need to call INVEPT (nor INVVPID) here, because CPU invalidates
-  //   mappings for the accessed linear address itself.
+  //   We don't need to call INVEPT (nor INVVPID) here, because
+  //   CPU invalidates mappings for the accessed linear address
+  //   for us.
   //
   //   Note1:
-  //     In the paragraph above, "EP4TA" is the value of bits 51:12 of EPTP.
-  //     These 40 bits contain the address of the EPT-PML4-table (the notation
-  //     EP4TA refers to those 40 bits).
+  //     In the paragraph above, "EP4TA" is the value of bits
+  //     51:12 of EPTP.  These 40 bits contain the address of
+  //     the EPT-PML4-table (the notation EP4TA refers to those
+  //     40 bits).
   //
   //   Note2:
-  //     If we would change any other EPT structure, INVEPT might be needed.
+  //     If we would change any other EPT structure, INVEPT or
+  //     INVVPID might be needed.
   //
 
-  // vmx::invept_all_contexts();
-
   //
-  // Make the instruction which fetched the memory to be executed again (this
-  // time without EPT violation).
+  // Make the instruction which fetched the memory to be executed
+  // again (this time without EPT violation).
   //
   vp.suppress_rip_adjust();
 }

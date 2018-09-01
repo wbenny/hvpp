@@ -7,45 +7,38 @@
 // Multi-Processor functions.
 //
 
-namespace mp {
-
-inline uint32_t cpu_count() noexcept
+namespace mp
 {
-  return detail::cpu_count();
-}
+  inline uint32_t cpu_count() noexcept
+  { return detail::cpu_count(); }
 
-inline uint32_t cpu_index() noexcept
-{
-  return detail::cpu_index();
-}
+  inline uint32_t cpu_index() noexcept
+  { return detail::cpu_index(); }
 
-inline void sleep(uint32_t milliseconds) noexcept
-{
-  detail::sleep(milliseconds);
-}
+  inline void sleep(uint32_t milliseconds) noexcept
+  { detail::sleep(milliseconds); }
 
-template <typename T>
-inline void ipi_call(T* instance, void (T::*member_function)() noexcept) noexcept
-{
-  //
-  // Inter-Processor Interrupt - runs specified method on all logical CPUs.
-  //
-  struct ipi_ctx
+  template <typename T>
+  inline void ipi_call(T* instance, void (T::*member_function)() noexcept) noexcept
   {
-    T* instance;
-    void (T::*member_function)() noexcept;
-  } ipi_context {
-    instance,
-    member_function
-  };
+    //
+    // Inter-Processor Interrupt - runs specified method on all logical CPUs.
+    //
+    struct ipi_ctx
+    {
+      T* instance;
+      void (T::*member_function)() noexcept;
+    } ipi_context {
+      instance,
+      member_function
+    };
 
-  detail::ipi_call([](void* context) noexcept {
-    auto ipi_context = reinterpret_cast<ipi_ctx*>(context);
-    auto instance = ipi_context->instance;
-    auto member_function = ipi_context->member_function;
+    detail::ipi_call([](void* context) noexcept {
+      auto ipi_context = reinterpret_cast<ipi_ctx*>(context);
+      auto instance = ipi_context->instance;
+      auto member_function = ipi_context->member_function;
 
-    (instance->*member_function)();
-  }, &ipi_context);
-}
-
+      (instance->*member_function)();
+    }, &ipi_context);
+  }
 }

@@ -55,7 +55,8 @@ struct interrupt_info_t
       info_.valid  = true;
 
       //
-      // Final sanitization of the following fields takes place in vcpu::inject().
+      // Final sanitization of the following fields takes place
+      // in vcpu::inject().
       //
 
       info_.error_code_valid = exception_code_valid;
@@ -335,7 +336,7 @@ class vcpu_t
     context_t          exit_context_;
 
     //
-    // Various VMX structures. Keep in mind they have "alignas(PAGE_SIZE)"
+    // Various VMX structures.  Keep in mind they have "alignas(PAGE_SIZE)"
     // specifier.
     //
     vmx::vmcs_t        vmxon_;

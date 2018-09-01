@@ -24,7 +24,8 @@ vmexit_stats_handler::vmexit_stats_handler() noexcept
 {
   //
   // Trace all VM-exit reasons.
-  // Tracing of specific exit reasons can be enabled/disabled via this bitmap.
+  // Tracing of specific exit reasons can be enabled/disabled
+  // via this bitmap.
   //
   vmexit_trace_bitmap_.set();
   // vmexit_trace_bitmap_.clear(static_cast<int>(vmx::exit_reason::exception_or_nmi));
@@ -41,8 +42,9 @@ void vmexit_stats_handler::invoke_termination() noexcept
   vmexit_handler::invoke_termination();
 
   //
-  // Handler saves statistics for all VCPUs but invoke_termination() is called
-  // per each VCPU, so it makes sense to call this function just once.
+  // Handler saves statistics for all VCPUs but invoke_termination()
+  // is called per each VCPU, so it makes sense to call this function
+  // just once.
   //
   if (mp::cpu_index() == 0)
   {

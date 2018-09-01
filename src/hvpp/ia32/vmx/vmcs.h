@@ -9,16 +9,16 @@ namespace detail
 {
   enum class vmcs_access_type_t : uint16_t
   {
-    full = 0,
-    high = 1,
+    full    = 0,
+    high    = 1,
   };
 
   enum class vmcs_type_t : uint16_t
   {
     control = 0,
-    vmexit = 1,
-    guest = 2,
-    host = 3
+    vmexit  = 1,
+    guest   = 2,
+    host    = 3
   };
 
   enum class vmcs_width_t : uint16_t
@@ -58,8 +58,8 @@ namespace detail
   static constexpr uint16_t encode(vmcs_access_type_t access_type, vmcs_type_t type, vmcs_width_t width, uint16_t index) noexcept
   {
     //
-    // Visual Studio has some problems understanding bitfields
-    // in constexpr functions... let's just use good ol' bit operations.
+    // Visual Studio has some problems understanding bitfields in constexpr
+    // functions...  let's just use good ol' bit operations.
     //
     // vmcs_componing_encoding result{};
     // result.access_type = static_cast<uint16_t>(access_type);

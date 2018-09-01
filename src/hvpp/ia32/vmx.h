@@ -66,8 +66,13 @@ auto adjust(T desired) noexcept
 
   if constexpr (is_control_register)
   {
-    using fixed0_msr_t = std::conditional_t<std::is_same_v<T, cr0_t>, msr::vmx_cr0_fixed0_t, msr::vmx_cr4_fixed0_t>;
-    using fixed1_msr_t = std::conditional_t<std::is_same_v<T, cr0_t>, msr::vmx_cr0_fixed1_t, msr::vmx_cr4_fixed1_t>;
+    using fixed0_msr_t = std::conditional_t<std::is_same_v<T, cr0_t>,
+                                            msr::vmx_cr0_fixed0_t,
+                                            msr::vmx_cr4_fixed0_t>;
+
+    using fixed1_msr_t = std::conditional_t<std::is_same_v<T, cr0_t>,
+                                            msr::vmx_cr0_fixed1_t,
+                                            msr::vmx_cr4_fixed1_t>;
 
     auto cr_fixed0 = msr::read<fixed0_msr_t>();
     auto cr_fixed1 = msr::read<fixed1_msr_t>();
@@ -78,8 +83,8 @@ auto adjust(T desired) noexcept
   else if constexpr (is_dr6)
   {
     //
-    // x |= ~x will set all bits of the bitfield to 1's. It would be prettier to
-    // just use ~0, but compilers would complain about value not fitting into
+    // x |= ~x will set all bits of the bitfield to 1's.  It would be prettier
+    // to just use ~0, but compilers would complain about value not fitting into
     // bitfield.
     //
     // Vol3B[17.2(Debug Registers)] describes which reserved fields should be

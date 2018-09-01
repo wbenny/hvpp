@@ -161,33 +161,41 @@ struct exit_qualification_t
     uint64_t flags;
 
     //
-    // For INVEPT, INVPCID, INVVPID, LGDT, LIDT, LLDT, LTR, SGDT, SIDT, SLDT, STR, VMCLEAR, VMPTRLD,
-    // VMPTRST, VMREAD, VMWRITE, VMXON, XRSTORS, and XSAVES, the exit qualification receives the value of
-    // the instruction’s displacement field, which is sign-extended to 64 bits if necessary (32 bits on processors
-    // that do not support Intel 64 architecture). If the instruction has no displacement (for example, has a
-    // register operand), zero is stored into the exit qualification.
-    // On processors that support Intel 64 architecture, an exception is made for RIP-relative addressing (used
-    // only in 64-bit mode). Such addressing causes an instruction to use an address that is the sum of the
-    // displacement field and the value of RIP that references the following instruction. In this case, the exit
-    // qualification is loaded with the sum of the displacement field and the appropriate RIP value.
+    // For INVEPT, INVPCID, INVVPID, LGDT, LIDT, LLDT, LTR, SGDT, SIDT,
+    // SLDT, STR, VMCLEAR, VMPTRLD, VMPTRST, VMREAD, VMWRITE, VMXON,
+    // XRSTORS, and XSAVES, the exit qualification receives the value
+    // of the instruction’s displacement field, which is sign-extended
+    // to 64 bits if necessary (32 bits on processors that do not support
+    // Intel 64 architecture).  If the instruction has no displacement
+    // (for example, has a register operand), zero is stored into the
+    // exit qualification.  On processors that support Intel 64 architecture,
+    // an exception is made for RIP-relative addressing (used only in 64-bit
+    // mode).  Such addressing causes an instruction to use an address
+    // that is the sum of the displacement field and the value of RIP
+    // that references the following instruction.  In this case, the
+    // exit qualification is loaded with the sum of the displacement field
+    // and the appropriate RIP value.
     // (ref: Vol3C[27.2.1(Basic VM-Exit Information)])
     //
-    uint64_t                           displacement;
+    uint64_t                              displacement;
 
     //
-    // For a page-fault exception, the exit qualification contains the linear address that caused the page fault.
-    // For INVLPG, the exit qualification contains the linear-address operand of the instruction.
+    // For a page-fault exception, the exit qualification contains the
+    // linear-address that caused the page fault.
     //
-    uint64_t                           linear_address;
+    // For INVLPG, the exit qualification contains the linear-address operand
+    // of the instruction.
+    //
+    uint64_t                              linear_address;
 
 
-    exit_qualification_debug_exception_t debug_exception;
-    exit_qualification_task_switch_t     task_switch;
-    exit_qualification_mov_cr_t          mov_cr;
-    exit_qualification_mov_dr_t          mov_dr;
-    exit_qualification_io_instruction_t  io_instruction;
-    exit_qualification_apic_access_t     apic_access;
-    exit_qualification_ept_violation_t   ept_violation;
+    exit_qualification_debug_exception_t  debug_exception;
+    exit_qualification_task_switch_t      task_switch;
+    exit_qualification_mov_cr_t           mov_cr;
+    exit_qualification_mov_dr_t           mov_dr;
+    exit_qualification_io_instruction_t   io_instruction;
+    exit_qualification_apic_access_t      apic_access;
+    exit_qualification_ept_violation_t    ept_violation;
   };
 };
 

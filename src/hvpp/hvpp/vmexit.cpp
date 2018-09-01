@@ -85,8 +85,8 @@ vmexit_handler::vmexit_handler() noexcept
 void vmexit_handler::setup(vcpu_t& vp) noexcept
 {
   //
-  // Setup guest VMCS state to bare minimum. This setup mirrors current state
-  // of the OS.
+  // Setup guest VMCS state to bare minimum.
+  // This setup mirrors current state of the OS.
   //
   vp.cr0_shadow(read<cr0_t>());
   vp.cr4_shadow(read<cr4_t>());
@@ -247,10 +247,11 @@ void vmexit_handler::handle_exception_or_nmi(vcpu_t& vp) noexcept
   vp.inject(interrupt);
 
   //
-  // Do not increment rip by exit_instruction_length() in vcpu::entry_host().
+  // Do not increment rip by exit_instruction_length() in
+  // vcpu::entry_host().
   //
-  // The RIP is controlled by entry_instruction_length() instead,
-  // which is taken from interrupt_info::rip_adjust().
+  // The RIP is controlled by entry_instruction_length()
+  // instead, which is taken from interrupt_info::rip_adjust().
   //
   vp.suppress_rip_adjust();
 }
@@ -287,26 +288,33 @@ void vmexit_handler::handle_execute_invd(vcpu_t& vp) noexcept
   (void)(vp);
 
   //
-  // The INVD instruction invalidates all internal cache entries, then generates a special-function bus cycle that indicates that
-  // external caches also should be invalidated. The INVD instruction should be used with care. It does not force a
-  // write-back of modified cache lines; therefore, data stored in the caches and not written back to system memory
-  // will be lost. Unless there is a specific requirement or benefit to invalidating the caches without writing back the
-  // modified lines (such as, during testing or fault recovery where cache coherency with main memory is not a
-  // concern), software should use the WBINVD instruction.
+  // The INVD instruction invalidates all internal cache entries,
+  // then generates a special-function bus cycle that indicates
+  // that external caches also should be invalidated.  The INVD
+  // instruction should be used with care.  It does not force a
+  // write-back of modified cache lines; therefore, data stored
+  // in the caches and not written back to system memory will be
+  // lost.  Unless there is a specific requirement or benefit to
+  // invalidating the caches without writing back the modified
+  // lines (such as, during testing or fault recovery where cache
+  // coherency with main memory is not a concern), software should
+  // use the WBINVD instruction.
   // (ref: Vol3A[11.5.5(Cache Management Instructions)])
   //
   // TL;DR:
-  //   INVD can be dangerous, as it doesn't write the cache content to the RAM.
-  //   Because of this, if we would perform this instruction, the system would
-  //   most likely crash after some time. We can either ignore the instruction
-  //   or perform WBINVD - which is what other hypervisors do too.
+  //   INVD can be dangerous, as it doesn't write the cache content
+  //   to the RAM.  Because of this, if we would perform this instruction,
+  //   the system would most likely crash after some time.  We can
+  //   either ignore the instruction or perform WBINVD - which is what
+  //   other hypervisors do too.
   //
-  //   Note that INVD instruction does not occur in whole NTOSKRNL and based on
-  //   articles below, the occurence of this instruction should be rare.
+  //   Note that INVD instruction does not occur in whole NTOSKRNL
+  //   and based on articles below, the occurence of this instruction
+  //   should be rare.
   //   The use of this instruction is:
   //     - historical (Cache-as-RAM)
-  //     - in boot phase/in firmware (shouldn't apply to us, as we're already
-  //       booted)
+  //     - in boot phase/in firmware (shouldn't apply to us, as we're
+  //       already booted)
   //     - related to DMA
   //
   // See also:
@@ -324,14 +332,15 @@ void vmexit_handler::handle_execute_invlpg(vcpu_t& vp) noexcept
   auto linear_address = vp.exit_qualification().linear_address;
 
   //
-  // Invalidate all mappings to the address associated with the VPID of the
-  // guest. Calling INVLPG wouldn't be dangerous here - but it's unnecessary,
-  // because:
+  // Invalidate all mappings to the address associated with the VPID
+  // of the guest.  Calling INVLPG wouldn't be dangerous here - but
+  // it's unnecessary, because:
   //   - that would've been superfluous
-  //   - if hypervisor happened to have different address space (i.e. it
-  //     wouldn't be "identity-mapped" with current OS) in which it would
-  //     legitimately used "linear_address" (for some variable/stack/etc...),
-  //     we would be causing unnecessary flush of that TLB entry
+  //   - if hypervisor happened to have different address space (i.e.
+  //     it wouldn't be "identity-mapped" with current OS) in which it
+  //     would legitimately used "linear_address" (for some variable,
+  //     stack, ...) we would be causing unnecessary flush of that TLB
+  //     entry
   //
 
   vmx::invvpid_individual_address(vp.vcpu_id(), linear_address);
@@ -379,9 +388,11 @@ void vmexit_handler::handle_mov_cr(vcpu_t& vp) noexcept
         case 3:
           {
             //
-            // If CR4.PCIDE = 1, bit 63 of the source operand to MOV to CR3 determines whether the instruction invalidates
-            // entries in the TLBs and the paging-structure caches. The instruction does not modify bit 63 of CR3, which is
-            // reserved and always 0.
+            // If CR4.PCIDE = 1, bit 63 of the source operand to MOV
+            // to CR3 determines whether the instruction invalidates
+            // entries in the TLBs and the paging-structure caches.
+            // The instruction does not modify bit 63 of CR3, which
+            // is reserved and always 0.
             // (ref: Vol2B(MOV-Move to/from Control Registers)
             // (see: Vol3A[4.10.4.1(Operations that Invalidate TLBs and Paging-Structure Caches)]
             //
@@ -397,12 +408,14 @@ void vmexit_handler::handle_mov_cr(vcpu_t& vp) noexcept
             vp.guest_cr3(cr3);
 
             //
-            // Some instructions invalidate all entries in the TLBs and paging-structure caches—except for global translations.
+            // Some instructions invalidate all entries in the TLBs
+            // and paging-structure caches-except for global translations.
             // An example is the MOV to CR3 instruction.
-            // Emulation of such an instruction may require execution of the INVVPID instruction as follows:
+            // Emulation of such an instruction may require execution of
+            // the INVVPID instruction as follows:
             //   - The INVVPID type is single-context-retaining-globals (3).
-            //   - The VPID in the INVVPID descriptor is the one assigned to the virtual processor whose execution is being
-            //     emulated.
+            //   - The VPID in the INVVPID descriptor is the one assigned to
+            //     the virtual processor whose execution is being emulated.
             // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
             //
             vmx::invvpid_single_context_retaining_globals(vp.vcpu_id());
@@ -412,12 +425,15 @@ void vmexit_handler::handle_mov_cr(vcpu_t& vp) noexcept
         case 4:
           {
             //
-            // Some instructions invalidate all entries in the TLBs and paging-structure caches—including for global translations.
-            // An example is the MOV to CR4 instruction if the value of value of bit 4 (page global enable—PGE) is
-            // changing. Emulation of such an instruction may require execution of the INVVPID instruction as follows :
-            //   - The INVVPID type is single - context(1).
-            //   - The VPID in the INVVPID descriptor is the one assigned to the virtual processor whose execution is being
-            //     emulated.
+            // Some instructions invalidate all entries in the TLBs and
+            // paging-structure caches-including for global translations.
+            // An example is the MOV to CR4 instruction if the value of
+            // value of bit 4 (page global enable-PGE) is changing.
+            // Emulation of such an instruction may require execution of
+            // the INVVPID instruction as follows:
+            //   - The INVVPID type is single-context (1).
+            //   - The VPID in the INVVPID descriptor is the one assigned to
+            //     the virtual processor whose execution is being emulated.
             // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
             //
             cr4_t new_cr4 = cr4_t{ gp_register };
@@ -462,19 +478,26 @@ void vmexit_handler::handle_mov_cr(vcpu_t& vp) noexcept
         auto cr0 = vp.guest_cr0();
 
         //
-        // Loads the source operand into the machine status word, bits 0 through 15 of register CR0. The source operand can
-        // be a 16-bit general-purpose register or a memory location. Only the low-order 4 bits of the source operand (which
-        // contains the PE, MP, EM, and TS flags) are loaded into CR0. The PG, CD, NW, AM, WP, NE, and ET flags of CR0 are
-        // not affected. The operand-size attribute has no effect on this instruction.
-        // If the PE flag of the source operand (bit 0) is set to 1, the instruction causes the processor to switch to protected
-        // mode. While in protected mode, the LMSW instruction cannot be used to clear the PE flag and force a switch back
-        // to real-address mode.
-        // (ref: Vol2A[(LMSW—Load Machine Status Word)])
+        // Loads the source operand into the machine status word,
+        // bits 0 through 15 of register CR0. The source operand
+        // can be a 16-bit general-purpose register or a memory
+        // location.  Only the low-order 4 bits of the source
+        // operand (which contains the PE, MP, EM, and TS flags)
+        // are loaded into CR0.  The PG, CD, NW, AM, WP, NE, and
+        // ET flags of CR0 are not affected.  The operand-size
+        // attribute has no effect on this instruction.  If the
+        // PE flag of the source operand (bit 0) is set to 1, the
+        // instruction causes the processor to switch to protected
+        // mode.  While in protected mode, the LMSW instruction
+        // cannot be used to clear the PE flag and force a switch
+        // back to real-address mode.
+        // (ref: Vol2A[(LMSW-Load Machine Status Word)])
         //
         // TL;DR:
         //   CR0[0:3] <- SRC[0:3];
         //
-        //   ...except if CR0.PE (bit 0) is already 1 - then do not change that bit (lmsw can't be used to switch back to
+        //   ...except if CR0.PE (bit 0) is already 1 - then do not
+        //   change that bit (lmsw can't be used to switch back to
         //   real mode from the protected mode.
         //
 
@@ -494,20 +517,23 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
   uint64_t& gp_register = vp.exit_context().gp_register[exit_qualification.gp_register];
 
   //
-  // The MOV DR instruction causes a VM exit if the "MOV-DR exiting" VM-execution
-  // control is 1. Such VM exits represent an exception to the principles identified
-  // in Section 25.1.1 (Relative Priority of Faults and VM Exits) in that they take
-  // priority over the following: general-protection exceptions based on privilege
-  // level; and invalid - opcode exceptions that occur because CR4.DE = 1 and the
+  // The MOV DR instruction causes a VM exit if the "MOV-DR exiting"
+  // VM-execution control is 1.  Such VM exits represent an exception
+  // to the principles identified in Section 25.1.1 (Relative Priority
+  // of Faults and VM Exits) in that they take priority over the
+  // following: general-protection exceptions based on privilege level;
+  // and invalid-opcode exceptions that occur because CR4.DE = 1 and the
   // instruction specified access to DR4 or DR5.
   // (ref: Vol3C[25.1.3(Instructions That Cause VM Exits Conditionally)])
   //
-  // In another words: CPU usually prioritizes exceptions. For example RDMSR executed
-  // at CPL = 3 won't cause VM-exit - it causes #GP instead. MOV DR is exception to
-  // this rule, as it ALWAYS cause VM-exit.
+  // TL;DR:
+  //   CPU usually prioritizes exceptions.  For example RDMSR executed
+  //   at CPL = 3 won't cause VM-exit - it causes #GP instead.  MOV DR
+  //   is exception to this rule, as it ALWAYS cause VM-exit.
   //
-  // Normally, CPU allows you to write to DR registers only at CPL = 0, otherwise it
-  // causes #GP. Therefore we'll simulate the exact same behavior here.
+  //   Normally, CPU allows you to write to DR registers only at CPL=0,
+  //   otherwise it causes #GP.  Therefore we'll simulate the exact same
+  //   behavior here.
   //
 
   if (vp.guest_cs().access.descriptor_privilege_level != 0)
@@ -518,10 +544,12 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
   }
 
   //
-  // Debug registers DR4 and DR5 are reserved when debug extensions are enabled (when the DE flag in control
-  // register CR4 is set) and attempts to reference the DR4 and DR5 registers cause invalid - opcode exceptions(#UD).
-  // When debug extensions are not enabled(when the DE flag is clear), these registers are aliased to debug registers
-  // DR6 and DR7.
+  // Debug registers DR4 and DR5 are reserved when debug extensions
+  // are enabled (when the DE flag in control register CR4 is set)
+  // and attempts to reference the DR4 and DR5 registers cause
+  // invalid-opcode exceptions (#UD).
+  // When debug extensions are not enabled (when the DE flag is clear),
+  // these registers are aliased to debug registers DR6 and DR7.
   // (ref: Vol3B[17.2.2(Debug Registers DR4 and DR5)])
   //
 
@@ -542,13 +570,17 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
 
   //
   // Enables (when set) debug-register protection, which causes a
-  // debug exception to be generated prior to any MOV instruction that accesses a debug register.When such a
-  // condition is detected, the BD flag in debug status register DR6 is set prior to generating the exception.This
-  // condition is provided to support in - circuit emulators.
-  // When the emulator needs to access the debug registers, emulator software can set the GD flag to prevent
-  // interference from the program currently executing on the processor.
-  // The processor clears the GD flag upon entering to the debug exception handler, to allow the handler access to
-  // the debug registers.
+  // debug exception to be generated prior to any MOV instruction
+  // that accesses a debug register.  When such a condition is
+  // detected, the BD flag in debug status register DR6 is set prior
+  // to generating the exception.  This condition is provided to
+  // support in-circuit emulators.
+  // When the emulator needs to access the debug registers, emulator
+  // software can set the GD flag to prevent interference from the
+  // program currently executing on the processor.
+  // The processor clears the GD flag upon entering to the debug
+  // exception handler, to allow the handler access to the debug
+  // registers.
   // (ref: Vol3B[17.2.4(Debug Control Register (DR7)])
   //
 
@@ -571,8 +603,9 @@ void vmexit_handler::handle_mov_dr(vcpu_t& vp) noexcept
   }
 
   //
-  // In 64-bit mode, the upper 32 bits of DR6 and DR7 are reserved and must be written with zeros. Writing 1 to any of
-  // the upper 32 bits results in a #GP(0) exception.
+  // In 64-bit mode, the upper 32 bits of DR6 and DR7 are reserved
+  // and must be written with zeros.  Writing 1 to any of the upper
+  // 32 bits results in a #GP(0) exception.
   // (ref: Vol3B[17.2.6(Debug Registers and Intel® 64 Processors)])
   //
   if (exit_qualification.access_type == vmx::exit_qualification_mov_dr_t::access_to_dr && (
@@ -635,8 +668,8 @@ void vmexit_handler::handle_execute_io_instruction(vcpu_t& vp) noexcept
   } port_value;
 
   //
-  // We don't check if CPL == 0 here, because the CPU would raise #GP instead
-  // of VM-exit.
+  // We don't check if CPL == 0 here, because the CPU would
+  // raise #GP instead of VM-exit.
   //
   // See Vol3C[25.1.1(Relative Priority of Faults and VM Exits)]
   //
@@ -647,7 +680,8 @@ void vmexit_handler::handle_execute_io_instruction(vcpu_t& vp) noexcept
   if (exit_qualification.string_instruction)
   {
     //
-    // String operations always operate either on RDI (in) or RSI (out) registers.
+    // String operations always operate either on RDI (in) or
+    // RSI (out) registers.
     //
     port_value.as_ptr =
       exit_qualification.access_type == vmx::exit_qualification_io_instruction_t::access_in
@@ -668,8 +702,9 @@ void vmexit_handler::handle_execute_io_instruction(vcpu_t& vp) noexcept
   uint16_t port = static_cast<uint16_t>(exit_qualification.port_number);
 
   //
-  // Resolve number of bytes to send/receive. REP prefixed instructions always
-  // take their count from *CX register.
+  // Resolve number of bytes to send/receive.
+  // REP prefixed instructions always take their count
+  // from *CX register.
   //
   uint32_t count = exit_qualification.rep_prefixed
     ? vp.exit_context().ecx
@@ -702,8 +737,9 @@ void vmexit_handler::handle_execute_io_instruction(vcpu_t& vp) noexcept
       else
       {
         //
-        // Note that port_value holds pointer to the vp.exit_context().rax member,
-        // therefore we're directly overwriting the RAX value.
+        // Note that port_value holds pointer to the
+        // vp.exit_context().rax member, therefore we're
+        // directly overwriting the RAX value.
         //
         switch (size)
         {
@@ -727,8 +763,9 @@ void vmexit_handler::handle_execute_io_instruction(vcpu_t& vp) noexcept
       else
       {
         //
-        // Note that port_value holds pointer to the vp.exit_context().rax member,
-        // therefore we're directly reading from the RAX value.
+        // Note that port_value holds pointer to the
+        // vp.exit_context().rax member, therefore we're
+        // directly reading from the RAX value.
         //
         switch (size)
         {
@@ -744,7 +781,8 @@ void vmexit_handler::handle_execute_io_instruction(vcpu_t& vp) noexcept
   {
     //
     // Update register:
-    // If the DF (direction flag) is set, decrement, otherwise increment.
+    // If the DF (direction flag) is set, decrement,
+    // otherwise increment.
     //
     // For in the register is RDI, for out it's RSI.
     //
@@ -763,7 +801,8 @@ void vmexit_handler::handle_execute_io_instruction(vcpu_t& vp) noexcept
     }
 
     //
-    // We've sent/received everything, reset counter register to 0.
+    // We've sent/received everything, reset counter register
+    // to 0.
     //
     if (exit_qualification.rep_prefixed)
     {
@@ -895,14 +934,18 @@ void vmexit_handler::handle_ldtr_tr_access(vcpu_t& vp) noexcept
     case vmx::instruction_info_ldtr_tr_access_t::instruction_ltr:
       {
         //
-        // After the segment selector is loaded in the task register, the processor uses the segment selector to locate the
-        // segment descriptor for the TSS in the global descriptor table(GDT). It then loads the segment limit and base
-        // address for the TSS from the segment descriptor into the task register.The task pointed to by the task register is
-        // marked busy, but a switch to the task does not occur.
+        // After the segment selector is loaded in the task register,
+        // the processor uses the segment selector to locate the segment
+        // descriptor for the TSS in the global descriptor table(GDT).
+        // It then loads the segment limit and base address for the TSS
+        // from the segment descriptor into the task register.  The task
+        // pointed to by the task register is marked busy, but a switch
+        // to the task does not occur.
         // (ref: Vol2A[(LTR-Load Task Register)])
         //
         // TL;DR:
-        //   LTR instruction sets busy bit in the TSS and we need to emulate this behavior.
+        //   LTR instruction sets busy bit in the TSS and we need to
+        //   emulate this behavior.
         //
         auto selector = seg_selector_t{ low_word };
         vp.guest_segment_selector(context_t::seg_tr, selector);
@@ -963,13 +1006,13 @@ void vmexit_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
 
   //
   // Error checking according to:
-  // Vol2A[(INVPCID—Invalidate Process-Context Identifier)]
+  // Vol2A[(INVPCID-Invalidate Process-Context Identifier)]
   // "64-Bit Mode Exceptions"
   //
 
   //
-  // #GP(0) ... If an invalid type is specified in the register operand, i.e.,
-  // INVPCID_TYPE > 3.
+  // #GP(0) ... If an invalid type is specified in the register
+  // operand, i.e., INVPCID_TYPE > 3.
   //
   if (type > invpcid_t::all_contexts_retaining_globals)
   {
@@ -990,8 +1033,8 @@ void vmexit_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
   }
 
   //
-  // #GP(0) ... If CR4.PCIDE=0, INVPCID_TYPE is either 0 or 1, and
-  // INVPCID_DESC[11:0] is not zero.
+  // #GP(0) ... If CR4.PCIDE=0, INVPCID_TYPE is either 0 or 1,
+  // and INVPCID_DESC[11:0] is not zero.
   //
   if ((type == invpcid_t::individual_address ||
        type == invpcid_t::single_context) &&
@@ -1004,15 +1047,17 @@ void vmexit_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
   //
   // Emulate INVPCID instruction using IVVPID instruction.
   //
-  // Note that when type == invpcid_t::single_context, the INVVPID we call will
-  // unfortunatelly invalidate TLB entries for all PCIDs. That's because there
-  // isn't such instruction which would invalidate TLB entries based on
-  // [ PCID, VPID ] pair.
+  // Note that when type == invpcid_t::single_context, the
+  // INVVPID we call will unfortunatelly invalidate TLB entries
+  // for all PCIDs.  That's because there isn't such instruction
+  // which would invalidate TLB entries based on [ PCID, VPID ]
+  // pair.
   //
-  // We would be probably fine if we just straight executed the INVPCID
-  // instruction here, as we're virtualizing just single OS. That way we would
-  // be risking invalidation of ours (hypervisors) cached TLB entries, but that
-  // shouldn't cause any serious problems.
+  // We would be probably fine if we just straight executed the
+  // INVPCID instruction here, as we're virtualizing just single
+  // OS.  That way we would be risking invalidation of ours
+  // (hypervisors) cached TLB entries, but that shouldn't cause
+  // any serious problems.
   //
 
   switch (type)
@@ -1020,8 +1065,8 @@ void vmexit_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
     case invpcid_t::individual_address:
       //
       // TODO:
-      // #GP(0) ... If INVPCID_TYPE is 0 and the linear address in
-      // INVPCID_DESC[127:64] is not canonical.
+      // #GP(0) ... If INVPCID_TYPE is 0 and the linear address
+      // in INVPCID_DESC[127:64] is not canonical.
       //
       vmx::invvpid_individual_address(vp.vcpu_id(), descriptor.linear_address);
       break;

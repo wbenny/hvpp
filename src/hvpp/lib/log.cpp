@@ -30,44 +30,28 @@ namespace logger
   options_t current_options = options_t::default_flags;
 
   void initialize() noexcept
-  {
-    tracelog::initialize();
-  }
+  { tracelog::initialize(); }
 
   void destroy() noexcept
-  {
-    tracelog::destroy();
-  }
+  { tracelog::destroy(); }
 
   void set_options(options_t options) noexcept
-  {
-    current_options = options;
-  }
+  { current_options = options; }
 
   auto get_options() noexcept -> options_t
-  {
-    return current_options;
-  }
+  { return current_options; }
 
   bool test_options(options_t options) noexcept
-  {
-    return (current_options & options) == options;
-  }
+  { return (current_options & options) == options; }
 
   void set_level(level_t level) noexcept
-  {
-    current_level = level;
-  }
+  { current_level = level; }
 
   auto get_level() noexcept -> level_t
-  {
-    return current_level;
-  }
+  { return current_level; }
 
   bool test_level(level_t level) noexcept
-  {
-    return (current_level & level) == level;
-  }
+  { return (current_level & level) == level; }
 
   void print(level_t level, const char* function, const char* format, ...) noexcept
   {

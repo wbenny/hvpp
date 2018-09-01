@@ -15,25 +15,31 @@
 //
 // Simple memory manager implementation.
 //
-// Because in VM-exits it is very dangerous to call OS function for memory
-// (de)allocation (they can cause IPIs and/or TLB flush), the hypervisor
-// has its own simple memory manager. The memory manager should be the very
-// first thing to initialize.
+// Because in VM-exits it is very dangerous to call OS
+// functions for memory (de)allocation (they can cause
+// IPIs and/or TLB flush), the hypervisor has its own
+// simple memory manager.  The memory manager should be
+// the very first thing to initialize.
 //
-// Memory manager is provided memory space on which it can operate. Small part
-// from this space is reserved for the page bitmap and page allocation map.
+// Memory manager is provided memory space on which it
+// can operate.  Small part from this space is reserved
+// for the page bitmap and page allocation map.
 //
-// Page bitmap sets bit 1 at page offset, if the page is allocated (e.g.:
-// if 4th page (at base_address + 4*PAGE_SIZE) is allocated, 4th bit in this
-// bitmap is set). On deallocation, corresponding bit is reset to 0.
+// Page bitmap sets bit 1 at page offset, if the page is
+// allocated (e.g.: if 4th page (at base_address + 4*PAGE_SIZE)
+// is allocated, 4th bit in this bitmap is set).
+// On deallocation, corresponding bit is reset to 0.
 //
-// Page allocation map stores number of pages allocated for the particular
-// address (e.g.: allocate(8192) returned (base_address + 4*PAGE_SIZE), which
-// is 2 pages, therefore page_allocation_map[4] == 2. On deallocation,
-// corresponding number in the map is reset to 0.
+// Page allocation map stores number of pages allocated
+// for the particular address (e.g.: allocate(8192) returned
+// (base_address + 4*PAGE_SIZE), which is 2 pages, therefore
+// page_allocation_map[4] == 2.
+// On deallocation, corresponding number in the map is reset
+// to 0.
 //
-// Note: allocations are always page-aligned - therefore allocation for
-//       even 1 byte results in waste of 4096 bytes.
+// Note: allocations are always page-aligned - therefore
+//       allocation for even 1 byte results in waste of
+//       4096 bytes.
 //
 
 namespace memory_manager
@@ -75,7 +81,8 @@ namespace memory_manager
   void destroy() noexcept
   {
     //
-    // Destroy all objects. Note that this method doesn't acquire the lock and
+    // Destroy all objects.
+    // Note that this method doesn't acquire the lock and
     // assumes all allocations has been already freed.
     //
     memory_type_range_registers.destroy();
@@ -91,12 +98,15 @@ namespace memory_manager
     }
 
     //
-    // Mark memory of page_bitmap and page_allocation_map as freed.
-    // Note that everything "free" does is clear bits in page_bitmap and sets 0
-    // to particular page_allocation_map items.
+    // Mark memory of page_bitmap and page_allocation_map
+    // as freed.
     //
-    // These two calls are needed to assure that the next two asserts below will
-    // pass.
+    // Note that everything "free" does is clear bits in
+    // page_bitmap and sets 0 to particular page_allocation_map
+    // items.
+    //
+    // These two calls are needed to assure that the next two
+    // asserts below will pass.
     //
     free(page_bitmap->buffer());
     free(page_allocation_map);
@@ -140,7 +150,8 @@ namespace memory_manager
     }
 
     //
-    // If the provided address is not page aligned, align it to the next page.
+    // If the provided address is not page aligned, align it
+    // to the next page.
     //
     if (ia32::byte_offset(address) != 0)
     {
@@ -169,20 +180,26 @@ namespace memory_manager
     }
 
     //
-    // Address is page-aligned, size is page-aligned, and all requirements are met.
-    // Proceed with initialization.
+    // Address is page-aligned, size is page-aligned, and all
+    // requirements are met.  Proceed with initialization.
     //
 
     //
     // The provided memory is split up to 3 parts:
-    //   1. page bitmap - stores information if page is allocated or not
-    //   2. page count  - stores information how many consecutive pages has been allocated
+    //   1. page bitmap - stores information if page is allocated
+    //      or not
+    //   2. page count  - stores information how many consecutive
+    //      pages has been allocated
     //   3. memory pool - this is the memory which will be provided
     //
-    // For (1), there is taken (size / PAGE_SIZE / 8) bytes from the provided memory space.
-    // For (2), there is taken (size / PAGE_SIZE * sizeof(pgmap_t)) bytes from the provided
-    // memory space. The rest memory is used for (3). This should account for ~93% of the
-    // provided memory space (if it is big enough, e.g.: 32MB).
+    // For (1), there is taken (size / PAGE_SIZE / 8) bytes from the
+    //          provided memory space.
+    // For (2), there is taken (size / PAGE_SIZE * sizeof(pgmap_t))
+    //          bytes from the provided memory space.
+    // The rest memory is used for (3).
+    //
+    // This should account for ~93% of the provided memory space (if
+    // it is big enough, e.g.: 32MB).
     //
 
     //
@@ -212,8 +229,8 @@ namespace memory_manager
 
     //
     // Mark memory of page_bitmap and page_allocation_map as allocated.
-    // The return value of these allocations should return the exact address of
-    // page_bitmap_buffer and page_allocation_map.
+    // The return value of these allocations should return the exact
+    // address of page_bitmap_buffer and page_allocation_map.
     //
     void* page_bitmap_buffer_tmp  = allocate(page_bitmap_buffer_size);
     void* page_allocation_map_tmp = allocate(page_allocation_map_size);
@@ -225,8 +242,9 @@ namespace memory_manager
     (void)page_allocation_map_tmp;
 
     //
-    // Initialize memory pool with garbage. This should help with debugging
-    // uninitialized variables and class members.
+    // Initialize memory pool with garbage.
+    // This should help with debugging uninitialized variables
+    // and class members.
     //
     memset(base_address + reserved_bytes, 0xcc, available_size);
 
@@ -253,7 +271,8 @@ namespace memory_manager
     int page_count = static_cast<int>(ia32::bytes_to_pages(size));
 
     //
-    // Check if the desired number of pages can fit into the allocation map.
+    // Check if the desired number of pages can fit into the
+    // allocation map.
     //
     if (page_count > std::numeric_limits<pgmap_t>::max() - 1)
     {
@@ -294,9 +313,10 @@ namespace memory_manager
     }
 
     //
-    // Return the final address. Note that we're not under lock here - we don't
-    // need it, because everything neccessary has been done (bitmap + page
-    // allocation map manipulation).
+    // Return the final address.
+    // Note that we're not under lock here - we don't need it, because
+    // everything neccessary has been done (bitmap + page allocation map
+    // manipulation).
     //
     return base_address + previous_page_offset * ia32::page_size;
   }

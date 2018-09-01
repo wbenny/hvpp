@@ -9,9 +9,9 @@ namespace hvpp {
 void ept_t::initialize() noexcept
 {
   //
-  // Initialize EPT's PML4. Each PML4 maps 512GB of memory. We would be fine
+  // Initialize EPT's PML4.  Each PML4 maps 512GB of memory. We would be fine
   // with just one PML4 in most scenarios, but we have to waste single page
-  // on it anyway. Single page can handle 512 PML4s (their size is 8 bytes)
+  // on it anyway.  Single page can handle 512 PML4s (their size is 8 bytes)
   // so just fill the whole page with 512 PML4s.
   //
   epml4_ = new epte_t[512];
@@ -25,8 +25,8 @@ void ept_t::initialize() noexcept
   pa_t empl4_pa = pa_t::from_va(epml4_);
 
   //
-  // Initialize EPT pointer. It's not really JUST pointer, but Intel Manual calls
-  // this structure as such.
+  // Initialize EPT pointer.
+  // It's not really JUST pointer, but Intel Manual calls it this way.
   //
   eptptr_.flags = 0;
   eptptr_.memory_type = static_cast<uint64_t>(memory_manager::mtrr().type(empl4_pa));
@@ -47,9 +47,10 @@ void ept_t::destroy() noexcept
 void ept_t::map_identity() noexcept
 {
   //
-  // This method will map the EPT in such way that they'll mirror host
-  // physical memory to the guest. This means that physical memory 0x4000
-  // in the guest will be physical memory 0x4000 in the host.
+  // This method will map the EPT in such way that they'll mirror
+  // host physical memory to the guest.  This means that physical memory
+  // at address 0x4000 in the guest will point to the physical memory
+  // at address 0x4000 in the host.
   //
   // Only first 512 GB of physical memory is covered - hopefully that should
   // cover most cases - and 2MB pages are used.
@@ -62,15 +63,16 @@ void ept_t::map_identity() noexcept
   //     entries for each 2MB pages.
   //
   // Usage of 2MB pages has also following drawbacks:
-  //   - Hooking of 2MB pages is inconvenient as we would get very frequent EPT
-  //     violations. If we want to do EPT hooking on smaller granularity (i.e.
-  //     4kb) we have to split desired 2MB page into 4kb pages.
-  //   - Higher risk of MTRR conflict - see mtrr::type() method implementation;
+  //   - Hooking of 2MB pages is inconvenient as we would get very frequent
+  //     EPT violations.  If we want to do EPT hooking on smaller granularity
+  //     (i.e. 4kb) we have to split desired 2MB page into 4kb pages.
+  //   - Higher risk of MTRR conflict - see mtrr::type() method implementation -
   //     if two or more MTRRs are contained within single 2MB page and those
   //     MTRRs are of different types, the memory type of the whole 2MB page
-  //     must be set to "least dangerous" option. Worst case scenario is if
+  //     must be set to "least dangerous" option.  Worst case scenario is if
   //     UC (uncached) memory type collides with something else - the whole page
-  //     must be then set to UC type. This may result in slight performance hit.
+  //     must be then set to UC type.  This may result in slight performance
+  //     loss.
   //
 
   static constexpr uint64_t _512gb = 512ull * 1024
@@ -184,21 +186,21 @@ void ept_t::split(pa_t guest_pa, pa_t host_pa) noexcept
 
 
   static_assert(std::is_base_of_v<ept_descriptor_tag,
-                                  ept_table_from_t::descriptor_tag>,
+                                  ept_table_to_t::descriptor_tag>,
                 "Wrong ept_table_to_t type");
 
   //
-  // Splitting pages (breaking large page into smaller ones) is possible only
-  // down accross one level (i.e. PDPT -> PD, PD -> PT). If you desire to split
-  // PDPT into PTs (2 levels apart), you have to split the PDPT first and then
-  // split resulting PDs again into PTs.
+  // Splitting pages (breaking large page into smaller ones) is possible
+  // only down accross one level (i.e. PDPT -> PD, PD -> PT).  If you
+  // desire to split PDPT into PTs (2 levels apart), you have to split
+  // the PDPT first and then split resulting PDs again into PTs.
   //
   static_assert(ept_table_from_t::level - 1 == ept_table_to_t::level,
                 "Cannot split page-tables accros multiple levels");
 
   //
-  // PML4 is not splittable (doesn't have the "large_page" flag). Although this
-  // might change in the future.
+  // PML4 is not splittable (doesn't have the "large_page" flag).
+  // Although this might change in the future CPUs.
   //
   static_assert(ept_table_from_t::level != pml::pml4,
                 "Cannot split PML4 into PDPTs");
@@ -211,8 +213,8 @@ void ept_t::split(pa_t guest_pa, pa_t host_pa) noexcept
   auto entry = ept_entry(guest_pa, ept_table_from_t::level);
 
   //
-  // Make sure that the fetched entry is indeed large. We can't split non-large
-  // pages - they already are splitted.
+  // Make sure that the fetched entry is indeed large.
+  // We can't split non-large pages - they already are splitted.
   //
   hvpp_assert(entry->large_page);
 
@@ -222,15 +224,15 @@ void ept_t::split(pa_t guest_pa, pa_t host_pa) noexcept
   unmap_entry(entry, ept_table_from_t::level);
 
   //
-  // Map the unmapped physical memory range again, this time with smaller EPT
-  // entries.
+  // Map the unmapped physical memory range again, this time with smaller
+  // EPT entries.
   //
   // If we're splitting 2MB page into 4kb pages, we're mapping range
   // [ guest_pa, guest_pa + 2MB ].
   //
   // Note: Each paging structure on Intel architectures always contain 512
   //       entries (one PDPT can contain 512 PDs, one PD can contain 512 PTs,
-  //       one PT can contain 512 pages). This is convenient because at the
+  //       one PT can contain 512 pages).  This is convenient because at the
   //       same time, each EPT structure has 8 bytes - therefore those 512
   //       entries can always fit into single 4kb page.
   //
@@ -257,35 +259,35 @@ void ept_t::join(pa_t guest_pa, pa_t host_pa) noexcept
   // See ia32/ept.h.
   //
   static_assert(std::is_base_of_v<ept_descriptor_tag,
-    ept_table_from_t::descriptor_tag>,
-    "Wrong ept_table_from_t type");
+                                  ept_table_from_t::descriptor_tag>,
+                "Wrong ept_table_from_t type");
 
 
   static_assert(std::is_base_of_v<ept_descriptor_tag,
-    ept_table_from_t::descriptor_tag>,
-    "Wrong ept_table_to_t type");
+                                  ept_table_to_t::descriptor_tag>,
+                "Wrong ept_table_to_t type");
 
   //
-  // Joining pages (merging pages into one large page) is possible only
-  // up accross one level (i.e. PD -> PDPT, PT -> PD). If you desire to join
-  // PTs into PDPT (2 levels apart), you have to join each PT into PDs first and
-  // then join resulting PDs again into PDPT.
+  // Joining pages (merging pages into one large page) is possible
+  // only up accross one level (i.e. PD -> PDPT, PT -> PD).  If you
+  // desire to join PTs into PDPT (2 levels apart), you have to join
+  // each PT into PDs first and then join resulting PDs again into PDPT.
   //
   static_assert(ept_table_from_t::level + 1 == ept_table_to_t::level,
                 "Cannot join page-tables accros multiple levels");
 
   //
   // PDPTs are not joinable into PML4 (PML4 doesn't have the "large_page" flag).
-  // Although this might change in the future.
+  // Although this might change in the future CPUs.
   //
   static_assert(ept_table_from_t::level != pml::pdpt,
                 "Cannot join PDPTs to PML4");
 
   //
-  // Make sure the guest physical address is aligned with respect to target
-  // EPT structure; i.e. if we're joining PTs into PD, the guest_pa must be
-  // aligned at 2MB boundary. If we're joining PDs into PDPT, the guest_pa must
-  // be aligned at 1GB boundary.
+  // Make sure the guest physical address is aligned with respect to the
+  // target EPT structure; i.e. if we're joining PTs into PD, the guest_pa
+  // must be aligned to 2MB boundary.  If we're joining PDs into PDPT,
+  // the guest_pa must be aligned to 1GB boundary.
   //
   hvpp_assert((guest_pa & ept_table_to_t::mask) == guest_pa);
   guest_pa = page_align(guest_pa.value(), ept_table_to_t{});
@@ -298,7 +300,8 @@ void ept_t::join(pa_t guest_pa, pa_t host_pa) noexcept
   auto entry = ept_entry(guest_pa, ept_table_to_t::level);
 
   //
-  // Make sure that the fetched entry is not large. We can't join large pages.
+  // Make sure that the fetched entry is not large.
+  // We can't join large pages.
   //
   if (entry->large_page)
   {
@@ -307,15 +310,16 @@ void ept_t::join(pa_t guest_pa, pa_t host_pa) noexcept
   }
 
   //
-  // Unmap the entry, i.e. make it non-present and reset the PFN. This will also
-  // deallocate entries in the subtable (e.g. if entry is PD, the PT it points
-  // to (entry->page_frame_number) will get automatically deallocated).
+  // Unmap the entry, i.e. make it non-present and reset the PFN.
+  // This will also deallocate entries in the subtable (e.g. if entry is PD,
+  // the PT it points to (entry->page_frame_number) will get automatically
+  // deallocated).
   //
   unmap_entry(entry, ept_table_to_t::level);
 
   //
-  // Map the unmapped physical memory range again, this time with single large
-  // EPT entry.
+  // Map the unmapped physical memory range again, this time with single
+  // large EPT entry.
   //
   map(guest_pa,
       host_pa,
@@ -463,10 +467,11 @@ void ept_t::unmap_entry(epte_t* entry, pml level) noexcept
   }
 
   //
-  // PFN cannot be 0 unless the entry is of large page.
-  // For example: 2MB large PD entry which covers first 2MB of the RAM will have
-  // the PFN set to 0. But non-large PD entry which points to page-table can't
-  // have PFN set to 0.
+  // PFN cannot be 0 unless the page is large.
+  //
+  // For example:
+  //   2MB large PD entry which covers first 2MB of the RAM will have PFN = 0.
+  //   But non-large PD entry which points to the page-table can't have PFN = 0.
   //
   hvpp_assert(entry->page_frame_number != 0 || entry->large_page);
 

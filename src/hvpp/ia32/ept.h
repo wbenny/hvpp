@@ -317,19 +317,25 @@ struct epte_t
     access = new_access;
   }
 
-  void update(pa_t pa, access_type new_access = access_type::read_write_execute) noexcept
+  void update(pa_t pa,
+              access_type new_access = access_type::read_write_execute) noexcept
   {
     update(new_access);
     page_frame_number = pa.pfn();
   }
 
-  void update(pa_t pa, ia32::memory_type type, access_type new_access = access_type::read_write_execute) noexcept
+  void update(pa_t pa,
+              ia32::memory_type type,
+              access_type new_access = access_type::read_write_execute) noexcept
   {
     update(pa, new_access);
     memory_type = static_cast<uint64_t>(type);
   }
 
-  void update(pa_t pa, ia32::memory_type type, bool large, access_type new_access = access_type::read_write_execute) noexcept
+  void update(pa_t pa,
+              ia32::memory_type type,
+              bool large,
+              access_type new_access = access_type::read_write_execute) noexcept
   {
     update(pa, type, new_access);
     large_page = large;

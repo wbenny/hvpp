@@ -127,8 +127,8 @@ class memory_range
 };
 
 //
-// Class for receiving physical memory ranges which are backed up by actual
-// physical memory.
+// Class for receiving physical memory ranges which are backed up
+// by actual physical memory.
 //
 class physical_memory_descriptor
 {

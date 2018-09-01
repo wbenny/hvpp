@@ -97,7 +97,7 @@ INCLUDE ia32/common.inc
     ?restore@context_t@ia32@@QEAAXXZ PROC
 ;
 ; We use shadow space of the caller + additional 8 bytes
-; for the IRETQ context. Note that we can use the callers
+; for the IRETQ context.  Note that we can use the callers
 ; shadow space without any worries, because this function
 ; never returns to the caller.
 ;

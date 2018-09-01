@@ -5,8 +5,8 @@
 //
 // This simple class can be used for effectively switching to virtual address
 // space of any user-mode process (and back to hypervisor's CR3, thanks to
-// RAII). You can think of it as a REALLY simple KeStackAttachProcess/KeStackDetachProcess
-// routines.
+// RAII).  You can think of it as a REALLY simple KeStackAttachProcess and
+// KeStackDetachProcess routines.
 //
 // Use this class with very big caution, because any virtual address of any
 // user-mode process can be paged out at any time - and causing page-fault
