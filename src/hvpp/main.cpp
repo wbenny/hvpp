@@ -236,6 +236,11 @@ DriverUnload(
   // Destroy memory manager and logger.
   //
   GlobalDestroy(HvppMemory, HvppMemorySize);
+
+  //
+  // Tell debugger we're stopped.
+  //
+  hvpp_info("Hypervisor stopped");
 }
 
 EXTERN_C
@@ -273,6 +278,12 @@ DriverEntry(
   // Start the hypervisor.
   //
   HvppHypervisor->start(HvppVmExitHandler);
+
+  //
+  // Tell debugger we're started
+  //
+  hvpp_info("Hypervisor started, current free memory: %" PRIu64 " MB",
+             memory_manager::free_bytes() / 1024 / 1024);
 
 Exit:
   return Status;

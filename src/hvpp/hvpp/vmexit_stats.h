@@ -3,6 +3,8 @@
 
 #include "lib/bitmap.h"
 
+#include <atomic>
+
 namespace hvpp {
 
 class vcpu_t;
@@ -18,6 +20,7 @@ class vmexit_stats_handler
   public:
     struct stats_t
     {
+      void merge(const stats_t& other) noexcept;
       void dump() const noexcept;
 
       //
@@ -111,14 +114,24 @@ class vmexit_stats_handler
     void handle(vcpu_t& vp) noexcept override;
     void invoke_termination() noexcept override;
 
-    const stats_t& stats() const noexcept;
-
   private:
     void update_stats(vcpu_t& vp) noexcept;
 
-    stats_t stats_;
+    //
+    // Array of stats (per VCPU).
+    //
+    stats_t* stats_;
+
+    //
+    // Bitmap of traced VM-exits.
+    //
     bitmap vmexit_trace_bitmap_;
     uint8_t vmexit_trace_bitmap_buffer_[16];
+
+    //
+    // Count of terminated VCPUs.
+    //
+    std::atomic_uint32_t terminated_vcpu_count_;
 };
 
 }

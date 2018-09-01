@@ -19,9 +19,15 @@
 namespace hvpp {
 
 vmexit_stats_handler::vmexit_stats_handler() noexcept
-  : stats_()
-  , vmexit_trace_bitmap_(vmexit_trace_bitmap_buffer_, 128)
+  : vmexit_trace_bitmap_(vmexit_trace_bitmap_buffer_, 128)
+  , terminated_vcpu_count_(0)
 {
+  //
+  // Create stats_t for each CPU.
+  //
+  stats_ = new stats_t[mp::cpu_count()];
+  memset(stats_, 0, sizeof(stats_t) * mp::cpu_count());
+
   //
   // Trace all VM-exit reasons.
   // Tracing of specific exit reasons can be enabled/disabled
@@ -42,25 +48,44 @@ void vmexit_stats_handler::invoke_termination() noexcept
   vmexit_handler::invoke_termination();
 
   //
-  // Handler saves statistics for all VCPUs but invoke_termination()
-  // is called per each VCPU, so it makes sense to call this function
-  // just once.
+  // Increment number of terminated VCPUs.
   //
-  if (mp::cpu_index() == 0)
-  {
-    stats_.dump();
-  }
-}
+  terminated_vcpu_count_ += 1;
 
-const vmexit_stats_handler::stats_t& vmexit_stats_handler::stats() const noexcept
-{
-  return stats_;
+  //
+  // Are we the last terminated VCPU?
+  //
+  if (terminated_vcpu_count_ == mp::cpu_count())
+  {
+    //
+    // Handler saves statistics separately for each VCPU.
+    // We merge statistics from all VCPUs into the first
+    // one (index 0).
+    //
+    for (uint32_t i = 1; i < mp::cpu_count(); ++i)
+    {
+      stats_[0].merge(stats_[i]);
+    }
+
+    //
+    // Print merged statistics.
+    // This is sum of statistics for each VCPU.
+    //
+    stats_[0].dump();
+
+    //
+    // Free the memory.
+    //
+    delete[] stats_;
+  }
 }
 
 void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
 {
-  auto exit_reason = vp.exit_reason();
-  stats_.vmexit[static_cast<int>(exit_reason)] += 1;
+  auto  exit_reason = vp.exit_reason();
+  auto& stats       = stats_[mp::cpu_index()];
+
+  stats.vmexit[static_cast<int>(exit_reason)] += 1;
 
   switch (exit_reason)
   {
@@ -69,7 +94,7 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       {
         case vmx::interrupt_type::hardware_exception:
         case vmx::interrupt_type::software_exception:
-          stats_.expt_vector[static_cast<int>(vp.exit_interrupt_info().vector())] += 1;
+          stats.expt_vector[static_cast<int>(vp.exit_interrupt_info().vector())] += 1;
 
           hv_trace_if_enabled(
             "exit_reason::exception_or_nmi: %s",
@@ -81,16 +106,16 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
     case vmx::exit_reason::execute_cpuid:
       if (vp.exit_context().eax <= 0x0000'000Fu)
       {
-        stats_.cpuid_0[vp.exit_context().eax] += 1;
+        stats.cpuid_0[vp.exit_context().eax] += 1;
       }
       else if (vp.exit_context().eax >= 0x8000'0000u &&
                vp.exit_context().eax <= 0x8000'000fu)
       {
-        stats_.cpuid_8[vp.exit_context().eax - 0x8000'0000u] += 1;
+        stats.cpuid_8[vp.exit_context().eax - 0x8000'0000u] += 1;
       }
       else
       {
-        stats_.cpuid_other += 1;
+        stats.cpuid_other += 1;
       }
 
       hv_trace_if_enabled("exit_reason::execute_cpuid: 0x%08x", vp.exit_context().eax);
@@ -112,7 +137,7 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       switch (vp.exit_qualification().mov_cr.access_type)
       {
         case vmx::exit_qualification_mov_cr_t::access_to_cr:
-          stats_.mov_to_cr[vp.exit_qualification().mov_cr.cr_number] += 1;
+          stats.mov_to_cr[vp.exit_qualification().mov_cr.cr_number] += 1;
 
           hv_trace_if_enabled(
             "exit_reason::mov_cr: (to_cr%u) 0x%p",
@@ -121,7 +146,7 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
           break;
 
         case vmx::exit_qualification_mov_cr_t::access_from_cr:
-          stats_.mov_from_cr[vp.exit_qualification().mov_cr.cr_number] += 1;
+          stats.mov_from_cr[vp.exit_qualification().mov_cr.cr_number] += 1;
 
           hv_trace_if_enabled(
             "exit_reason::mov_cr: (from_cr%u) 0x%p",
@@ -130,13 +155,13 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
           break;
 
         case vmx::exit_qualification_mov_cr_t::access_clts:
-          stats_.clts += 1;
+          stats.clts += 1;
 
           hv_trace_if_enabled("exit_reason::mov_cr: (clts)");
           break;
 
         case vmx::exit_qualification_mov_cr_t::access_lmsw:
-          stats_.lmsw += 1;
+          stats.lmsw += 1;
 
           hv_trace_if_enabled("exit_reason::mov_cr: (lmsw)");
           break;
@@ -147,7 +172,7 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       switch (vp.exit_qualification().mov_dr.access_type)
       {
         case vmx::exit_qualification_mov_dr_t::access_to_dr:
-          stats_.mov_to_dr[vp.exit_qualification().mov_dr.dr_number] += 1;
+          stats.mov_to_dr[vp.exit_qualification().mov_dr.dr_number] += 1;
 
           hv_trace_if_enabled(
             "exit_reason::mov_dr: (to_dr%u) 0x%p",
@@ -156,7 +181,7 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
           break;
 
         case vmx::exit_qualification_mov_dr_t::access_from_dr:
-          stats_.mov_from_dr[vp.exit_qualification().mov_dr.dr_number] += 1;
+          stats.mov_from_dr[vp.exit_qualification().mov_dr.dr_number] += 1;
 
           hv_trace_if_enabled(
             "exit_reason::mov_dr: (from_dr%u) 0x%p",
@@ -170,7 +195,7 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       switch (vp.exit_qualification().io_instruction.access_type)
       {
         case vmx::exit_qualification_io_instruction_t::access_out:
-          stats_.io_out[vp.exit_qualification().io_instruction.port_number] += 1;
+          stats.io_out[vp.exit_qualification().io_instruction.port_number] += 1;
 
           hv_trace_if_enabled(
             "exit_reason::execute_io_instruction: out 0x%04x",
@@ -178,7 +203,7 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
           break;
 
         case vmx::exit_qualification_io_instruction_t::access_in:
-          stats_.io_in[vp.exit_qualification().io_instruction.port_number] += 1;
+          stats.io_in[vp.exit_qualification().io_instruction.port_number] += 1;
 
           hv_trace_if_enabled(
             "exit_reason::execute_io_instruction: in 0x%04x",
@@ -190,16 +215,16 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
     case vmx::exit_reason::execute_rdmsr:
       if (vp.exit_context().ecx <= 0x0000'1fffu)
       {
-        stats_.rdmsr_0[vp.exit_context().ecx] += 1;
+        stats.rdmsr_0[vp.exit_context().ecx] += 1;
       }
       else if (vp.exit_context().ecx >= 0xc000'0000u &&
                vp.exit_context().ecx <= 0xc000'1fffu)
       {
-        stats_.rdmsr_c[vp.exit_context().ecx - 0xc000'0000u] += 1;
+        stats.rdmsr_c[vp.exit_context().ecx - 0xc000'0000u] += 1;
       }
       else
       {
-        stats_.rdmsr_other += 1;
+        stats.rdmsr_other += 1;
       }
       hv_trace_if_enabled("exit_reason::execute_rdmsr: 0x%08x", vp.exit_context().ecx);
       break;
@@ -207,23 +232,23 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
     case vmx::exit_reason::execute_wrmsr:
       if (vp.exit_context().ecx <= 0x0000'1fffu)
       {
-        stats_.wrmsr_0[vp.exit_context().ecx] += 1;
+        stats.wrmsr_0[vp.exit_context().ecx] += 1;
       }
       else if (vp.exit_context().ecx >= 0xc000'0000u &&
                vp.exit_context().ecx <= 0xc000'1fffu)
       {
-        stats_.wrmsr_c[vp.exit_context().ecx - 0xc000'0000u] += 1;
+        stats.wrmsr_c[vp.exit_context().ecx - 0xc000'0000u] += 1;
       }
       else
       {
-        stats_.wrmsr_other += 1;
+        stats.wrmsr_other += 1;
       }
 
       hv_trace_if_enabled("exit_reason::execute_wrmsr: 0x%08x", vp.exit_context().ecx);
       break;
 
     case vmx::exit_reason::gdtr_idtr_access:
-      stats_.gdtr_idtr[vp.exit_instruction_info().gdtr_idtr_access.instruction] += 1;
+      stats.gdtr_idtr[vp.exit_instruction_info().gdtr_idtr_access.instruction] += 1;
 
       hv_trace_if_enabled(
         "exit_reason::gdtr_idtr_access: %s",
@@ -231,7 +256,7 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       break;
 
     case vmx::exit_reason::ldtr_tr_access:
-      stats_.ldtr_tr[vp.exit_instruction_info().ldtr_tr_access.instruction] += 1;
+      stats.ldtr_tr[vp.exit_instruction_info().ldtr_tr_access.instruction] += 1;
 
       hv_trace_if_enabled(
         "exit_reason::ldtr_tr_access: %s",
@@ -262,6 +287,39 @@ void vmexit_stats_handler::update_stats(vcpu_t& vp) noexcept
       hv_trace_if_enabled("exit_reason::execute_invpcid");
       break;
   }
+}
+
+void vmexit_stats_handler::stats_t::merge(const stats_t& other) noexcept
+{
+#define STATS_MERGE(name)                         \
+  for (uint32_t i = 0; i < std::size(name); ++i)  \
+  {                                               \
+    name[i] += other.name[i];                     \
+  }
+
+  STATS_MERGE(vmexit);
+  STATS_MERGE(expt_vector);
+  STATS_MERGE(cpuid_0);
+  STATS_MERGE(cpuid_8);
+  cpuid_other += other.cpuid_other;
+  STATS_MERGE(mov_from_cr);
+  STATS_MERGE(mov_to_cr);
+  clts += other.clts;
+  lmsw += other.lmsw;
+  STATS_MERGE(mov_from_dr);
+  STATS_MERGE(mov_to_dr);
+  STATS_MERGE(gdtr_idtr);
+  STATS_MERGE(ldtr_tr);
+  STATS_MERGE(io_in);
+  STATS_MERGE(io_out);
+  STATS_MERGE(rdmsr_0);
+  STATS_MERGE(rdmsr_c);
+  rdmsr_other += other.rdmsr_other;
+  STATS_MERGE(wrmsr_0);
+  STATS_MERGE(wrmsr_c);
+  wrmsr_other += other.wrmsr_other;
+
+#undef STATS_MERGE
 }
 
 void vmexit_stats_handler::stats_t::dump() const noexcept
@@ -383,7 +441,7 @@ void vmexit_stats_handler::stats_t::dump() const noexcept
           {
             if (io_in[i] > 0)
             {
-              hvpp_info("    in: %u", i, io_in[i]);
+              hvpp_info("    in (0x%04x): %u", i, io_in[i]);
             }
           }
 
@@ -391,7 +449,7 @@ void vmexit_stats_handler::stats_t::dump() const noexcept
           {
             if (io_out[i] > 0)
             {
-              hvpp_info("    out: %u", i, io_out[i]);
+              hvpp_info("    out (0x%04x): %u", i, io_out[i]);
             }
           }
           break;

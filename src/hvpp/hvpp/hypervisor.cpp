@@ -60,8 +60,6 @@ void hypervisor::start(vmexit_handler* handler) noexcept
 #else
   mp::ipi_call(this, &hypervisor::start_ipi_callback);
 #endif
-
-  hvpp_info("hvpp started");
 }
 
 void hypervisor::stop() noexcept
@@ -71,8 +69,6 @@ void hypervisor::stop() noexcept
 #else
   mp::ipi_call(this, &hypervisor::stop_ipi_callback);
 #endif
-
-  hvpp_info("hvpp stopped");
 }
 
 //
