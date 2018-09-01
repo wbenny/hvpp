@@ -266,6 +266,9 @@
     <ClInclude Include="ia32\cpuid\cpuid_eax_01.h">
       <Filter>Header Files\ia32\cpuid</Filter>
     </ClInclude>
+    <ClInclude Include="ia32\paging.h">
+      <Filter>Header Files\ia32</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="ia32\context.asm">

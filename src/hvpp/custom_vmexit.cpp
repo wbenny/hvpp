@@ -115,7 +115,12 @@ void custom_vmexit_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
       hvpp_trace("vmcall (hook) EXEC: 0x%p READ: 0x%p", data.page_exec.value(), data.page_read.value());
 
       //
-      // Set execute-only access.
+      // Split the 2MB page where the code we want to hook resides.
+      //
+      vp.ept().split_2mb_to_4kb(data.page_exec & ept_pd_t::mask, data.page_exec & ept_pd_t::mask);
+
+      //
+      // Set execute-only access on the page we want to hook.
       //
       vp.ept().map_4kb(data.page_exec, data.page_exec, epte_t::access_type::execute);
 
@@ -130,9 +135,10 @@ void custom_vmexit_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
       hvpp_trace("vmcall (unhook)");
 
       //
-      // Set back read-write-execute access.
+      // Merge the 4kb pages back to the original 2MB large page. Note that this
+      // will also automatically set the access rights to read_write_execute.
       //
-      vp.ept().map_4kb(data.page_exec, data.page_exec, epte_t::access_type::read_write_execute);
+      vp.ept().join_4kb_to_2mb(data.page_exec & ept_pd_t::mask, data.page_exec & ept_pd_t::mask);
 
       //
       // We've changed EPT structure - mappings derived from EPT need to be

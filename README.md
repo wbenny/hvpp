@@ -48,8 +48,10 @@ read and navigate through 5000 pages with browser's built-in PDF reader.
 
 ### Features
 
-- EPT with identity mapping **with usage of 2MB pages** for device physical memory ranges (see [ept.cpp](src/hvpp/hvpp/ept.cpp))
-  and any memory in first 4GB range which is not backed by actual physical memory.
+- EPT with identity mapping **with usage of 2MB pages** for the first 512GB of physical memory (see [ept.cpp](src/hvpp/hvpp/ept.cpp)).
+  This results in faster translations of the memory. It also means splitting particular 2MB pages into 4kb pages might
+  be desired if EPT hooking is required. This process is actually not complicated at all and this repository includes
+  example on how to achieve that.
 - Simple pass-through VM-exit handler, which can handle:
   - exceptions or [NMIs][nmi]
   - `CPUID`, `(WB)INVD`, `INVLPG`, `RDTSC(P)`, `MOV CR`, `MOV DR`, `IN/OUT`, `RDMSR`, `WRMSR`, `SGDT`, `SIDT`, `LGDT`,

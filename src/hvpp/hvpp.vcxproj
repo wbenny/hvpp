@@ -143,6 +143,7 @@
     <ClInclude Include="ia32\msr\mtrr.h" />
     <ClInclude Include="ia32\msr\vmx.h" />
     <ClInclude Include="ia32\mtrr.h" />
+    <ClInclude Include="ia32\paging.h" />
     <ClInclude Include="ia32\vmx.h" />
     <ClInclude Include="ia32\vmx\exception_bitmap.h" />
     <ClInclude Include="ia32\vmx\instruction_info.h" />

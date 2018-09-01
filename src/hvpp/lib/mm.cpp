@@ -157,7 +157,7 @@ namespace memory_manager
     //
     // Align size to the page boundary.
     //
-    size = reinterpret_cast<size_t>(ia32::page_align(size));
+    size = ia32::page_align(size);
 
     //
     // Check again.

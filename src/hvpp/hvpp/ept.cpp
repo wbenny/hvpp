@@ -38,16 +38,10 @@ void ept_t::destroy() noexcept
 {
   eptptr_.flags = 0;
 
-  //
-  // Note: this call also frees memory of epml4_ itself.
-  //
-  destroy(epml4_, page_table_level::pml4);
-  epml4_ = nullptr;
-}
+  unmap_table(epml4_);
+  delete[] epml4_;
 
-ept_ptr_t ept_t::ept_pointer() const noexcept
-{
-  return eptptr_;
+  epml4_ = nullptr;
 }
 
 void ept_t::map_identity() noexcept
@@ -57,132 +51,316 @@ void ept_t::map_identity() noexcept
   // physical memory to the guest. This means that physical memory 0x4000
   // in the guest will be physical memory 0x4000 in the host.
   //
-  // We're going to try to achive that in an optimal way: we're not going
-  // to map whole physical memory in 4kb granularity - instead we'll map
-  // with 4kb granularity just those physical memory ranges, which actually
-  // POINT to physical memory.
+  // Only first 512 GB of physical memory is covered - hopefully that should
+  // cover most cases - and 2MB pages are used.
   //
-  // Because things like DMA (Direct Memory Access) and IOMMU (I/O memory
-  // management unit) are in this game too, some ranges of the physical memory
-  // actually point to other devices. Because we don't care that much about
-  // device's memory, we'll map it with 2MB granularity (to waste less space).
+  // Usage of 2MB pages has following benefits:
+  //   - Compared to 4kb pages, it requires less memory to cover the same
+  //     address space.
+  //   - CPU spends less time walking the paging hierarchy (one level less).
+  //   - This function runs faster as it doesn't have to map 512 additional
+  //     entries for each 2MB pages.
   //
-  // Note that new memory ranges for devices can be created when PC is running;
-  // for example if you plug-in USB device or any PnP device to the computer.
-  // But because most of the time (not always!) these memory ranges reside in
-  // lower 4GB of physical address space, we'll just cover the whole <4GB space
-  // (which is not backed up by actual physical memory) with 2MB EPT pages.
-  //
-  // So, to sum it up:
-  //   - Get physical memory descriptor (it will say us which ranges are actually
-  //     backed up by physical memory).
-  //   - Map these ranges with 4kb granularity.
-  //   - Map rest of <4GB address space with 2MB EPT pages.
-  //   - Because 2MB pages MUST be aligned to 2MB address boundary, there is
-  //     a chance we still didn't cover the whole <4GB address space - so we
-  //     will map these "holes" again with 4kb granularity.
+  // Usage of 2MB pages has also following drawbacks:
+  //   - Hooking of 2MB pages is inconvenient as we would get very frequent EPT
+  //     violations. If we want to do EPT hooking on smaller granularity (i.e.
+  //     4kb) we have to split desired 2MB page into 4kb pages.
+  //   - Higher risk of MTRR conflict - see mtrr::type() method implementation;
+  //     if two or more MTRRs are contained within single 2MB page and those
+  //     MTRRs are of different types, the memory type of the whole 2MB page
+  //     must be set to "least dangerous" option. Worst case scenario is if
+  //     UC (uncached) memory type collides with something else - the whole page
+  //     must be then set to UC type. This may result in slight performance hit.
   //
 
-  //
-  // Page frame number map for 0000'0000 - FFFF'FFFF range (first 4GB).
-  // 1 bit == 1 page.
-  //
-  static constexpr uint64_t _4gb = 0x1'0000'0000;
-  static constexpr uint64_t _2mb_pfn_count = 512;
-  static constexpr uint64_t _4kb_pfn_count = 1;
+  static constexpr uint64_t _512gb = 512ull * 1024
+                                            * 1024
+                                            * 1024;
 
-  bitmap pfn_map(_4gb / page_size);
-  int pfn;
-
-  for (auto range : memory_manager::physical_memory_descriptor())
+  for (pa_t pa = 0; pa < _512gb; pa += ept_pd_t::size)
   {
-    for (auto pa : range)
-    {
-      map_4kb(pa, pa);
-
-      if (pa < _4gb)
-      {
-        pfn_map.set(static_cast<uint32_t>(pa.pfn()));
-      }
-    }
+    map_2mb(pa, pa);
   }
-
-  //
-  // Use 2MB pages whenever possible.
-  //
-  pfn = 0;
-  while ((pfn = pfn_map.find_first_clear(pfn, _2mb_pfn_count)) != -1)
-  {
-    int remainder = pfn % _2mb_pfn_count;
-
-    if (remainder == 0)
-    {
-      //
-      // Page is aligned to 2MB boundary - make 2MB page.
-      //
-      auto pa = pa_t::from_pfn(pfn);
-      map_2mb(pa, pa);
-
-      pfn_map.set(pfn, _2mb_pfn_count);
-    }
-    else
-    {
-      //
-      // Page is not aligned to 2MB boundary - skip all PFNs up to next 2MB
-      // boundary.
-      //
-      pfn += _2mb_pfn_count - remainder;
-    }
-  }
-
-  //
-  // Use 4KB pages for the rest.
-  //
-  pfn = 0;
-  while ((pfn = pfn_map.find_first_clear(pfn, _4kb_pfn_count)) != -1)
-  {
-    auto pa = pa_t::from_pfn(pfn);
-    map_4kb(pa, pa);
-
-    pfn_map.set(pfn);
-  }
-
-  hvpp_assert(pfn_map.all_set());
 }
 
-epte_t* ept_t::map(pa_t guest_pa, pa_t host_pa, epte_t::access_type access /* = epte_t::access_type::read_write_execute */, large_page large /* = large_page::none */) noexcept
+epte_t* ept_t::map(pa_t guest_pa, pa_t host_pa,
+                   epte_t::access_type access /* = epte_t::access_type::read_write_execute */,
+                   pml large /* = pml::pt */) noexcept
 {
+  //
+  // Map provided guest physical address to provided host physical address.
+  // Set provided access to the guest physical address.
+  // The map is created using paging structure specified in "large" parameter.
+  // The range of mapped memory is derived from the size of the paging
+  // structure.
+  //
   return map_pml4(guest_pa, host_pa, epml4_, access, large);
 }
 
-epte_t* ept_t::map_4kb(pa_t guest_pa, pa_t host_pa, epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
+epte_t* ept_t::map_4kb(pa_t guest_pa, pa_t host_pa,
+                       epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
 {
-  return map(guest_pa, host_pa, access, large_page::none);
+  return map(guest_pa, host_pa, access, pml::pt);
 }
 
-epte_t* ept_t::map_2mb(pa_t guest_pa, pa_t host_pa, epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
+epte_t* ept_t::map_2mb(pa_t guest_pa, pa_t host_pa,
+                       epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
 {
-  return map(guest_pa, host_pa, access, large_page::pde_2mb);
+  return map(guest_pa, host_pa, access, pml::pd);
 }
 
-epte_t* ept_t::map_1gb(pa_t guest_pa, pa_t host_pa, epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
+epte_t* ept_t::map_1gb(pa_t guest_pa, pa_t host_pa,
+                       epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
 {
-  return map(guest_pa, host_pa, access, large_page::pdpte_1gb);
+  return map(guest_pa, host_pa, access, pml::pdpt);
+}
+
+void ept_t::split_1gb_to_2mb(pa_t guest_pa, pa_t host_pa) noexcept
+{
+  //
+  // Split
+  //    PDPT entry (1, large, 1GB)
+  //          into
+  //    PD entries (512, large, 2MB).
+  //
+  split<ept_pdpt_t, ept_pd_t>(guest_pa, host_pa);
+}
+
+void ept_t::split_2mb_to_4kb(pa_t guest_pa, pa_t host_pa) noexcept
+{
+  //
+  // Split
+  //    PD entry (1, large, 2MB)
+  //          into
+  //    PT entries (512, 4kb).
+  //
+  split<ept_pd_t, ept_pt_t>(guest_pa, host_pa);
+}
+
+void ept_t::join_2mb_to_1gb(pa_t guest_pa, pa_t host_pa) noexcept
+{
+  //
+  // Join (merge)
+  //    PD entries (512, large, 2MB)
+  //          into
+  //    PDPT entry (1, large, 1GB).
+  //
+  join<ept_pd_t, ept_pdpt_t>(guest_pa, host_pa);
+}
+
+void ept_t::join_4kb_to_2mb(pa_t guest_pa, pa_t host_pa) noexcept
+{
+  //
+  // Join (merge)
+  //    PT entries (512, 4kb)
+  //          into
+  //    PD entry (1, large, 2MB).
+  //
+  join<ept_pt_t, ept_pd_t>(guest_pa, host_pa);
+}
+
+ept_ptr_t ept_t::ept_pointer() const noexcept
+{
+  return eptptr_;
 }
 
 //
 // Private
 //
 
+template <
+  typename ept_table_from_t,
+  typename ept_table_to_t
+>
+void ept_t::split(pa_t guest_pa, pa_t host_pa) noexcept
+{
+  //
+  // Sanity compile-time checks - allow to use only EPT descriptors.
+  // See ia32/ept.h.
+  //
+  static_assert(std::is_base_of_v<ept_descriptor_tag,
+                                  ept_table_from_t::descriptor_tag>,
+                "Wrong ept_table_from_t type");
+
+
+  static_assert(std::is_base_of_v<ept_descriptor_tag,
+                                  ept_table_from_t::descriptor_tag>,
+                "Wrong ept_table_to_t type");
+
+  //
+  // Splitting pages (breaking large page into smaller ones) is possible only
+  // down accross one level (i.e. PDPT -> PD, PD -> PT). If you desire to split
+  // PDPT into PTs (2 levels apart), you have to split the PDPT first and then
+  // split resulting PDs again into PTs.
+  //
+  static_assert(ept_table_from_t::level - 1 == ept_table_to_t::level,
+                "Cannot split page-tables accros multiple levels");
+
+  //
+  // PML4 is not splittable (doesn't have the "large_page" flag). Although this
+  // might change in the future.
+  //
+  static_assert(ept_table_from_t::level != pml::pml4,
+                "Cannot split PML4 into PDPTs");
+
+  //
+  // Fetch the EPT entry for the provided guest physical address.
+  // The returned EPT entry is fetched at the "ept_table_from_t::level",
+  // this means that if we're splitting from PD to PTs, we've fetched PD entry.
+  //
+  auto entry = ept_entry(guest_pa, ept_table_from_t::level);
+
+  //
+  // Make sure that the fetched entry is indeed large. We can't split non-large
+  // pages - they already are splitted.
+  //
+  hvpp_assert(entry->large_page);
+
+  //
+  // Unmap the entry, i.e. make it non-present and reset the PFN.
+  //
+  unmap_entry(entry, ept_table_from_t::level);
+
+  //
+  // Map the unmapped physical memory range again, this time with smaller EPT
+  // entries.
+  //
+  // If we're splitting 2MB page into 4kb pages, we're mapping range
+  // [ guest_pa, guest_pa + 2MB ].
+  //
+  // Note: Each paging structure on Intel architectures always contain 512
+  //       entries (one PDPT can contain 512 PDs, one PD can contain 512 PTs,
+  //       one PT can contain 512 pages). This is convenient because at the
+  //       same time, each EPT structure has 8 bytes - therefore those 512
+  //       entries can always fit into single 4kb page.
+  //
+  //       This means that this for-loop always exetues 512-times, no matter
+  //       what the ept_table_from_t is.
+  //
+  for (uint64_t i = 0; i < ept_table_from_t::count; i++)
+  {
+    map(guest_pa + (i * ept_table_to_t::size), // offset = iteration * page_size
+        host_pa  + (i * ept_table_to_t::size), // offset = iteration * page_size
+        epte_t::access_type::read_write_execute,
+        ept_table_to_t::level);
+  }
+}
+
+template <
+  typename ept_table_from_t,
+  typename ept_table_to_t
+>
+void ept_t::join(pa_t guest_pa, pa_t host_pa) noexcept
+{
+  //
+  // Sanity compile-time checks - allow to use only EPT descriptors.
+  // See ia32/ept.h.
+  //
+  static_assert(std::is_base_of_v<ept_descriptor_tag,
+    ept_table_from_t::descriptor_tag>,
+    "Wrong ept_table_from_t type");
+
+
+  static_assert(std::is_base_of_v<ept_descriptor_tag,
+    ept_table_from_t::descriptor_tag>,
+    "Wrong ept_table_to_t type");
+
+  //
+  // Joining pages (merging pages into one large page) is possible only
+  // up accross one level (i.e. PD -> PDPT, PT -> PD). If you desire to join
+  // PTs into PDPT (2 levels apart), you have to join each PT into PDs first and
+  // then join resulting PDs again into PDPT.
+  //
+  static_assert(ept_table_from_t::level + 1 == ept_table_to_t::level,
+                "Cannot join page-tables accros multiple levels");
+
+  //
+  // PDPTs are not joinable into PML4 (PML4 doesn't have the "large_page" flag).
+  // Although this might change in the future.
+  //
+  static_assert(ept_table_from_t::level != pml::pdpt,
+                "Cannot join PDPTs to PML4");
+
+  //
+  // Make sure the guest physical address is aligned with respect to target
+  // EPT structure; i.e. if we're joining PTs into PD, the guest_pa must be
+  // aligned at 2MB boundary. If we're joining PDs into PDPT, the guest_pa must
+  // be aligned at 1GB boundary.
+  //
+  hvpp_assert((guest_pa & ept_table_to_t::mask) == guest_pa);
+  guest_pa = page_align(guest_pa.value(), ept_table_to_t{});
+
+  //
+  // Fetch the EPT entry for the provided guest physical address.
+  // The returned EPT entry is fetched at the "ept_table_to_t::level",
+  // this means that if we're joining PTs into PD, we've fetched PD entry.
+  //
+  auto entry = ept_entry(guest_pa, ept_table_to_t::level);
+
+  //
+  // Make sure that the fetched entry is not large. We can't join large pages.
+  //
+  if (entry->large_page)
+  {
+    hvpp_assert(0);
+    return;
+  }
+
+  //
+  // Unmap the entry, i.e. make it non-present and reset the PFN. This will also
+  // deallocate entries in the subtable (e.g. if entry is PD, the PT it points
+  // to (entry->page_frame_number) will get automatically deallocated).
+  //
+  unmap_entry(entry, ept_table_to_t::level);
+
+  //
+  // Map the unmapped physical memory range again, this time with single large
+  // EPT entry.
+  //
+  map(guest_pa,
+      host_pa,
+      epte_t::access_type::read_write_execute,
+      ept_table_to_t::level);
+}
+
+epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
+{
+  //
+  // Get EPT entry at desired level for provided guest physical address.
+  // Start at PML4 and traverse down the paging hierarchy.
+  // Returns nullptr for unmapped (non-present) physical addresses.
+  //
+  auto pml4e = &epml4_[guest_pa.index(pml::pml4)];
+  auto pdpte = pml4e->is_present()
+    ? &pml4e->subtable()[guest_pa.index(pml::pdpt)]
+    : nullptr;
+
+  if (!pdpte || pdpte->large_page || level == pml::pdpt)
+  {
+    return pdpte;
+  }
+
+  auto pde = pdpte->is_present()
+    ? &pdpte->subtable()[guest_pa.index(pml::pd)]
+    : nullptr;
+
+  if (!pde || pde->large_page || level == pml::pd)
+  {
+    return pde;
+  }
+
+  auto pte = pde->is_present()
+    ? &pde->subtable()[guest_pa.index(pml::pt)]
+    : nullptr;
+
+  return pte;
+}
+
 epte_t* ept_t::map_subtable(epte_t* table) noexcept
 {
   //
   // Get or create next level of EPT table hierarchy.
-  //
-  // PML4 (top level)
-  // -> PDPT
-  //   -> PD
-  //     -> PT
+  // PML4 -> PDPT -> PD -> PT
   //
   if (table->is_present())
   {
@@ -198,19 +376,21 @@ epte_t* ept_t::map_subtable(epte_t* table) noexcept
   return subtable;
 }
 
-epte_t* ept_t::map_pml4(pa_t guest_pa, pa_t host_pa, epte_t* pml4, epte_t::access_type access, large_page large) noexcept
+epte_t* ept_t::map_pml4(pa_t guest_pa, pa_t host_pa, epte_t* pml4,
+                        epte_t::access_type access, pml large) noexcept
 {
-  auto pml4e = &pml4[guest_pa.index(page_table_level::pml4)];
+  auto pml4e = &pml4[guest_pa.index(pml::pml4)];
   auto pdpt = map_subtable(pml4e);
 
   return map_pdpt(guest_pa, host_pa, pdpt, access, large);
 }
 
-epte_t* ept_t::map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt, epte_t::access_type access, large_page large) noexcept
+epte_t* ept_t::map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt,
+                        epte_t::access_type access, pml large) noexcept
 {
-  auto pdpte = &pdpt[guest_pa.index(page_table_level::pdpt)];
+  auto pdpte = &pdpt[guest_pa.index(pml::pdpt)];
 
-  if (large == large_page::pdpte_1gb)
+  if (large == pml::pdpt)
   {
     pdpte->update(host_pa, memory_manager::mtrr().type(guest_pa), true);
     return pdpte;
@@ -220,11 +400,12 @@ epte_t* ept_t::map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt, epte_t::acces
   return map_pd(guest_pa, host_pa, pd, access, large);
 }
 
-epte_t* ept_t::map_pd(pa_t guest_pa, pa_t host_pa, epte_t* pd, epte_t::access_type access, large_page large) noexcept
+epte_t* ept_t::map_pd(pa_t guest_pa, pa_t host_pa, epte_t* pd,
+                      epte_t::access_type access, pml large) noexcept
 {
-  auto pde = &pd[guest_pa.index(page_table_level::pd)];
+  auto pde = &pd[guest_pa.index(pml::pd)];
 
-  if (large == large_page::pde_2mb)
+  if (large == pml::pd)
   {
     pde->update(host_pa, memory_manager::mtrr().type(guest_pa), true);
     return pde;
@@ -234,53 +415,97 @@ epte_t* ept_t::map_pd(pa_t guest_pa, pa_t host_pa, epte_t* pd, epte_t::access_ty
   return map_pt(guest_pa, host_pa, pt, access, large);
 }
 
-epte_t* ept_t::map_pt(pa_t guest_pa, pa_t host_pa, epte_t* pt, epte_t::access_type access, large_page large) noexcept
+epte_t* ept_t::map_pt(pa_t guest_pa, pa_t host_pa, epte_t* pt,
+                      epte_t::access_type access, pml large) noexcept
 {
-  auto page = &pt[guest_pa.index(page_table_level::pt)];
+  auto pte = &pt[guest_pa.index(pml::pt)];
 
   (void)(large);
-  hvpp_assert(large == large_page::none);
+  hvpp_assert(large == pml::pt);
   {
-    page->update(host_pa, memory_manager::mtrr().type(guest_pa), access);
-    return page;
+    pte->update(host_pa, memory_manager::mtrr().type(guest_pa), access);
+    return pte;
   }
 }
 
-void ept_t::destroy(epte_t* table, page_table_level ptl_type /* = page_table_level::pml4 */) noexcept
+void ept_t::unmap_table(epte_t* table, pml level /* = pml::pml4 */) noexcept
 {
+  //
+  // Table must be present and it cannot be large page.
+  //
+  hvpp_assert(table && table->is_present() && !table->large_page);
+
+  //
+  // PTs already point to real physical addresses - we can't unmap them.
+  //
+  hvpp_assert(level != pml::pt);
+
+  //
+  // Unmap each of 512 entries in the table.
+  //
   for (int i = 0; i < 512; ++i)
   {
     auto entry = &table[i];
+    unmap_entry(entry, level);
+  }
+}
 
-    if (entry->is_present())
-    {
-      hvpp_assert(entry->page_frame_number != 0);
+void ept_t::unmap_entry(epte_t* entry, pml level) noexcept
+{
+  hvpp_assert(entry);
 
-      auto subtable = entry->subtable();
-
-      if (!entry->large_page)
-      {
-        switch (ptl_type)
-        {
-          case page_table_level::pml4:
-          case page_table_level::pdpt:
-            destroy(subtable, ptl_type - 1);
-            break;
-
-          case page_table_level::pd:
-            delete subtable;
-            break;
-
-          case page_table_level::pt:
-          default:
-            hvpp_assert(0);
-            break;
-        }
-      }
-    }
+  if (!entry->is_present())
+  {
+    //
+    // Don't do anything if entry is already unmapped.
+    //
+    return;
   }
 
-  delete[] table;
+  //
+  // PFN cannot be 0 unless the entry is of large page.
+  // For example: 2MB large PD entry which covers first 2MB of the RAM will have
+  // the PFN set to 0. But non-large PD entry which points to page-table can't
+  // have PFN set to 0.
+  //
+  hvpp_assert(entry->page_frame_number != 0 || entry->large_page);
+
+  if (!entry->large_page)
+  {
+    //
+    // Fetch subtable. Only non-large pages have subtables.
+    //
+    auto subtable = entry->subtable();
+
+    //
+    // Unmap and/or deallocate the subtable based on current page map level.
+    //
+    switch (level)
+    {
+      case pml::pml4:
+      case pml::pdpt:
+        if (!subtable->large_page)
+        {
+          unmap_table(subtable, level - 1);
+        }
+        delete[] subtable;
+        break;
+
+        case pml::pd:
+          delete[] subtable;
+          break;
+
+        case pml::pt:
+        default:
+          hvpp_assert(0);
+          break;
+        }
+  }
+
+  //
+  // Unmap entry and make it not present.
+  //
+  entry->clear();
 }
 
 }

@@ -1,14 +1,17 @@
 #pragma once
 #include "win32/memory.h"
 #include "lib/log.h"
+#include "paging.h"
 
 #include <cstdint>
 #include <numeric>
+#include <type_traits>
 
 namespace ia32 {
 
-using pfn_t = uint64_t;
-using la_t = uint64_t;
+using pfn_t = uint64_t; // Page Frame Number
+using la_t  = uint64_t; // Linear Address
+using va_t  = uint64_t; // Virtual Address
 
 enum class memory_type : uint8_t
 {
@@ -20,56 +23,9 @@ enum class memory_type : uint8_t
   invalid         = 0xff
 };
 
-enum class page_table_level : uint8_t
-{
-  pml4 = 3,
-  pdpt = 2,
-  pd   = 1,
-  pt   = 0,
-};
-
-inline page_table_level& operator++(page_table_level& ptl) noexcept
-{ reinterpret_cast<uint8_t&>(ptl)++; return ptl; }
-
-inline page_table_level& operator--(page_table_level& ptl) noexcept
-{ reinterpret_cast<uint8_t&>(ptl)--; return ptl; }
-
-inline page_table_level operator++(page_table_level& ptl, int) noexcept
-{ auto result = ptl; reinterpret_cast<uint8_t&>(ptl)++; return result; }
-
-inline page_table_level operator--(page_table_level& ptl, int) noexcept
-{ auto result = ptl; reinterpret_cast<uint8_t&>(ptl)--; return result; }
-
-inline page_table_level operator+(page_table_level ptl, uint8_t value) noexcept
-{ return static_cast<page_table_level>(static_cast<uint8_t>(ptl) + value); }
-
-inline page_table_level operator-(page_table_level ptl, uint8_t value) noexcept
-{ return static_cast<page_table_level>(static_cast<uint8_t>(ptl) - value); }
-
-inline page_table_level& operator+=(page_table_level& ptl, uint8_t value) noexcept
-{ reinterpret_cast<uint8_t&>(ptl) += value; return ptl; }
-
-inline page_table_level& operator-=(page_table_level& ptl, uint8_t value) noexcept
-{ reinterpret_cast<uint8_t&>(ptl) -= value; return ptl; }
-
 static constexpr auto page_shift = 12;
 static constexpr auto page_size  = 4096;
-
-template <typename T, typename = std::enable_if_t<std::is_pointer_v<T> || (std::is_integral_v<T> && sizeof(T) == sizeof(uintptr_t))>>
-inline constexpr void* page_align(T va) noexcept
-{ return (void*)((uintptr_t)(va) & ~(page_size - 1)); }
-
-template <typename T, typename = std::enable_if_t<std::is_pointer_v<T> || (std::is_integral_v<T> && sizeof(T) == sizeof(uintptr_t))>>
-inline constexpr uint32_t byte_offset(T va) noexcept
-{ return (uint32_t)((uintptr_t)(va) & (page_size - 1)); }
-
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-inline constexpr uint64_t bytes_to_pages(T size) noexcept
-{ return (size >> page_shift) + ((size & (page_size - 1)) != 0); }
-
-template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-inline constexpr uint64_t round_to_pages(T size) noexcept
-{ return ((uintptr_t)(size) + page_size - 1) & ~(page_size - 1); }
+static constexpr auto page_mask  = page_size - 1;
 
 class pa_t
 {
@@ -77,6 +33,7 @@ class pa_t
     //
     // Static
     //
+
     static pa_t from_pfn(pfn_t pfn)    noexcept { return pa_t(pfn << page_shift);       }
     static pa_t from_va(void* va)      noexcept { return pa_t(detail::pa_from_va(va));  }
 
@@ -93,11 +50,17 @@ class pa_t
 
     pa_t& operator= (uint64_t other)   noexcept { value_ = other; return *this;         }
 
-    pa_t  operator+ (pa_t other)       noexcept { return pa_t(value_ + other.value_);   }
+    pa_t  operator+ (pa_t other) const noexcept { return pa_t(value_ + other.value_);   }
     pa_t& operator+=(pa_t other)       noexcept { value_ += other.value_; return *this; }
 
-    pa_t  operator- (pa_t other)       noexcept { return pa_t(value_ - other.value_);   }
+    pa_t  operator- (pa_t other) const noexcept { return pa_t(value_ - other.value_);   }
     pa_t& operator-=(pa_t other)       noexcept { value_ -= other.value_; return *this; }
+
+    pa_t  operator| (pa_t other) const noexcept { return pa_t(value_ | other.value_);   }
+    pa_t& operator|=(pa_t other)       noexcept { value_ |= other.value_; return *this; }
+
+    pa_t  operator& (pa_t other) const noexcept { return pa_t(value_ & other.value_);   }
+    pa_t& operator&=(pa_t other)       noexcept { value_ &= other.value_; return *this; }
 
     bool  operator> (pa_t other) const noexcept { return value_ > other.value_;         }
     bool  operator>=(pa_t other) const noexcept { return value_ >= other.value_;        }
@@ -115,7 +78,7 @@ class pa_t
     pfn_t pfn()                  const noexcept { return value_ >> page_shift;          }
     void* va()                   const noexcept { return detail::va_from_pa(value_);    }
 
-    int index(page_table_level level) const noexcept
+    int index(pml level) const noexcept
     {
       uint64_t result = value_;
       result >>= page_shift + static_cast<uint8_t>(level) * 9;
@@ -126,37 +89,6 @@ class pa_t
 
   private:
     uint64_t value_;
-};
-
-class page_iterator
-{
-  public:
-    page_iterator()                                      noexcept = delete;
-    page_iterator(pa_t value)                            noexcept : value_(value) { }
-    page_iterator(const page_iterator& other)            noexcept = default;
-    page_iterator(page_iterator&& other)                 noexcept = default;
-    page_iterator& operator=(const page_iterator& other) noexcept = default;
-    page_iterator& operator=(page_iterator&& other)      noexcept = default;
-
-    pa_t operator++(   )       noexcept { return                value_ += page_size;                    }
-    pa_t operator++(int)       noexcept { pa_t result = value_; value_ += page_size; return result;     }
-    pa_t operator--(   )       noexcept { return                value_ -= page_size;                    }
-    pa_t operator--(int)       noexcept { pa_t result = value_; value_ -= page_size; return result;     }
-    pa_t operator* (   )       noexcept { return                value_;                                 }
-    pa_t operator* (   ) const noexcept { return                value_;                                 }
-    pa_t operator->(   )       noexcept { return                value_;                                 }
-    pa_t operator->(   ) const noexcept { return                value_;                                 }
-
-    bool operator> (const page_iterator& other) const noexcept { return value_ > other.value_;  }
-    bool operator>=(const page_iterator& other) const noexcept { return value_ >= other.value_; }
-    bool operator< (const page_iterator& other) const noexcept { return value_ < other.value_;  }
-    bool operator<=(const page_iterator& other) const noexcept { return value_ <= other.value_; }
-    bool operator==(const page_iterator& other) const noexcept { return value_ == other.value_; }
-    bool operator!=(const page_iterator& other) const noexcept { return value_ != other.value_; }
-    bool operator! (                                  ) const noexcept { return !value_;                }
-
-  private:
-    pa_t value_;
 };
 
 class memory_range
@@ -177,7 +109,7 @@ class memory_range
     void set(pa_t begin_pa, pa_t end_pa) noexcept
     {
       begin_ = begin_pa;
-      end_ = end_pa;
+      end_   = end_pa;
     }
 
     bool contains(pa_t pa) const noexcept
@@ -185,9 +117,9 @@ class memory_range
       return pa >= begin_ && pa < end_;
     }
 
-    page_iterator begin() const noexcept { return page_iterator(begin_); }
-    page_iterator end()   const noexcept { return page_iterator(end_); }
-    size_t        size()  const noexcept { return end_.value() - begin_.value(); }
+    pa_t    begin() const noexcept { return begin_; }
+    pa_t    end()   const noexcept { return end_; }
+    size_t  size()  const noexcept { return end_.value() - begin_.value(); }
 
   private:
     pa_t begin_;

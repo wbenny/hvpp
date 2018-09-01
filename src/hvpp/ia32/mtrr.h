@@ -43,7 +43,7 @@ class mtrr
       //    -  If two or more variable memory ranges match and the memory types are identical, then that memory type
       //       is used.
       //    -  If two or more variable memory ranges match and one of the memory types is UC, the UC memory type
-      //       used.
+      //       is used.
       //    -  If two or more variable memory ranges match and the memory types are WT and WB, the WT memory type
       //       is used.
       //    -  For overlaps not defined by the above rules, processor behavior is undefined.
