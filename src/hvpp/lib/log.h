@@ -57,6 +57,15 @@ namespace logger
   constexpr inline options_t& operator|=(options_t& value1, options_t value2) noexcept
   { value1 = value1 | value2; return value1; }
 
+  namespace detail
+  {
+    void initialize() noexcept;
+    void destroy() noexcept;
+
+    void vprint(level_t level, const char* function, const char* format, va_list args) noexcept;
+    void vprint_trace(level_t level, const char* function, const char* format, va_list args) noexcept;
+  }
+
   void initialize() noexcept;
   void destroy() noexcept;
 

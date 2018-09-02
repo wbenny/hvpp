@@ -1,5 +1,4 @@
 #pragma once
-#include "win32/memory.h"
 #include "lib/log.h"
 #include "paging.h"
 
@@ -26,6 +25,17 @@ enum class memory_type : uint8_t
 static constexpr auto page_shift = 12;
 static constexpr auto page_size  = 4096;
 static constexpr auto page_mask  = page_size - 1;
+
+class pa_t;
+class memory_range;
+class physical_memory_descriptor;
+
+namespace detail
+{
+  uint64_t pa_from_va(void* va) noexcept;
+  void*    va_from_pa(uint64_t pa) noexcept;
+  void     check_physical_memory(memory_range* range_list, int range_list_size, int& count) noexcept;
+}
 
 class pa_t
 {
@@ -167,7 +177,8 @@ class physical_memory_descriptor
     }
 
   private:
-    void check_physical_memory() noexcept;
+    void check_physical_memory() noexcept
+    { detail::check_physical_memory(range_, max_range_count, count_); }
 
     memory_range range_[max_range_count];
     int          count_ = 0;

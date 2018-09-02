@@ -1,6 +1,6 @@
 #define _NO_CRT_STDIO_INLINE
 
-#include "tracelog.h"
+#include "../log.h"
 
 #include <iterator> // std::end()
 
@@ -26,41 +26,24 @@ PsGetProcessImageFileName (
     _In_ PEPROCESS Process
     );
 
-namespace logger::tracelog
+namespace logger::detail
 {
-  namespace detail
+  void do_print_trace(const char* process_name, const char* function, const char* message) noexcept
   {
-    void do_print(const char* process_name, const char* function, const char* message) noexcept
+    if (test_options(options_t::print_function_name))
     {
-      if (test_options(options_t::print_function_name))
-      {
-        TraceLoggingWrite(provider,
-          "MessageEvent",
-          TraceLoggingValue(process_name, "ProcessName"),
-          TraceLoggingValue(function, "Function"),
-          TraceLoggingValue(message, "Message"));
-      }
-      else
-      {
-        TraceLoggingWrite(provider,
-          "MessageEvent",
-          TraceLoggingValue(process_name, "ProcessName"),
-          TraceLoggingValue(message, "Message"));
-      }
+      TraceLoggingWrite(provider,
+        "MessageEvent",
+        TraceLoggingValue(process_name, "ProcessName"),
+        TraceLoggingValue(function, "Function"),
+        TraceLoggingValue(message, "Message"));
     }
-
-    void vprint(level_t level, const char* function, const char* format, va_list args) noexcept
+    else
     {
-      if (test_level(level))
-      {
-        auto process_name = PsGetProcessImageFileName(PsGetCurrentProcess());
-        auto function_name = function;
-
-        char log_message[512];
-        vsprintf_s(log_message, std::size(log_message), format, args);
-
-        do_print(process_name, function_name, log_message);
-      }
+      TraceLoggingWrite(provider,
+        "MessageEvent",
+        TraceLoggingValue(process_name, "ProcessName"),
+        TraceLoggingValue(message, "Message"));
     }
   }
 
@@ -72,5 +55,19 @@ namespace logger::tracelog
   void destroy() noexcept
   {
     TraceLoggingUnregister(provider);
+  }
+
+  void vprint_trace(level_t level, const char* function, const char* format, va_list args) noexcept
+  {
+    if (test_level(level))
+    {
+      auto process_name = PsGetProcessImageFileName(PsGetCurrentProcess());
+      auto function_name = function;
+
+      char log_message[512];
+      vsprintf_s(log_message, std::size(log_message), format, args);
+
+      do_print_trace(process_name, function_name, log_message);
+    }
   }
 }

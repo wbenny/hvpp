@@ -1,6 +1,5 @@
 #pragma once
 #include "ia32/arch.h"
-#include "win32/kernel_cr3.h"
 
 //
 // This simple class can be used for effectively switching to virtual address
@@ -20,13 +19,17 @@
 // value of this function might be unreliable.
 //
 
+namespace detail
+{
+  ia32::cr3_t kernel_cr3(ia32::cr3_t cr3) noexcept;
+}
+
 class cr3_guard
 {
   public:
     cr3_guard(ia32::cr3_t new_cr3) noexcept
       : previous_cr3_(ia32::read<ia32::cr3_t>())
-//    { ia32::write<ia32::cr3_t>(new_cr3); }
-    { ia32::write<ia32::cr3_t>(kernel_cr3(new_cr3)); }
+    { ia32::write<ia32::cr3_t>(::detail::kernel_cr3(new_cr3)); }
 
     ~cr3_guard() noexcept
     { ia32::write<ia32::cr3_t>(previous_cr3_); }

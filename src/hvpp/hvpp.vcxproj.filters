@@ -90,9 +90,6 @@
     <ClCompile Include="hvpp\vmexit.cpp">
       <Filter>Source Files\hvpp</Filter>
     </ClCompile>
-    <ClCompile Include="lib\log.cpp">
-      <Filter>Source Files\lib</Filter>
-    </ClCompile>
     <ClCompile Include="hvpp\vmexit_stats.cpp">
       <Filter>Source Files\hvpp</Filter>
     </ClCompile>
@@ -105,16 +102,22 @@
     <ClCompile Include="ia32\win32\memory.cpp">
       <Filter>Source Files\ia32\win32</Filter>
     </ClCompile>
-    <ClCompile Include="lib\win32\kernel_cr3.cpp">
-      <Filter>Source Files\lib\win32</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\win32\mp.cpp">
+    <ClCompile Include="lib\win32\cr3_guard.cpp">
       <Filter>Source Files\lib\win32</Filter>
     </ClCompile>
     <ClCompile Include="lib\win32\log.cpp">
       <Filter>Source Files\lib\win32</Filter>
     </ClCompile>
+    <ClCompile Include="lib\win32\mp.cpp">
+      <Filter>Source Files\lib\win32</Filter>
+    </ClCompile>
     <ClCompile Include="lib\win32\tracelog.cpp">
+      <Filter>Source Files\lib\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\log.cpp">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\win32\mm.cpp">
       <Filter>Source Files\lib\win32</Filter>
     </ClCompile>
   </ItemGroup>
@@ -239,29 +242,14 @@
     <ClInclude Include="hvpp\config.h">
       <Filter>Header Files\hvpp</Filter>
     </ClInclude>
-    <ClInclude Include="lib\win32\kernel_cr3.h">
-      <Filter>Header Files\lib\win32</Filter>
-    </ClInclude>
     <ClInclude Include="lib\cr3_guard.h">
       <Filter>Header Files\lib</Filter>
     </ClInclude>
     <ClInclude Include="lib\vmware\vmware.h">
       <Filter>Header Files\lib\vmware</Filter>
     </ClInclude>
-    <ClInclude Include="ia32\win32\memory.h">
-      <Filter>Header Files\ia32\win32</Filter>
-    </ClInclude>
     <ClInclude Include="ia32\win32\asm.h">
       <Filter>Header Files\ia32\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\win32\mp.h">
-      <Filter>Header Files\lib\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\win32\log.h">
-      <Filter>Header Files\lib\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\win32\tracelog.h">
-      <Filter>Header Files\lib\win32</Filter>
     </ClInclude>
     <ClInclude Include="ia32\cpuid\cpuid_eax_01.h">
       <Filter>Header Files\ia32\cpuid</Filter>

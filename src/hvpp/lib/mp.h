@@ -1,14 +1,20 @@
 #pragma once
 #include <cstdint>
 
-#include "win32/mp.h"
-
 //
 // Multi-Processor functions.
 //
 
 namespace mp
 {
+  namespace detail
+  {
+    uint32_t cpu_count() noexcept;
+    uint32_t cpu_index() noexcept;
+    void     sleep(uint32_t milliseconds) noexcept;
+    void     ipi_call(void(*callback)(void*) noexcept, void* context) noexcept;
+  }
+
   inline uint32_t cpu_count() noexcept
   { return detail::cpu_count(); }
 
@@ -18,7 +24,12 @@ namespace mp
   inline void sleep(uint32_t milliseconds) noexcept
   { detail::sleep(milliseconds); }
 
-  template <typename T>
+  inline void ipi_call(void(*callback)(void*) noexcept, void* context) noexcept
+  { detail::ipi_call(callback, context); }
+
+  template <
+    typename T
+  >
   inline void ipi_call(T* instance, void (T::*member_function)() noexcept) noexcept
   {
     //
@@ -33,7 +44,7 @@ namespace mp
       member_function
     };
 
-    detail::ipi_call([](void* context) noexcept {
+    ipi_call([](void* context) noexcept {
       auto ipi_context = reinterpret_cast<ipi_ctx*>(context);
       auto instance = ipi_context->instance;
       auto member_function = ipi_context->member_function;

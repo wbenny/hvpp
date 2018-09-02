@@ -1,6 +1,6 @@
 #define _NO_CRT_STDIO_INLINE
 
-#include "log.h"
+#include "../log.h"
 
 #include "lib/mp.h"
 

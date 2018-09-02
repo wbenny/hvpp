@@ -1,10 +1,12 @@
-#include "kernel_cr3.h"
+#include "../cr3_guard.h"
 
 #include <ntddk.h>
 
 #define PCID_NONE   0x000
 #define PCID_USER   0x001 // KeMakeUserDirectoryTableBase
 #define PCID_KERNEL 0x002 // KeMakeKernelDirectoryTableBase
+
+namespace detail {
 
 ia32::cr3_t kernel_cr3(ia32::cr3_t cr3) noexcept
 {
@@ -84,4 +86,6 @@ ia32::cr3_t kernel_cr3(ia32::cr3_t cr3) noexcept
 
   auto kprocess = reinterpret_cast<NT_KPROCESS*>(PsGetCurrentProcess());
   return ia32::cr3_t{ kprocess->DirectoryTableBase };
+}
+
 }

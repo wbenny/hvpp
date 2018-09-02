@@ -4,6 +4,12 @@
 
 namespace memory_manager
 {
+  namespace detail
+  {
+    void* system_allocate(size_t size) noexcept;
+    void system_free(void* address) noexcept;
+  }
+
   void initialize() noexcept;
   void destroy() noexcept;
   void assign(void* address, size_t size) noexcept;
@@ -16,4 +22,10 @@ namespace memory_manager
 
   const ia32::physical_memory_descriptor& physical_memory_descriptor() noexcept;
   const ia32::mtrr& mtrr() noexcept;
+
+  inline void* system_allocate(size_t size) noexcept
+  { return detail::system_allocate(size); }
+
+  inline void system_free(void* address) noexcept
+  { detail::system_free(address); }
 }

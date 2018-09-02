@@ -1,8 +1,5 @@
 #include "log.h"
 
-#include "win32/log.h"
-#include "win32/tracelog.h"
-
 #include <cstdarg>
 #include <cstdio>
 
@@ -30,10 +27,10 @@ namespace logger
   options_t current_options = options_t::default_flags;
 
   void initialize() noexcept
-  { tracelog::initialize(); }
+  { detail::initialize(); }
 
   void destroy() noexcept
-  { tracelog::destroy(); }
+  { detail::destroy(); }
 
   void set_options(options_t options) noexcept
   { current_options = options; }
@@ -60,11 +57,11 @@ namespace logger
 
     if (level == level_t::trace)
     {
-      tracelog::detail::vprint(level, function, format, args);
+      detail::vprint_trace(level, function, format, args);
     }
     else
     {
-                detail::vprint(level, function, format, args);
+      detail::vprint      (level, function, format, args);
     }
 
     va_end(args);

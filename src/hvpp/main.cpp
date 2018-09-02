@@ -17,7 +17,6 @@
 using TVmExitHandler = custom_vmexit_handler;
 static_assert(std::is_base_of_v<hvpp::vmexit_handler, TVmExitHandler>);
 
-#define HVPP_MEMORY_TAG 'ppvh'
 
 NTSTATUS
 GlobalInitialize(
@@ -106,9 +105,7 @@ GlobalInitialize(
   //
   // Allocate memory.
   //
-  PVOID AllocatedMemory = ExAllocatePoolWithTag(NonPagedPool,
-                                                RequiredMemorySize,
-                                                HVPP_MEMORY_TAG);
+  PVOID AllocatedMemory = memory_manager::system_allocate(RequiredMemorySize);
 
   if (!AllocatedMemory)
   {
@@ -137,7 +134,7 @@ GlobalDestroy(
   memory_manager::destroy();
   logger::destroy();
 
-  ExFreePoolWithTag(Memory, HVPP_MEMORY_TAG);
+  memory_manager::system_free(Memory);
 }
 
 NTSTATUS
