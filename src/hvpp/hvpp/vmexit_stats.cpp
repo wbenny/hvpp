@@ -48,14 +48,9 @@ void vmexit_stats_handler::invoke_termination() noexcept
   vmexit_handler::invoke_termination();
 
   //
-  // Increment number of terminated VCPUs.
-  //
-  terminated_vcpu_count_ += 1;
-
-  //
   // Are we the last terminated VCPU?
   //
-  if (terminated_vcpu_count_ == mp::cpu_count())
+  if (terminated_vcpu_count_.fetch_add(1) == (mp::cpu_count() - 1))
   {
     //
     // Handler saves statistics separately for each VCPU.
