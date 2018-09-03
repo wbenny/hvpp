@@ -120,6 +120,12 @@
     <ClCompile Include="lib\win32\mm.cpp">
       <Filter>Source Files\lib\win32</Filter>
     </ClCompile>
+    <ClCompile Include="lib\win32\driver.cpp">
+      <Filter>Source Files\lib\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\driver.cpp">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\bitmap.h">
@@ -256,6 +262,12 @@
     </ClInclude>
     <ClInclude Include="ia32\paging.h">
       <Filter>Header Files\ia32</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\driver.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\error.h">
+      <Filter>Header Files\lib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

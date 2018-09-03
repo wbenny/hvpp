@@ -47,9 +47,14 @@ namespace logger::detail
     }
   }
 
-  void initialize() noexcept
+  auto initialize() noexcept -> error_code_t
   {
-    TraceLoggingRegister(provider);
+    if (!NT_SUCCESS(TraceLoggingRegister(provider)))
+    {
+      return make_error_code_t(std::errc::not_enough_memory);
+    }
+
+    return error_code_t{};
   }
 
   void destroy() noexcept

@@ -2,6 +2,8 @@
 #include "ia32/memory.h"
 #include "ia32/mtrr.h"
 
+#include "lib/error.h"
+
 namespace memory_manager
 {
   namespace detail
@@ -10,9 +12,10 @@ namespace memory_manager
     void system_free(void* address) noexcept;
   }
 
-  void initialize() noexcept;
+  auto initialize() noexcept -> error_code_t;
   void destroy() noexcept;
-  void assign(void* address, size_t size) noexcept;
+
+  auto assign(void* address, size_t size) noexcept -> error_code_t;
 
   void* allocate(size_t size) noexcept;
   void free(void* address) noexcept;

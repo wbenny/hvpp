@@ -82,6 +82,16 @@ vmexit_handler::vmexit_handler() noexcept
   handlers_[static_cast<int>(vmx::exit_reason::execute_xrstors)]              = &vmexit_handler::handle_execute_xrstors;
 }
 
+auto vmexit_handler::initialize() noexcept -> error_code_t
+{
+  return error_code_t{};
+}
+
+void vmexit_handler::destroy() noexcept
+{
+
+}
+
 void vmexit_handler::setup(vcpu_t& vp) noexcept
 {
   //

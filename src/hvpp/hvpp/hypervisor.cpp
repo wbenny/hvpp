@@ -21,37 +21,38 @@
 
 namespace hvpp {
 
-void hypervisor::initialize() noexcept
+auto hypervisor::initialize() noexcept -> error_code_t
 {
   vcpu_list_ = new vcpu_t[mp::cpu_count()];
   handler_ = nullptr;
-  check_ = false;
+  check_passed_ = false;
+
+  if (!vcpu_list_)
+  {
+    return make_error_code_t(std::errc::not_enough_memory);
+  }
+
+  if (!check_cpu_features())
+  {
+    return make_error_code_t(std::errc::not_supported);
+  }
+
+  return error_code_t{};
 }
 
 void hypervisor::destroy() noexcept
 {
-  delete[] vcpu_list_;
-}
-
-bool hypervisor::check() noexcept
-{
-  if (!vcpu_list_)
+  if (vcpu_list_)
   {
-    return false;
+    delete[] vcpu_list_;
+    vcpu_list_ = nullptr;
+    check_passed_ = false;
   }
-
-#ifdef HVPP_SINGLE_VCPU
-  single_cpu_call(check_ipi_callback);
-#else
-  mp::ipi_call(this, &hypervisor::check_ipi_callback);
-#endif
-
-  return check_;
 }
 
 void hypervisor::start(vmexit_handler* handler) noexcept
 {
-  hvpp_assert(vcpu_list_ && check_ && handler);
+  hvpp_assert(vcpu_list_ && check_passed_ && handler);
 
   handler_ = handler;
 
@@ -75,6 +76,19 @@ void hypervisor::stop() noexcept
 // Private
 //
 
+bool hypervisor::check_cpu_features() noexcept
+{
+  hvpp_assert(vcpu_list_);
+
+#ifdef HVPP_SINGLE_VCPU
+  single_cpu_call(check_ipi_callback);
+#else
+  mp::ipi_call(this, &hypervisor::check_ipi_callback);
+#endif
+
+  return check_passed_;
+}
+
 void hypervisor::check_ipi_callback() noexcept
 {
   cpuid_eax_01 cpuid_info;
@@ -93,7 +107,7 @@ void hypervisor::check_ipi_callback() noexcept
   auto vmx_basic = msr::read<msr::vmx_basic_t>();
   if (
      vmx_basic.vmcs_size_in_bytes > page_size ||
-     vmx_basic.memory_type != static_cast<uint64_t>(memory_type::write_back) ||
+     vmx_basic.memory_type != uint64_t(memory_type::write_back) ||
     !vmx_basic.true_controls
     )
   {
@@ -113,11 +127,16 @@ void hypervisor::check_ipi_callback() noexcept
     return;
   }
 
-  check_ = true;
+  check_passed_ = true;
 }
 
 void hypervisor::start_ipi_callback() noexcept
 {
+  //
+  // TODO:
+  //   - error handling
+  //   - create new error_category for VMX errors
+  //
   auto idx = mp::cpu_index();
   vcpu_list_[idx].initialize(handler_);
   vcpu_list_[idx].launch();

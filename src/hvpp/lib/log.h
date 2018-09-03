@@ -1,4 +1,6 @@
 #pragma once
+#include "lib/error.h"
+
 #include <cstdint>
 
 #define hvpp_trace(format, ...)  ::logger::print(::logger::level_t::trace, __FUNCTION__, format, __VA_ARGS__)
@@ -59,14 +61,14 @@ namespace logger
 
   namespace detail
   {
-    void initialize() noexcept;
+    auto initialize() noexcept -> error_code_t;
     void destroy() noexcept;
 
     void vprint(level_t level, const char* function, const char* format, va_list args) noexcept;
     void vprint_trace(level_t level, const char* function, const char* format, va_list args) noexcept;
   }
 
-  void initialize() noexcept;
+  auto initialize() noexcept -> error_code_t;
   void destroy() noexcept;
 
   auto get_options() noexcept -> options_t;

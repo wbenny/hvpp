@@ -64,7 +64,7 @@ namespace memory_manager
   object_t<ia32::mtrr> memory_type_range_registers;
   object_t<spinlock> lock;
 
-  void initialize() noexcept
+  auto initialize() noexcept -> error_code_t
   {
     //
     // Initialize physical memory descriptor and MTRRs.
@@ -76,6 +76,8 @@ namespace memory_manager
     // Initialize lock.
     //
     lock.initialize();
+
+    return error_code_t{};
   }
 
   void destroy() noexcept
@@ -138,7 +140,7 @@ namespace memory_manager
     number_of_free_bytes = 0;
   }
 
-  void assign(void* address, size_t size) noexcept
+  auto assign(void* address, size_t size) noexcept -> error_code_t
   {
     if (size < ia32::page_size * 3)
     {
@@ -146,7 +148,7 @@ namespace memory_manager
       // We need at least 3 pages (see explanation below).
       //
       hvpp_assert(0);
-      return;
+      return make_error_code_t(std::errc::invalid_argument);
     }
 
     //
@@ -176,7 +178,7 @@ namespace memory_manager
     if (size < ia32::page_size * 3)
     {
       hvpp_assert(0);
-      return;
+      return make_error_code_t(std::errc::invalid_argument);
     }
 
     //
@@ -253,6 +255,8 @@ namespace memory_manager
     //
     number_of_allocated_bytes = 0;
     number_of_free_bytes = size;
+
+    return error_code_t{};
   }
 
   void* allocate(size_t size) noexcept

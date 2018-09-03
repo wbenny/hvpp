@@ -1,6 +1,8 @@
 #pragma once
 #include "ia32/arch.h"
 
+#include "lib/error.h"
+
 namespace hvpp {
 
 using namespace ia32;
@@ -19,8 +21,8 @@ class vmexit_handler
   public:
     vmexit_handler() noexcept;
 
-    virtual void initialize() noexcept { }
-    virtual void destroy() noexcept { }
+    virtual auto initialize() noexcept -> error_code_t;
+    virtual void destroy() noexcept;
 
     virtual void setup(vcpu_t& vp) noexcept;
 

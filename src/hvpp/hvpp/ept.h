@@ -2,6 +2,8 @@
 #include "ia32/ept.h"
 #include "ia32/memory.h"
 
+#include "lib/error.h"
+
 namespace hvpp {
 
 using namespace ia32;
@@ -9,7 +11,7 @@ using namespace ia32;
 class ept_t
 {
   public:
-    void initialize() noexcept;
+    auto initialize() noexcept -> error_code_t;
     void destroy() noexcept;
 
     void map_identity() noexcept;

@@ -15,7 +15,7 @@ namespace hvpp {
 // Public
 //
 
-void vcpu_t::initialize(vmexit_handler* handler) noexcept
+auto vcpu_t::initialize(vmexit_handler* handler) noexcept -> error_code_t
 {
   //
   // Fill out initial stack with garbage.
@@ -37,13 +37,13 @@ void vcpu_t::initialize(vmexit_handler* handler) noexcept
   state_ = vcpu_state::off;
 
   //
-  // Initialize EPT.
-  //
-  ept_.initialize();
-
-  //
   // Initialize VM-exit handler.
   //
+  if (!handler)
+  {
+    return make_error_code_t(std::errc::invalid_argument);
+  }
+
   handler_ = handler;
 
   //
@@ -51,6 +51,14 @@ void vcpu_t::initialize(vmexit_handler* handler) noexcept
   //
   memset(&vmxon_, 0, sizeof(vmxon_));
   memset(&vmcs_, 0, sizeof(vmcs_));
+
+  //
+  // Initialize EPT.
+  //
+  if (auto err = ept_.initialize())
+  {
+    return err;
+  }
 
   //
   // This is not really needed.
@@ -88,6 +96,8 @@ void vcpu_t::initialize(vmexit_handler* handler) noexcept
     static_assert(VCPU_RSP + VCPU_LAUNCH_CONTEXT_OFFSET == offsetof(vcpu_t, guest_context_));
     static_assert(VCPU_RSP + VCPU_EXIT_CONTEXT_OFFSET   == offsetof(vcpu_t, exit_context_));
   };
+
+  return error_code_t{};
 }
 
 void vcpu_t::destroy() noexcept

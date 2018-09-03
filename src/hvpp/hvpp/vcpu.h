@@ -5,6 +5,8 @@
 #include "ia32/exception.h"
 #include "ia32/vmx.h"
 
+#include "lib/error.h"
+
 #include <cstdint>
 
 namespace hvpp {
@@ -105,7 +107,7 @@ enum class vcpu_state
 class vcpu_t
 {
   public:
-    void initialize(vmexit_handler* handler = nullptr) noexcept;
+    auto initialize(vmexit_handler* handler = nullptr) noexcept -> error_code_t;
     void destroy() noexcept;
 
     void launch() noexcept;

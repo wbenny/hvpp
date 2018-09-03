@@ -26,8 +26,8 @@ namespace logger
   level_t   current_level   = level_t::default_flags;
   options_t current_options = options_t::default_flags;
 
-  void initialize() noexcept
-  { detail::initialize(); }
+  auto initialize() noexcept -> error_code_t
+  { return detail::initialize(); }
 
   void destroy() noexcept
   { detail::destroy(); }

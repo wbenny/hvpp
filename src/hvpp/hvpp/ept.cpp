@@ -6,7 +6,7 @@
 
 namespace hvpp {
 
-void ept_t::initialize() noexcept
+auto ept_t::initialize() noexcept -> error_code_t
 {
   //
   // Initialize EPT's PML4.  Each PML4 maps 512GB of memory. We would be fine
@@ -14,10 +14,17 @@ void ept_t::initialize() noexcept
   // on it anyway.  Single page can handle 512 PML4s (their size is 8 bytes)
   // so just fill the whole page with 512 PML4s.
   //
+  static_assert(sizeof(epte_t) * 512 == page_size);
+
   epml4_ = new epte_t[512];
   hvpp_assert(epml4_ != nullptr);
+
+  if (!epml4_)
+  {
+    return make_error_code_t(std::errc::not_enough_memory);
+  }
+
   memset(epml4_, 0, sizeof(epte_t) * 512);
-  static_assert(sizeof(epte_t) * 512 == page_size);
 
   //
   // Get physical address of EPT's PML4.
@@ -32,16 +39,21 @@ void ept_t::initialize() noexcept
   eptptr_.memory_type = static_cast<uint64_t>(memory_manager::mtrr().type(empl4_pa));
   eptptr_.page_walk_length = ept_ptr_t::page_walk_length_4;
   eptptr_.page_frame_number = empl4_pa.pfn();
+
+  return error_code_t{};
 }
 
 void ept_t::destroy() noexcept
 {
   eptptr_.flags = 0;
 
-  unmap_table(epml4_);
-  delete[] epml4_;
+  if (epml4_)
+  {
+    unmap_table(epml4_);
+    delete[] epml4_;
 
-  epml4_ = nullptr;
+    epml4_ = nullptr;
+  }
 }
 
 void ept_t::map_identity() noexcept
