@@ -71,17 +71,19 @@ read and navigate through 5000 pages with browser's built-in PDF reader.
 - [TraceLogging][tracelogging-api] API (which builds on ETW) - the main benefit is it can be used for **really** high
   frequency logging (10'000+ per second) and it can be used from any IRQL - which makes it a perfect candidate even
   for logging in VM-exit handlers.
-  - **hvpp** already includes tracing VM-exit handler (see [vmexit_stats.cpp](src/hvpp/hvpp/vmexit_stats.cpp)). You can
-    enable it by uncommenting line with `#define HVPP_ENABLE_STATS` in [config.h](src/hvpp/hvpp/config.h).
+  - **hvpp** already includes tracing VM-exit handler (see [vmexit_stats.cpp](src/hvpp/hvpp/vmexit/vmexit_stats.cpp)).
 - Various reimplemented classes and functions - such as bitmaps and spinlocks - to avoid calling kernel functions.
 - Included simple application (**hvppctrl**) which should demonstrate `CPUID` instruction interception, hiding hooks
   in user-mode applications via EPT and communication with **hvpp** via `VMCALL`
 
 ### Code workflow
 
-- Bootstrap of the hypervisor ([main.cpp](src/hvpp/main.cpp)):
+- Bootstrap of the driver ([driver.cpp](src/hvpp/lib/win32/driver.cpp))
   - preallocate enough memory and initialize the **hvpp** memory manager
   - initialize the logger
+- Bootstrap of the hypervisor ([main.cpp](src/hvpp/main.cpp))
+  - create **hvpp** instance
+  - create **vmexit_handler** instance
 - Start the hypervisor with provided VM-exit handler (`hypervisor::start(vmexit_handler* handler)`)
   - initialize each virtual cpu (VCPU) on each logical processor via IPI (inter-processor interrupt) - this also includes
     initialization of EPT

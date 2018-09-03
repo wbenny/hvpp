@@ -1,12 +1,12 @@
-#include "custom_vmexit.h"
+#include "vmexit_custom.h"
 
 #include "lib/cr3_guard.h"
 #include "lib/mp.h"
 #include "lib/log.h"
 
-void custom_vmexit_handler::setup(vcpu_t& vp) noexcept
+void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
 {
-  vmexit_base_handler::setup(vp);
+  base_type::setup(vp);
 
 #if 0
   //
@@ -27,8 +27,14 @@ void custom_vmexit_handler::setup(vcpu_t& vp) noexcept
   // try to avoid using both of them.
   //
 
-  // procbased_ctls.use_io_bitmaps = true;
+// #define USE_IO_BITMAPS
+// #define DISABLE_GP_EXITING
+
+#ifdef USE_IO_BITMAPS
+  procbased_ctls.use_io_bitmaps = true;
+#else
   procbased_ctls.unconditional_io_exiting = true;
+#endif
   procbased_ctls.mov_dr_exiting = true;
   procbased_ctls.cr3_load_exiting = true;
   procbased_ctls.cr3_store_exiting = true;
@@ -43,17 +49,32 @@ void custom_vmexit_handler::setup(vcpu_t& vp) noexcept
   memset(msr_bitmap.data, 0xff, sizeof(msr_bitmap));
   vp.msr_bitmap(msr_bitmap);
 
-  if (procbased_ctls.use_io_bitmaps)
-  {
-    vmx::io_bitmap_t io_bitmap{};
-    memset(io_bitmap.data, 0xff, sizeof(io_bitmap));
-    vp.io_bitmap(io_bitmap);
-  }
+#ifdef USE_IO_BITMAPS
+  vmx::io_bitmap_t io_bitmap{};
+  memset(io_bitmap.data, 0xff, sizeof(io_bitmap));
 
+  //
+  // Disable VMWare backdoor.
+  //
+  bitmap(io_bitmap.a).clear(0x5658);
+  bitmap(io_bitmap.a).clear(0x5659);
+
+  vp.io_bitmap(io_bitmap);
+#endif
+
+#ifdef DISABLE_GP_EXITING
+  //
+  // Catch all exceptions except #GP.
+  //
+  vmx::exception_bitmap_t exception_bitmap{ ~0ul };
+  exception_bitmap.general_protection = false;
+  vp.exception_bitmap(exception_bitmap);
+#else
   //
   // Catch all exceptions.
   //
   vp.exception_bitmap(vmx::exception_bitmap_t{ ~0ul });
+#endif
 
   //
   // VM-execution control fields include guest/host masks
@@ -94,7 +115,7 @@ void custom_vmexit_handler::setup(vcpu_t& vp) noexcept
 #endif
 }
 
-void custom_vmexit_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
+void vmexit_custom_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
 {
   if (vp.exit_context().eax == 'ppvh')
   {
@@ -108,11 +129,11 @@ void custom_vmexit_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
   }
   else
   {
-    vmexit_base_handler::handle_execute_cpuid(vp);
+    base_type::handle_execute_cpuid(vp);
   }
 }
 
-void custom_vmexit_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
+void vmexit_custom_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
 {
   auto& data = data_[mp::cpu_index()];
 
@@ -143,7 +164,7 @@ void custom_vmexit_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
       // invalidated.
       //
       vmx::invept_single_context(vp.ept().ept_pointer());
-      break;
+    break;
 
     case 0xc2:
       hvpp_trace("vmcall (unhook)");
@@ -163,12 +184,12 @@ void custom_vmexit_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
       break;
 
     default:
-      vmexit_base_handler::handle_execute_vmcall(vp);
+      base_type::handle_execute_vmcall(vp);
       return;
   }
 }
 
-void custom_vmexit_handler::handle_ept_violation(vcpu_t& vp) noexcept
+void vmexit_custom_handler::handle_ept_violation(vcpu_t& vp) noexcept
 {
   auto exit_qualification = vp.exit_qualification().ept_violation;
   auto guest_pa = vp.exit_guest_physical_address();

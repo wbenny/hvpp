@@ -2,21 +2,19 @@
 #include "hvpp/config.h"
 #include "hvpp/vcpu.h"
 #include "hvpp/vmexit.h"
-#include "hvpp/vmexit_stats.h"
+#include "hvpp/vmexit/vmexit_stats.h"
+#include "hvpp/vmexit/vmexit_dbgbreak.h"
+#include "hvpp/vmexit/vmexit_passthrough.h"
 
 using namespace ia32;
 using namespace hvpp;
 
-#ifdef HVPP_ENABLE_STATS
-using vmexit_base_handler = vmexit_stats_handler;
-#else
-using vmexit_base_handler = vmexit_handler;
-#endif
-
-class custom_vmexit_handler
-  : public vmexit_base_handler
+class vmexit_custom_handler
+  : public vmexit_passthrough_handler
 {
   public:
+    using base_type = vmexit_passthrough_handler;
+
     void setup(vcpu_t& vp) noexcept override;
 
     void handle_execute_cpuid(vcpu_t& vp) noexcept override;

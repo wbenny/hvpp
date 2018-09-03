@@ -41,21 +41,21 @@ namespace driver::common
     // If hypervisor begins to run out of memory, required_memory_size
     // is the right variable to adjust.
     //
-    // Default required memory size is 34MB per core.
+    // Default required memory size is 34MB per CPU.
     //
     auto required_memory_size = (
       //
       // Estimated EPT size:
       // Make space for 2MB EPT entries for 512 GB of the physical
       // memory.  Each EPT entry has 8 bytes.
-      // 512GB / 2MB * 8 = 256kb * 8 = 2MB per core.
+      // 512GB / 2MB * 8 = 256kb * 8 = 2MB per CPU.
       //
       ((512ull * 1024 * 1024 * 1024) / (2ull * 1024 * 1024) * 8)
 
       +
 
       //
-      // Additional 32MB per core.
+      // Additional 32MB per CPU.
       //
       (32ull * 1024 * 1024)
       ) * mp::cpu_count();

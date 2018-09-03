@@ -107,29 +107,37 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="hvpp\vmexit_stats.cpp" />
+    <ClCompile Include="hvpp\vmexit\vmexit_dbgbreak.cpp" />
+    <ClCompile Include="hvpp\vmexit\vmexit_passthrough.cpp" />
+    <ClCompile Include="hvpp\vmexit\vmexit_stats.cpp" />
     <ClCompile Include="ia32\win32\memory.cpp" />
+    <ClCompile Include="lib\bitmap.cpp" />
     <ClCompile Include="lib\driver.cpp" />
     <ClCompile Include="lib\log.cpp" />
     <ClCompile Include="lib\mm.cpp" />
     <ClCompile Include="lib\vmware\vmware.cpp" />
     <ClCompile Include="lib\win32\cr3_guard.cpp" />
+    <ClCompile Include="lib\win32\debugger.cpp" />
     <ClCompile Include="lib\win32\driver.cpp" />
     <ClCompile Include="lib\win32\log.cpp" />
     <ClCompile Include="lib\win32\mm.cpp" />
     <ClCompile Include="lib\win32\mp.cpp" />
     <ClCompile Include="lib\win32\tracelog.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="custom_vmexit.cpp" />
+    <ClCompile Include="vmexit_custom.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="custom_vmexit.h" />
+    <ClInclude Include="lib\debugger.h" />
+    <ClInclude Include="vmexit_custom.h" />
     <ClInclude Include="hvpp\config.h" />
     <ClInclude Include="hvpp\ept.h" />
     <ClInclude Include="hvpp\hypervisor.h" />
     <ClInclude Include="hvpp\vcpu.h" />
     <ClInclude Include="hvpp\vmexit.h" />
-    <ClInclude Include="hvpp\vmexit_stats.h" />
+    <ClInclude Include="hvpp\vmexit\vmexit_dbgbreak.h" />
+    <ClInclude Include="hvpp\vmexit\vmexit_passthrough.h" />
+    <ClInclude Include="hvpp\vmexit\vmexit_stats.h" />
+    <ClInclude Include="hvpp\vmexit_compositor.h" />
     <ClInclude Include="ia32\arch.h" />
     <ClInclude Include="ia32\arch\cr.h" />
     <ClInclude Include="ia32\arch\dr.h" />

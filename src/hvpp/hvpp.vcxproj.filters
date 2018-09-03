@@ -65,6 +65,12 @@
     <Filter Include="Header Files\ia32\cpuid">
       <UniqueIdentifier>{62dd8975-bcd7-4cf8-b7d1-d70006bb42c9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\hvpp\vmexit">
+      <UniqueIdentifier>{9e0fb2bc-cf6e-4382-a229-9df0a5b912c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\hvpp\vmexit">
+      <UniqueIdentifier>{39b38d18-92a6-4233-a72b-30acecb0d9ae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Inf Include="hvpp.inf">
@@ -89,12 +95,6 @@
     </ClCompile>
     <ClCompile Include="hvpp\vmexit.cpp">
       <Filter>Source Files\hvpp</Filter>
-    </ClCompile>
-    <ClCompile Include="hvpp\vmexit_stats.cpp">
-      <Filter>Source Files\hvpp</Filter>
-    </ClCompile>
-    <ClCompile Include="custom_vmexit.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib\vmware\vmware.cpp">
       <Filter>Source Files\lib\vmware</Filter>
@@ -124,6 +124,24 @@
       <Filter>Source Files\lib\win32</Filter>
     </ClCompile>
     <ClCompile Include="lib\driver.cpp">
+      <Filter>Source Files\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\vmexit\vmexit_dbgbreak.cpp">
+      <Filter>Source Files\hvpp\vmexit</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\vmexit\vmexit_passthrough.cpp">
+      <Filter>Source Files\hvpp\vmexit</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\vmexit\vmexit_stats.cpp">
+      <Filter>Source Files\hvpp\vmexit</Filter>
+    </ClCompile>
+    <ClCompile Include="vmexit_custom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\win32\debugger.cpp">
+      <Filter>Source Files\lib\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\bitmap.cpp">
       <Filter>Source Files\lib</Filter>
     </ClCompile>
   </ItemGroup>
@@ -236,14 +254,8 @@
     <ClInclude Include="ia32\vmx\instruction_info.h">
       <Filter>Header Files\ia32\vmx</Filter>
     </ClInclude>
-    <ClInclude Include="hvpp\vmexit_stats.h">
-      <Filter>Header Files\hvpp</Filter>
-    </ClInclude>
     <ClInclude Include="ia32\arch\xsave.h">
       <Filter>Header Files\ia32\arch</Filter>
-    </ClInclude>
-    <ClInclude Include="custom_vmexit.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="hvpp\config.h">
       <Filter>Header Files\hvpp</Filter>
@@ -267,6 +279,24 @@
       <Filter>Header Files\lib</Filter>
     </ClInclude>
     <ClInclude Include="lib\error.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\vmexit\vmexit_dbgbreak.h">
+      <Filter>Header Files\hvpp\vmexit</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\vmexit\vmexit_passthrough.h">
+      <Filter>Header Files\hvpp\vmexit</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\vmexit\vmexit_stats.h">
+      <Filter>Header Files\hvpp\vmexit</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\vmexit_compositor.h">
+      <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
+    <ClInclude Include="vmexit_custom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\debugger.h">
       <Filter>Header Files\lib</Filter>
     </ClInclude>
   </ItemGroup>

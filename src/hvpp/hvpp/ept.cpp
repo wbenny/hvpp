@@ -1,7 +1,6 @@
 #include "ept.h"
 
 #include "lib/assert.h"
-#include "lib/bitmap.h"
 #include "lib/mm.h"
 
 namespace hvpp {

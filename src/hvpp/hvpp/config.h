@@ -11,9 +11,3 @@
 // in VMWare and you don't want the VMWare Tools to crash.
 //
 #define HVPP_ENABLE_VMWARE_WORKAROUND
-
-//
-// Use vmexit_stats_handler instead of vmexit_handler as a base class
-// for custom_vmexit_handler.
-//
-#define HVPP_ENABLE_STATS

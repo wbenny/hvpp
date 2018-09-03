@@ -1,3 +1,4 @@
+#include "lib/debugger.h"
 #include "lib/driver.h"
 #include "lib/assert.h"
 #include "lib/log.h"
@@ -6,17 +7,26 @@
 
 #include "hvpp/hypervisor.h"
 
-#include "custom_vmexit.h"
+#include "vmexit_custom.h"
+#include "hvpp/vmexit_compositor.h"
 
 #include <cinttypes>
 
 namespace driver
 {
-  using vmexit_handler_t = custom_vmexit_handler;
+  //
+  // Create combined handler from these VM-exit handlers.
+  //
+  using vmexit_handler_t = vmexit_compositor_handler<
+    vmexit_stats_handler,
+    vmexit_dbgbreak_handler,
+    vmexit_custom_handler
+    >;
+
   static_assert(std::is_base_of_v<hvpp::vmexit_handler, vmexit_handler_t>);
 
-  hvpp::hypervisor*     hypervisor;
-  hvpp::vmexit_handler* vmexit_handler;
+  hvpp::hypervisor* hypervisor;
+  vmexit_handler_t* vmexit_handler;
 
   auto initialize() noexcept -> error_code_t
   {
@@ -60,6 +70,25 @@ namespace driver
     }
 
     //
+    // Enable tracing of I/O instructions.
+    //
+    std::get<hvpp::vmexit_stats_handler>(vmexit_handler->handlers)
+      .trace_bitmap().set(int(ia32::vmx::exit_reason::execute_io_instruction));
+
+    //
+    // If debugger is enabled, break on first IN 0x64
+    // and OUT 0x64 instruction.
+    //
+    if (debugger::is_enabled())
+    {
+      std::get<hvpp::vmexit_dbgbreak_handler>(vmexit_handler->handlers)
+        .storage().io_in[0x64] = true;
+
+      std::get<hvpp::vmexit_dbgbreak_handler>(vmexit_handler->handlers)
+        .storage().io_out[0x64] = true;
+    }
+
+    //
     // Start the hypervisor.
     //
     hypervisor->start(vmexit_handler);
@@ -90,6 +119,11 @@ namespace driver
     //
     if (vmexit_handler)
     {
+      //
+      // Print statistics into debugger.
+      //
+      std::get<vmexit_stats_handler>(vmexit_handler->handlers).dump();
+
       vmexit_handler->destroy();
       delete vmexit_handler;
     }
