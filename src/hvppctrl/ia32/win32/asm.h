@@ -1,9 +1,31 @@
 #pragma once
 #include <intrin.h>
+#include <cstdint>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+//
+// ref: Vol2A[(INVPCID-Invalidate Process-Context Identifier)]
+//
+
+enum class invpcid_t : uint32_t
+{
+  individual_address                = 0x00000000,
+  single_context                    = 0x00000001,
+  all_contexts                      = 0x00000002,
+  all_contexts_retaining_globals    = 0x00000003,
+};
+
+struct invpcid_desc_t
+{
+  uint64_t pcid : 12;
+  uint64_t reserved : 52;
+  uint64_t linear_address;
+};
+
+static_assert(sizeof(invpcid_desc_t) == 16);
 
 //
 // These instructions aren't provided by the intrin.h header.
@@ -31,10 +53,10 @@ void                ia32_asm_write_ldtr         (_In_ unsigned short ldt)     no
 unsigned long       ia32_asm_read_ar            (_In_ unsigned short selector)noexcept;
 
 //
-// This breaks release build. MSVC __segmentlimit in combination
-// with being in the "if constexpr" block generates invalid code.
+// This breaks release build. MSVC __segmentlimit in combination with being in
+// the "if constexpr" block generates invalid code.
 //
-// lsl instruction is replaced with custom asm implementation.
+// LSL instruction is replaced with custom asm implementation.
 //
 //#define           ia32_asm_read_sl            __segmentlimit
 unsigned long       ia32_asm_read_sl            (_In_ unsigned long seg)      noexcept;
@@ -46,8 +68,8 @@ void                ia32_asm_invd               ()                            no
 void                ia32_asm_halt               ()                            noexcept;
 void                ia32_asm_write_msw          (_In_ unsigned short msw)     noexcept;
 unsigned long long  ia32_asm_vmx_vmcall         (_In_ unsigned long long rcx, _In_ unsigned long long rdx, _In_ unsigned long long r8, _In_ unsigned long long r9) noexcept;
-void                ia32_asm_inv_ept            (_In_ unsigned long type, _In_ void* descriptor) noexcept;
-void                ia32_asm_inv_vpid           (_In_ unsigned long type, _In_ void* descriptor) noexcept;
+unsigned char       ia32_asm_inv_ept            (_In_ unsigned long type, _In_ void* descriptor) noexcept;
+unsigned char       ia32_asm_inv_vpid           (_In_ unsigned long type, _In_ void* descriptor) noexcept;
 
 //
 // MSVC intrinsics.
@@ -103,8 +125,10 @@ void                ia32_asm_inv_vpid           (_In_ unsigned long type, _In_ v
 #define             ia32_asm_read_xcr           _xgetbv
 #define             ia32_asm_write_xcr          _xsetbv
 
+#define             ia32_asm_popcnt             __popcnt64
 #define             ia32_asm_clear_ts           __clts
 #define             ia32_asm_wb_invd            __wbinvd
+#define             ia32_asm_inv_page           __invlpg
 
 #define             ia32_asm_vmx_on             __vmx_on
 #define             ia32_asm_vmx_off            __vmx_off
@@ -144,6 +168,33 @@ unsigned char      ia32_asm_bts(_In_ void* base, _In_ unsigned long offset) noex
   return _bittestandset((long*)base, offset);
 }
 
+inline
+void               ia32_asm_inv_pcid(_In_ invpcid_t type, _In_opt_ invpcid_desc_t* descriptor = nullptr) noexcept
+{
+  if (!descriptor)
+  {
+    static invpcid_desc_t zero_descriptor{};
+    descriptor = &zero_descriptor;
+  }
+
+  _invpcid(static_cast<unsigned int>(type), descriptor);
+}
+
+
 #ifdef __cplusplus
 }
 #endif
+
+//
+// This macro expands to code which will cause compiler to print error message
+// which includes size of the object.
+//
+#define static_sizeof(object)                 \
+  do                                          \
+  {                                           \
+    switch (*reinterpret_cast<int*>(nullptr)) \
+    {                                         \
+      case sizeof(object): break;             \
+      case sizeof(object): break;             \
+    }                                         \
+  } while (0)

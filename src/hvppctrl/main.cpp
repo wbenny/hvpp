@@ -8,6 +8,10 @@
 #include "detours/detours.h"
 #include "udis86/udis86.h"
 
+#include "../hvpp/lib/ioctl.h"
+
+using ioctl_enable_io_debugbreak = ioctl_read_write_t<1, sizeof(uint16_t)>;
+
 #define PAGE_SIZE       4096
 #define PAGE_ALIGN(Va)  ((PVOID)((ULONG_PTR)(Va) & ~(PAGE_SIZE - 1)))
 
@@ -30,7 +34,7 @@ Hook_ZwClose(
 void TestCpuid()
 {
   //
-  // See custom_vmexit_handler::handle_execute_cpuid().
+  // See vmexit_custom_handler::handle_execute_cpuid().
   //
   int CpuInfo[4];
   ia32_asm_cpuid(CpuInfo, 'ppvh');
@@ -44,25 +48,26 @@ void TestHook()
 
   //
   // Save pointer to the function from which we want to hide the hook.
-  // Also, since EPTs have 4kb (PAGE_SIZE) granularity, it will allow us to
-  // switch just whole pages - not only few bytes. Therefore we'll store pointer
-  // which is aligned to the page boundary.
+  // Also, since EPTs have 4kb (PAGE_SIZE) granularity, it will allow
+  // us to switch just whole pages - not only few bytes.  Therefore
+  // we'll store pointer which is aligned to the page boundary.
   //
   PVOID OriginalFunction        = (PVOID)ZwCloseFn;
   PVOID OriginalFunctionAligned = PAGE_ALIGN(OriginalFunction);
 
   //
-  // Allocate memory where we'll copy the original content of the page we're
-  // about to hook. We'll allocate size of 2 pages, since malloc() doesn't
-  // guarantee the return address is page aligned. We have to do it ourselves.
+  // Allocate memory where we'll copy the original content of the page
+  // we're about to hook.  We'll allocate size of 2 pages, since malloc()
+  // doesn't guarantee the return address is page aligned.  We have to
+  // do it ourselves.
   //
   PVOID OriginalFunctionBackup  = malloc(PAGE_SIZE * 2);
   PVOID OriginalFunctionBackupAligned = PAGE_ALIGN((ULONG_PTR)OriginalFunctionBackup + PAGE_SIZE);
   memcpy(OriginalFunctionBackupAligned, OriginalFunctionAligned, PAGE_SIZE);
 
   //
-  // Store pointer to the function which will be called instead of the original
-  // one.
+  // Store pointer to the function which will be called instead of
+  // the original one.
   //
   PVOID HookedFunction          = (PVOID)&Hook_ZwClose;
 
@@ -77,9 +82,9 @@ void TestHook()
   printf("\n");
 
   //
-  // Define locally functions for disassembling, (un)hooking and (un)hiding.
-  // Disassembling is useful to check what's in the memory if we request read
-  // access.
+  // Define locally functions for disassembling, (un)hooking and
+  // (un)hiding.  Disassembling is useful to check what's in the
+  // memory if we request read access.
   //
   auto Disassemble = [](void* Address)
   {
@@ -127,7 +132,7 @@ void TestHook()
   };
 
   //
-  // Lock the pages in the RAM. Hopefully, they won't be swapped out.
+  // Lock the pages in the RAM.  Hopefully, they won't be swapped out.
   //
 
   VirtualLock(OriginalFunctionAligned, PAGE_SIZE);
@@ -144,8 +149,8 @@ void TestHook()
   printf("\n");
 
   //
-  // Hook the function and call it. If the hooking was successful, HookCallCount
-  // should be already incremented.
+  // Hook the function and call it.  If the hooking was successful,
+  // HookCallCount should be already incremented.
   //
 
   printf("Hook:\n");
@@ -174,10 +179,11 @@ void TestHook()
   printf("\n");
 
   //
-  // Unhide the hook and instruct the hypervisor to return original pages
-  // for both read and execute. The output of Disassemble() should be same
-  // as when we called it after hooking and the call should be still detoured
-  // to our hook function. HookCallCount should be incremented again.
+  // Unhide the hook and instruct the hypervisor to return original
+  // pages for both read and execute.  The output of Disassemble()
+  // should be same as when we called it after hooking and the call
+  // should be still detoured to our hook function.  HookCallCount
+  // should be incremented again.
   //
 
   printf("Unhide:\n");
@@ -188,9 +194,10 @@ void TestHook()
   printf("\n");
 
   //
-  // Unhook the function. Disassemble() should be same as when we called it
-  // without any hooks and the call of the function should call the original
-  // function - therefore HookCallCount shouldn't be incremented this time.
+  // Unhook the function.  Disassemble() should be same as when we
+  // called it without any hooks and the call of the function should
+  // call the original function - therefore HookCallCount shouldn't
+  // be incremented this time.
   //
 
   printf("Unhook:\n");
@@ -209,10 +216,58 @@ void TestHook()
   free(OriginalFunctionBackup);
 }
 
+void TestIoControl()
+{
+  HANDLE DeviceHandle;
+
+  DeviceHandle = CreateFile(TEXT("\\\\.\\hvpp"),
+                            GENERIC_READ | GENERIC_WRITE,
+                            FILE_SHARE_READ | FILE_SHARE_WRITE,
+                            NULL,
+                            OPEN_EXISTING,
+                            0,
+                            NULL);
+
+  if (DeviceHandle == INVALID_HANDLE_VALUE)
+  {
+    printf("Error while opening 'hvpp' device!\n");
+    return;
+  }
+
+  //
+  // Issue IOCTL call to the driver.
+  // When kernel debugger is attached, this IOCTL will instruct
+  // the hypervisor to set one-time breakpoint when IN/OUT
+  // instruction from/to port 0x64 (keyboard I/O port) is executed.
+  //
+  // See hvpp/device_custom.cpp.
+  //
+
+  UINT16 IoPort = 0x64;
+  DWORD BytesReturned;
+  DeviceIoControl(DeviceHandle,
+                  ioctl_enable_io_debugbreak::code(),
+                  &IoPort,
+                  sizeof(IoPort),
+                  &IoPort,
+                  sizeof(IoPort),
+                  &BytesReturned,
+                  NULL);
+
+  CloseHandle(DeviceHandle);
+
+  //
+  // Return value should be 0x1337 if the kernel debugger
+  // is attached, 0xCAFE otherwise.
+  //
+  printf("IOCTL return value: 0x%04x (size: %u)\n", IoPort, BytesReturned);
+}
+
 int main()
 {
   TestCpuid();
   TestHook();
+  TestIoControl();
 
   return 0;
 }

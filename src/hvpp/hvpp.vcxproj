@@ -100,6 +100,7 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="device_custom.cpp" />
     <ClCompile Include="hvpp\ept.cpp" />
     <ClCompile Include="hvpp\hypervisor.cpp" />
     <ClCompile Include="hvpp\vcpu.cpp" />
@@ -118,6 +119,7 @@
     <ClCompile Include="lib\vmware\vmware.cpp" />
     <ClCompile Include="lib\win32\cr3_guard.cpp" />
     <ClCompile Include="lib\win32\debugger.cpp" />
+    <ClCompile Include="lib\win32\device.cpp" />
     <ClCompile Include="lib\win32\driver.cpp" />
     <ClCompile Include="lib\win32\log.cpp" />
     <ClCompile Include="lib\win32\mm.cpp" />
@@ -127,7 +129,10 @@
     <ClCompile Include="vmexit_custom.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="device_custom.h" />
     <ClInclude Include="lib\debugger.h" />
+    <ClInclude Include="lib\device.h" />
+    <ClInclude Include="lib\ioctl.h" />
     <ClInclude Include="vmexit_custom.h" />
     <ClInclude Include="hvpp\config.h" />
     <ClInclude Include="hvpp\ept.h" />

@@ -144,6 +144,12 @@
     <ClCompile Include="lib\bitmap.cpp">
       <Filter>Source Files\lib</Filter>
     </ClCompile>
+    <ClCompile Include="lib\win32\device.cpp">
+      <Filter>Source Files\lib\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="device_custom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lib\bitmap.h">
@@ -297,6 +303,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\debugger.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\device.h">
+      <Filter>Header Files\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="device_custom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\ioctl.h">
       <Filter>Header Files\lib</Filter>
     </ClInclude>
   </ItemGroup>

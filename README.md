@@ -151,11 +151,19 @@ Run **hvppctrl**:
 `hvppctrl.exe`
 
 
-**hvppctrl** performs `CPUID` instruction with `EAX = 0x70707668 ('hvpp')` which **hvpp** should intercept and return
-string `hello from hvpp` in EAX, EBX, ECX and EDX registers (see [custom_vmexit.cpp](src/hvpp/custom_vmexit.cpp)).
-**hvppctrl** should print this string.
+- **hvppctrl** performs `CPUID` instruction with `EAX = 0x70707668 ('hvpp')` which **hvpp** should intercept and return
+  string `hello from hvpp` in EAX, EBX, ECX and EDX registers (see [custom_vmexit.cpp](src/hvpp/custom_vmexit.cpp)).
+  **hvppctrl** should print this string.
 
-After that, **hvppctrl**:
+- **hvppctrl** tries to "stealthily" hook `ntdll!ZwClose` function using EPT. The exact process is described
+  further below.
+
+- **hvppctrl** performs IOCTL, which should instruct **hvpp** to set one-time breakpoint when `IN/OUT` instruction
+  manipulating with port `0x64` (keyboard) is executed.
+
+
+#### Description of "stealth hooking" process
+
 - locates `ZwClose` function in **ntdll.dll**
   - disassembles first 16 bytes of this function and prints them
     - printed instructions should indicate that this function is **NOT** hooked yet

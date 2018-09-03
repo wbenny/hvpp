@@ -8,7 +8,19 @@ void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
 {
   base_type::setup(vp);
 
-#if 0
+#if 1
+  //
+  // Enable exitting on 0x64 I/O port (keyboard).
+  //
+  auto procbased_ctls = vp.processor_based_controls();
+  procbased_ctls.use_io_bitmaps = true;
+  vp.processor_based_controls(procbased_ctls);
+
+  vmx::io_bitmap_t io_bitmap{};
+  bitmap(io_bitmap.a).set(0x64);
+
+  vp.io_bitmap(io_bitmap);
+#else
   //
   // Turn on VM-exit on everything we support.
   //
