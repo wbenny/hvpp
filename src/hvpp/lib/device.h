@@ -15,6 +15,8 @@ class device
     auto initialize() noexcept -> error_code_t;
     void destroy() noexcept;
 
+    virtual ~device() noexcept {}
+
     virtual const char* name() const noexcept = 0;
 
     //

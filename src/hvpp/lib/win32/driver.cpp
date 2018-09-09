@@ -37,7 +37,6 @@ ErrorCodeToNtStatus(
     : STATUS_UNSUCCESSFUL;
 }
 
-
 NTSTATUS
 DriverDispatch(
   PDEVICE_OBJECT DeviceObject,

@@ -1,6 +1,7 @@
 #pragma once
 #include "memory.h"
 #include "msr.h"
+#include "msr/mtrr.h"
 
 #include <cstdint>
 

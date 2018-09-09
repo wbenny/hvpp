@@ -116,6 +116,7 @@ class vmexit_handler
 {
   public:
     vmexit_handler() noexcept;
+    virtual ~vmexit_handler() noexcept;
 
     //
     // Avoid execution of any VMX instructions here, because

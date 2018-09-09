@@ -135,7 +135,7 @@ void vmexit_passthrough_handler::handle_triple_fault(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
 {
-  int cpu_info[4];
+  uint32_t cpu_info[4];
   ia32_asm_cpuid_ex(cpu_info,
                     vp.exit_context().eax,
                     vp.exit_context().ecx);
@@ -225,7 +225,7 @@ void vmexit_passthrough_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
   }
   else if (vp.exit_context().rcx == vmcall_breakpoint_id)
   {
-    __debugbreak();
+    ia32_asm_int3();
   }
   else
   {
@@ -577,6 +577,7 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
 
 #ifdef HVPP_ENABLE_VMWARE_WORKAROUND
 
+  (void)(port_value);
   (void)(port);
   (void)(count);
   (void)(size);

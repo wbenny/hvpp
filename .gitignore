@@ -14,3 +14,16 @@ bin/**
 # VS Code files.
 #
 .vscode/**
+
+#
+# Compiled objects (Linux).
+#
+*.o
+*.a
+*.ko
+*.cmd
+*.mod.c
+*.order
+*.symvers
+.tmp_versions/
+.cache.mk

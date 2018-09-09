@@ -218,7 +218,7 @@ int bitmap::find_first_clear() const noexcept
 {
   for (int i = 0; i * 8 < size_in_bits_; ++i)
   {
-    if (buffer_[i] != ~0)
+    if (buffer_[i] != word_t(~0))
     {
       return std::min(
         static_cast<int>(i * 8 + ia32_asm_bsf(~static_cast<uint64_t>(buffer_[i]))),

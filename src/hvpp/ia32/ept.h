@@ -301,7 +301,7 @@ struct epte_t
 
     struct
     {
-      access_type access : 3; // bits of read_access
+      uint64_t access : 3;    // bits of read_access
                               //         write_access
                               //         execute_access
     };
@@ -314,7 +314,7 @@ struct epte_t
 
   void update(access_type new_access) noexcept
   {
-    access = new_access;
+    access = uint64_t(new_access);
   }
 
   void update(pa_t pa,

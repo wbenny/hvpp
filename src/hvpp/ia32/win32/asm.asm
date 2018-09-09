@@ -29,6 +29,19 @@ INCLUDE ksamd64.inc
     VMX_ERROR_CODE_FAILED_WITH_STATUS   = 1
     VMX_ERROR_CODE_FAILED               = 2
 
+    ;
+    ; Pause/halt.
+    ;
+
+    ia32_asm_halt PROC
+        hlt
+        ret
+    ia32_asm_halt ENDP
+
+    ;
+    ; Segment registers.
+    ;
+
     ia32_asm_read_cs PROC
         mov    ax, cs
         ret
@@ -89,10 +102,6 @@ INCLUDE ksamd64.inc
         ret
     ia32_asm_write_ss ENDP
 
-    ;                                   ;
-    ; --------------------------------- ;
-    ;                                   ;
-
     ia32_asm_read_tr PROC
         str     ax
         ret
@@ -113,10 +122,6 @@ INCLUDE ksamd64.inc
         ret
     ia32_asm_write_ldtr ENDP
 
-    ;                                   ;
-    ; --------------------------------- ;
-    ;                                   ;
-
     ia32_asm_read_ar PROC
         lar     rax, rcx
         ret
@@ -126,6 +131,10 @@ INCLUDE ksamd64.inc
         lsl     eax, ecx
         ret
     ia32_asm_read_sl ENDP
+
+    ;
+    ; Descriptor registers.
+    ;
 
     ia32_asm_read_gdtr PROC
         sgdt    fword ptr [rcx]
@@ -137,42 +146,37 @@ INCLUDE ksamd64.inc
         ret
     ia32_asm_write_gdtr ENDP
 
-    ;                                   ;
-    ; --------------------------------- ;
-    ;                                   ;
-
-    ia32_asm_halt PROC
-        hlt
-        ret
-    ia32_asm_halt ENDP
+    ;
+    ; Control registers.
+    ;
 
     ia32_asm_write_msw PROC
-        lmsw    ax
+        lmsw    cx
         ret
     ia32_asm_write_msw ENDP
+
+    ;
+    ; Cache control
+    ;
 
     ia32_asm_invd PROC
         invd
         ret
     ia32_asm_invd ENDP
 
-    ;                                   ;
-    ; --------------------------------- ;
-    ;                                   ;
+    ;
+    ; VMX.
+    ;
 
     ia32_asm_vmx_vmcall PROC
         vmcall
         ret
     ia32_asm_vmx_vmcall ENDP
 
-    ;                                   ;
-    ; --------------------------------- ;
-    ;                                   ;
-
     ia32_asm_inv_ept PROC
         invept  rcx, oword ptr [rdx]
-        jz @jz
-        jc @jc
+        jz      @jz
+        jc      @jc
         xor     rax, rax
         ret
 
@@ -185,8 +189,8 @@ INCLUDE ksamd64.inc
 
     ia32_asm_inv_vpid PROC
         invvpid rcx, oword ptr [rdx]
-        jz @jz
-        jc @jc
+        jz      @jz
+        jc      @jc
         xor     rax, rax
         ret
 

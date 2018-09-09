@@ -1,4 +1,7 @@
 #pragma once
+#include "../msr.h"
+#include "../msr/arch.h"
+
 #include <cstdint>
 #include <type_traits>
 
@@ -248,7 +251,7 @@ struct seg_t
         //
         // Actually untested with LDT.
         //
-        if (selector.table == seg_selector_t::table_ldt) __debugbreak();
+        if (selector.table == seg_selector_t::table_ldt) ia32_asm_int3();
 
         auto& table_entry = selector.table
           ? descriptor_table[read<ldtr_t>()][selector]

@@ -3,11 +3,19 @@
 
 #include <cstdint>
 
+#if 1
+#define hvpp_trace(format, ...)  ::logger::print(::logger::level_t::trace, __FUNCTION__, format, ##__VA_ARGS__)
+#define hvpp_debug(format, ...)  ::logger::print(::logger::level_t::debug, __FUNCTION__, format, ##__VA_ARGS__)
+#define hvpp_info(format, ...)   ::logger::print(::logger::level_t::info,  __FUNCTION__, format, ##__VA_ARGS__)
+#define hvpp_warn(format, ...)   ::logger::print(::logger::level_t::warn,  __FUNCTION__, format, ##__VA_ARGS__)
+#define hvpp_error(format, ...)  ::logger::print(::logger::level_t::error, __FUNCTION__, format, ##__VA_ARGS__)
+#else
 #define hvpp_trace(format, ...)  ::logger::print(::logger::level_t::trace, __FUNCTION__, format, __VA_ARGS__)
 #define hvpp_debug(format, ...)  ::logger::print(::logger::level_t::debug, __FUNCTION__, format, __VA_ARGS__)
 #define hvpp_info(format, ...)   ::logger::print(::logger::level_t::info,  __FUNCTION__, format, __VA_ARGS__)
 #define hvpp_warn(format, ...)   ::logger::print(::logger::level_t::warn,  __FUNCTION__, format, __VA_ARGS__)
 #define hvpp_error(format, ...)  ::logger::print(::logger::level_t::error, __FUNCTION__, format, __VA_ARGS__)
+#endif
 
 namespace logger
 {

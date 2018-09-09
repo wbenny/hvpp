@@ -1,8 +1,10 @@
 #pragma once
 #include "asm.h"
 #include "ept.h"
-#include "msr.h"
 #include "memory.h"
+#include "msr.h"
+
+#include "msr/vmx.h"
 
 #include "vmx/exit_qualification.h"
 #include "vmx/exit_reason.h"
@@ -90,15 +92,21 @@ auto adjust(T desired) noexcept
     // Vol3B[17.2(Debug Registers)] describes which reserved fields should be
     // set to 0 and 1 respectively.
     //
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverflow"
     desired.reserved_1 |= ~desired.reserved_1;
     desired.reserved_2 = 0;
     desired.reserved_3 |= ~desired.reserved_3;
+#pragma GCC diagnostic pop
   }
   else if constexpr (is_dr7)
   {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverflow"
     desired.reserved_1 |= ~desired.reserved_1;
     desired.reserved_2 = 0;
     desired.reserved_3 = 0;
+#pragma GCC diagnostic pop
   }
   else if constexpr (is_vmx_ctl_msr)
   {
@@ -191,37 +199,6 @@ inline TResult vmcall(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3
   return r.as_value;
 }
 
-enum class invept_t : uint32_t
-{
-  single_context                    = 0x00000001,
-  all_contexts                      = 0x00000002,
-};
-
-enum class invvpid_t : uint32_t
-{
-  individual_address                = 0x00000000,
-  single_context                    = 0x00000001,
-  all_contexts                      = 0x00000002,
-  single_context_retaining_globals  = 0x00000003,
-};
-
-struct invept_desc_t
-{
-  ept_ptr_t ept_pointer;
-  uint64_t  reserved;
-};
-
-static_assert(sizeof(invept_desc_t) == 16);
-
-struct invvpid_desc_t
-{
-  uint64_t vpid : 16;
-  uint64_t reserved : 48;
-  uint64_t linear_address;
-};
-
-static_assert(sizeof(invvpid_desc_t) == 16);
-
 inline error_code invept(invept_t type, invept_desc_t* descriptor = nullptr) noexcept
 {
   if (!descriptor)
@@ -230,12 +207,12 @@ inline error_code invept(invept_t type, invept_desc_t* descriptor = nullptr) noe
     descriptor = &zero_descriptor;
   }
 
-  return static_cast<error_code>(ia32_asm_inv_ept(static_cast<uint32_t>(type), descriptor));
+  return static_cast<error_code>(ia32_asm_inv_ept(type, descriptor));
 }
 
 inline error_code invept_single_context(ept_ptr_t ept_pointer) noexcept
 {
-  invept_desc_t descriptor = { ept_pointer, 0 };
+  invept_desc_t descriptor = { ept_pointer.flags, 0 };
   return invept(invept_t::single_context, &descriptor);
 }
 
@@ -252,7 +229,7 @@ inline error_code invvpid(invvpid_t type, invvpid_desc_t* descriptor = nullptr) 
     descriptor = &zero_descriptor;
   }
 
-  return static_cast<error_code>(ia32_asm_inv_vpid(static_cast<uint32_t>(type), descriptor));
+  return static_cast<error_code>(ia32_asm_inv_vpid(type, descriptor));
 }
 
 inline error_code invvpid_individual_address(uint16_t vpid, uint64_t linear_address) noexcept

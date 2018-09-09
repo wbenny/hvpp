@@ -11,7 +11,7 @@
     bool flag_set   = true;                                     \
     if (value.compare_exchange_strong(flag_set, flag_clear))    \
     {                                                           \
-      __debugbreak();                                           \
+      ia32_asm_int3();                                          \
     }                                                           \
   } while (0)
 

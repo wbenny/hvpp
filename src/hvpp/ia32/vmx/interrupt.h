@@ -34,7 +34,7 @@ struct interrupt_info_t
   };
 };
 
-inline constexpr char* interrupt_type_to_string(interrupt_type value) noexcept
+inline constexpr const  char* interrupt_type_to_string(interrupt_type value) noexcept
 {
   switch (value)
   {

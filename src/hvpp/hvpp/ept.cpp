@@ -3,6 +3,8 @@
 #include "lib/assert.h"
 #include "lib/mm.h"
 
+#include <cstring>
+
 namespace hvpp {
 
 auto ept_t::initialize() noexcept -> error_code_t
@@ -192,12 +194,12 @@ void ept_t::split(pa_t guest_pa, pa_t host_pa) noexcept
   // See ia32/ept.h.
   //
   static_assert(std::is_base_of_v<ept_descriptor_tag,
-                                  ept_table_from_t::descriptor_tag>,
+                         typename ept_table_from_t::descriptor_tag>,
                 "Wrong ept_table_from_t type");
 
 
   static_assert(std::is_base_of_v<ept_descriptor_tag,
-                                  ept_table_to_t::descriptor_tag>,
+                         typename ept_table_to_t::descriptor_tag>,
                 "Wrong ept_table_to_t type");
 
   //
@@ -270,12 +272,12 @@ void ept_t::join(pa_t guest_pa, pa_t host_pa) noexcept
   // See ia32/ept.h.
   //
   static_assert(std::is_base_of_v<ept_descriptor_tag,
-                                  ept_table_from_t::descriptor_tag>,
+                         typename ept_table_from_t::descriptor_tag>,
                 "Wrong ept_table_from_t type");
 
 
   static_assert(std::is_base_of_v<ept_descriptor_tag,
-                                  ept_table_to_t::descriptor_tag>,
+                         typename ept_table_to_t::descriptor_tag>,
                 "Wrong ept_table_to_t type");
 
   //

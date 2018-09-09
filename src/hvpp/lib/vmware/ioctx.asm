@@ -21,24 +21,24 @@
 ;--
 
 INCLUDE ksamd64.inc
-INCLUDE ia32/common.inc
+INCLUDE ia32/win32/common.inc
 
 .CODE
 
 ;
 ; Definitions for ia32::vmx::exit_qualification_io_instruction_t.
 ;
-    EQ_IO_SIZE_OF_ACCESS_MASK           = 7h                ; bits 0-2
-    EQ_IO_ACCESS_TYPE_MASK              = 8h                ; bit  3
+    EQ_IO_SIZE_OF_ACCESS_MASK           = 7h                  ; bits 0-2
+    EQ_IO_ACCESS_TYPE_MASK              = 8h                  ; bit  3
     EQ_IO_ACCESS_TYPE_SHIFT             = 3
-    EQ_IO_STRING_INST_MASK              = 10h               ; bit  4
+    EQ_IO_STRING_INST_MASK              = 10h                 ; bit  4
     EQ_IO_STRING_INST_SHIFT             = 4
-    EQ_IO_REP_PREFIXED_MASK             = 20h               ; bit  5
+    EQ_IO_REP_PREFIXED_MASK             = 20h                 ; bit  5
     EQ_IO_REP_PREFIXED_SHIFT            = 5
-    EQ_IO_PORT_MASK                     = 0ffff0000h        ; bits 16-31
+    EQ_IO_PORT_MASK                     = 0ffffffffffff0000h  ; bits 16-31
     EQ_IO_PORT_SHIFT                    = 16
 
-    RFLAGS_DF_MASK                      = 0400h             ; bit 10
+    RFLAGS_DF_MASK                      = 0400h               ; bit 10
 
 ;++
 ;

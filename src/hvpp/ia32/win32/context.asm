@@ -22,7 +22,7 @@
 ;--
 
 INCLUDE ksamd64.inc
-INCLUDE ia32/common.inc
+INCLUDE ia32/win32/common.inc
 
 .CODE
 

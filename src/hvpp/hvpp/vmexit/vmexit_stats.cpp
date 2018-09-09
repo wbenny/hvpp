@@ -12,7 +12,7 @@
   {                                                               \
     if (vmexit_trace_bitmap_.test(static_cast<int>(exit_reason))) \
     {                                                             \
-      hvpp_trace(format, __VA_ARGS__);                            \
+      hvpp_trace(format, ##__VA_ARGS__);                          \
     }                                                             \
   } while (0)
 

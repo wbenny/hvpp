@@ -67,7 +67,7 @@ struct exception_error_code_t
   };
 };
 
-inline constexpr char* exception_vector_to_string(exception_vector value) noexcept
+inline constexpr const char* exception_vector_to_string(exception_vector value) noexcept
 {
   switch (value)
   {

@@ -1,11 +1,8 @@
 #pragma once
 #include "asm.h"
 
-#include "msr/arch.h"
-#include "msr/mtrr.h"
-#include "msr/vmx.h"
-
 #include <cstdint>
+#include <type_traits>
 
 namespace ia32::msr {
 
@@ -13,7 +10,7 @@ template <typename T, typename = void> struct has_msr_id : std::false_type { };
 template <typename T>                  struct has_msr_id<T, decltype(T::msr_id, void())> : std::true_type { };
 template <typename T>          constexpr bool has_msr_id_v = has_msr_id<T>::value;
 
-template <typename T> inline auto     read()                                 noexcept { return T::result_type { ia32_asm_read_msr(T::msr_id) }; }
+template <typename T> inline auto     read()                                 noexcept { return typename T::result_type { ia32_asm_read_msr(T::msr_id) }; }
 template <typename T> inline T        read(uint32_t msr_id)                  noexcept { return T { ia32_asm_read_msr(   msr_id) }; }
                       inline uint64_t read(uint32_t msr_id)                  noexcept { return     ia32_asm_read_msr(   msr_id) ; }
 

@@ -316,25 +316,25 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="ia32\context.asm">
-      <Filter>Source Files\ia32</Filter>
-    </MASM>
     <MASM Include="hvpp\vcpu.asm">
       <Filter>Source Files\hvpp</Filter>
-    </MASM>
-    <MASM Include="ia32\asm.asm">
-      <Filter>Source Files\ia32</Filter>
     </MASM>
     <MASM Include="lib\vmware\ioctx.asm">
       <Filter>Source Files\lib\vmware</Filter>
     </MASM>
+    <MASM Include="ia32\win32\asm.asm">
+      <Filter>Source Files\ia32\win32</Filter>
+    </MASM>
+    <MASM Include="ia32\win32\context.asm">
+      <Filter>Source Files\ia32\win32</Filter>
+    </MASM>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ia32\common.inc">
-      <Filter>Source Files\ia32</Filter>
-    </None>
     <None Include="hvpp\vcpu.inl">
       <Filter>Source Files\hvpp</Filter>
+    </None>
+    <None Include="ia32\win32\common.inc">
+      <Filter>Source Files\ia32\win32</Filter>
     </None>
   </ItemGroup>
 </Project>

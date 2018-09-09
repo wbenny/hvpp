@@ -186,13 +186,13 @@
   </ItemGroup>
   <ItemGroup>
     <MASM Include="hvpp\vcpu.asm" />
-    <MASM Include="ia32\context.asm" />
-    <MASM Include="ia32\asm.asm" />
+    <MASM Include="ia32\win32\asm.asm" />
+    <MASM Include="ia32\win32\context.asm" />
     <MASM Include="lib\vmware\ioctx.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include="hvpp\vcpu.inl" />
-    <None Include="ia32\common.inc" />
+    <None Include="ia32\win32\common.inc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

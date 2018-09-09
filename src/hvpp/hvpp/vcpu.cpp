@@ -244,7 +244,7 @@ void vcpu_t::error() noexcept
 {
   vmx::instruction_error instruction_error = exit_instruction_error();
   hvpp_error("error: %p (%s)\n", instruction_error, vmx::instruction_error_to_string(instruction_error));
-  __debugbreak();
+  ia32_asm_int3();
   terminate();
 }
 

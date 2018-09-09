@@ -236,7 +236,7 @@ struct instruction_info_t
   };
 };
 
-inline constexpr char* instruction_info_gdtr_idtr_to_string(uint64_t value) noexcept
+inline constexpr const  char* instruction_info_gdtr_idtr_to_string(uint64_t value) noexcept
 {
   switch (value)
   {
@@ -249,7 +249,7 @@ inline constexpr char* instruction_info_gdtr_idtr_to_string(uint64_t value) noex
 }
 
 
-inline constexpr char* instruction_info_ldtr_tr_to_string(uint64_t value) noexcept
+inline constexpr const  char* instruction_info_ldtr_tr_to_string(uint64_t value) noexcept
 {
   switch (value)
   {
