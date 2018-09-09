@@ -1,5 +1,5 @@
 #include <linux/module.h>
-#include <linux/slab.h>
+#include <linux/vmalloc.h>
 #include <linux/smp.h>
 #include <linux/delay.h>
 
@@ -28,12 +28,12 @@ uint64_t ia32_detail_check_physical_memory(void* range_list, int range_list_size
 
 void* memory_manager_detail_system_allocate(size_t size)
 {
-    return kmalloc(size, GFP_KERNEL | GFP_ATOMIC | __GFP_ZERO);
+    return vmalloc(size);
 }
 
 void memory_manager_detail_system_free(void* address)
 {
-    kfree(address);
+    vfree(address);
 }
 
 //
