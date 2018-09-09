@@ -9,12 +9,12 @@
 
 uint64_t ia32_detail_pa_from_va(void* va)
 {
-    return 0;
+    return __pa(va);
 }
 
 void* ia32_detail_va_from_pa(uint64_t pa)
 {
-    return NULL;
+    return __va(pa);
 }
 
 uint64_t ia32_detail_check_physical_memory(void* range_list, int range_list_size, int* count)
