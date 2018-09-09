@@ -3,11 +3,13 @@ CXXFLAGS    := \
 	-c \
 	-O1 \
 	-std=c++17 \
+	-mcmodel=kernel \
 	-I./src/hvpp \
 	-Wall \
 	-fno-exceptions \
 	-fno-rtti \
 	-fno-stack-protector \
+	-fno-pic \
 	-Wno-multichar \
 	-Wno-invalid-offsetof \
 	-Wno-switch \
