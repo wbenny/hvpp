@@ -856,13 +856,7 @@ inline uint32_t ia32_asm_bsf(uint64_t value) noexcept
   uint64_t result;
 
   asm volatile(
-    "bsfq %1, %0\n\t"
-    "jnz  1f\n\t"
-    "xorl %k0, %k0\n\t"
-    "jmp  2f\n"
-    "1:\n\t"
-    "incl %k0\n"
-    "2:\n\t"
+    "bsfq %1, %0"
     : "=r" (result)
     : "rm" (value)
     );
@@ -875,13 +869,7 @@ inline uint32_t ia32_asm_bsr(uint64_t value) noexcept
   uint64_t result;
 
   asm volatile(
-    "bsrq %1, %0\n\t"
-    "jnz  1f\n\t"
-    "xorl %k0, %k0\n\t"
-    "jmp  2f\n"
-    "1:\n\t"
-    "incl %k0\n"
-    "2:\n\t"
+    "bsrq %1, %0"
     : "=r" (result)
     : "rm" (value)
     );

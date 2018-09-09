@@ -450,7 +450,6 @@ inline void ia32_asm_write_xcr(uint32_t reg, uint64_t value) noexcept
 // Bit operations.
 //
 
-
 unsigned char _BitScanForward64(unsigned long*, unsigned __int64);
 #pragma intrinsic(_BitScanForward64)
 inline uint32_t ia32_asm_bsf(uint64_t value) noexcept
