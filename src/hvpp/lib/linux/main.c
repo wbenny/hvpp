@@ -73,6 +73,11 @@ void logger_detail_do_print(const char* message)
     printk(KERN_INFO "%s\n", message);
 }
 
+void logger_detail_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+{
+    vsnprintf(buf, size, fmt, args);
+}
+
 //
 // lib/linux/driver.cpp
 //
