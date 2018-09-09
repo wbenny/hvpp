@@ -966,15 +966,15 @@ inline void ia32_asm_inv_pcid(invpcid_t type, invpcid_desc_t* descriptor) noexce
 // VMX.
 //
 
-inline uint8_t ia32_asm_vmx_on(void* vmxon_region) noexcept
+inline uint8_t ia32_asm_vmx_on(uint64_t* vmxon_pa) noexcept
 {
   uint8_t error = 0;
 
   asm volatile(
-    "vmxon %0"
-    : 
-    : "m" (*(uint8_t*)vmxon_region)
-    : "memory"
+    ".byte 0xf3, 0x0f, 0xc7, 0x30" "; setna %0"
+    : "=q" (error)
+    : "a" (vmxon_pa)
+    : "memory", "cc"
     );
 
   return error;
@@ -1009,15 +1009,15 @@ inline uint8_t ia32_asm_vmx_vmresume(void) noexcept
   return error;
 }
 
-inline uint8_t ia32_asm_vmx_vmclear(void* vmcs) noexcept
+inline uint8_t ia32_asm_vmx_vmclear(uint64_t* vmcs_pa) noexcept
 {
   uint8_t error = 0;
 
   asm volatile(
-    "vmclear %0"
-    :
-    : "m" (*(uint8_t*)vmcs)
-    : "memory"
+    ".byte 0x66, 0x0f, 0xc7, 0x30" "; setna %0"
+    : "=qm" (error)
+    : "a" (vmcs_pa), "m" (*vmcs_pa)
+    : "cc", "memory"
     );
 
   return error;
@@ -1028,9 +1028,10 @@ inline uint8_t ia32_asm_vmx_vmread(uint64_t vmcs_field, uint64_t* value) noexcep
   uint8_t error = 0;
 
   asm volatile(
-    "vmread %1, %0"
-    : "=rm" (*value)
-    : "r" (vmcs_field)
+    ".byte 0x0f, 0x78, 0x08" "; setna %0"
+    : "=q" (error)
+    : "a" (value), "c" (vmcs_field)
+    : "memory", "cc"
     );
 
   return error;
@@ -1076,10 +1077,10 @@ inline uint8_t ia32_asm_vmx_vmptr_write(uint64_t* vmcs_pa) noexcept
   uint8_t error = 0;
 
   asm volatile(
-    "vmptrld %0"
-    :
-    : "m" (*vmcs_pa)
-    : "memory"
+    ".byte 0x0f, 0xc7, 0x30" "; setna %0"
+    : "=qm" (error)
+    : "a" (vmcs_pa), "m" (*vmcs_pa)
+    : "cc", "memory"
     );
 
   return error;

@@ -11,7 +11,7 @@
 #include "device_custom.h"
 
 #include <cinttypes>
-
+   
 using namespace ia32;
 using namespace hvpp;
 
@@ -22,7 +22,7 @@ namespace driver
   //
   using vmexit_handler_t = vmexit_compositor_handler<
     vmexit_stats_handler,
-    vmexit_dbgbreak_handler,
+    // vmexit_dbgbreak_handler,
     vmexit_custom_handler
     >;
 
@@ -97,7 +97,7 @@ namespace driver
     //
     // Assign the vmexit_dbgbreak_handler instance to the device.
     //
-    device_->handler(std::get<vmexit_dbgbreak_handler>(vmexit_handler_->handlers));
+    //device_->handler(std::get<vmexit_dbgbreak_handler>(vmexit_handler_->handlers));
 
     //
     // Example: Enable tracing of I/O instructions.

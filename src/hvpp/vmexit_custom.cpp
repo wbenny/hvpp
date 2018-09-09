@@ -12,7 +12,15 @@ void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
   //
   // Enable exitting on 0x64 I/O port (keyboard).
   //
+
+  
+    hvpp_info("setup b4");
+    mp::sleep(1000*1000);
   auto procbased_ctls = vp.processor_based_controls();
+  
+
+    hvpp_info("success");
+    mp::sleep(1000*1000);
   procbased_ctls.use_io_bitmaps = true;
   vp.processor_based_controls(procbased_ctls);
 

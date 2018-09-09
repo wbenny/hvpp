@@ -3,6 +3,7 @@
 #include "paging.h"
 
 #include <cstdint>
+#include <cinttypes>
 #include <numeric>
 #include <type_traits>
 
@@ -169,7 +170,7 @@ class physical_memory_descriptor
       for (int i = 0; i < count_; ++i)
       {
         hvpp_info(
-          "  %3i)    [%p - %p] (%8u kb)", i,
+          "  %3i)    [%016" PRIx64 " - %016" PRIx64 "] (%8u kb)", i,
           range_[i].begin(),
           range_[i].end(),
           range_[i].size() / 1024);

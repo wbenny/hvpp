@@ -522,9 +522,9 @@ inline void ia32_asm_inv_pcid(invpcid_t type, invpcid_desc_t* descriptor) noexce
 
 unsigned char __vmx_on(unsigned __int64*);
 #pragma intrinsic(__vmx_on)
-inline uint8_t ia32_asm_vmx_on(void* vmxon_region) noexcept
+inline uint8_t ia32_asm_vmx_on(uint64_t* vmxon_pa) noexcept
 {
-  return __vmx_on((uint64_t*)vmxon_region);
+  return __vmx_on(vmxon_pa);
 }
 
 
@@ -551,9 +551,9 @@ inline uint8_t ia32_asm_vmx_vmresume(void) noexcept
 
 unsigned char __vmx_vmclear(unsigned __int64*);
 #pragma intrinsic(__vmx_vmclear)
-inline uint8_t ia32_asm_vmx_vmclear(void* vmcs) noexcept
+inline uint8_t ia32_asm_vmx_vmclear(uint64_t* vmcs_pa) noexcept
 {
-  return __vmx_vmclear((uint64_t*)vmcs);
+  return __vmx_vmclear(vmcs_pa);
 }
 
 unsigned char __vmx_vmread(size_t, size_t*);
@@ -577,14 +577,14 @@ void __vmx_vmptrst(unsigned __int64*);
 #pragma intrinsic(__vmx_vmptrst)
 inline void ia32_asm_vmx_vmptr_read(uint64_t* vmcs_pa) noexcept
 {
-  __vmx_vmptrst((uint64_t*)vmcs_pa);
+  __vmx_vmptrst(vmcs_pa);
 }
 
 unsigned char __vmx_vmptrld(unsigned __int64*);
 #pragma intrinsic(__vmx_vmptrld)
 inline uint8_t ia32_asm_vmx_vmptr_write(uint64_t* vmcs_pa) noexcept
 {
-  return __vmx_vmptrld((uint64_t*)vmcs_pa);
+  return __vmx_vmptrld(vmcs_pa);
 }
 
 uint8_t ia32_asm_inv_ept(invept_t type, invept_desc_t* descriptor) noexcept;

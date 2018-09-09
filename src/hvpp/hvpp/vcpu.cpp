@@ -3,8 +3,10 @@
 
 #include "lib/assert.h"
 #include "lib/log.h"
+#include "lib/mp.h"
 
 #include <iterator> // std::end()
+#include <cinttypes>
 
 #include "vcpu.inl"
 
@@ -131,14 +133,19 @@ void vcpu_t::launch() noexcept
   //     That will catapult us back here.
   //   - We'll set state to vcpu_state::running and exit this function.
   //
-
+  hvpp_info("launch(1)");
+  hvpp_info("launch(%p)", &guest_context_);
+  hvpp_info("launch(%" PRIx64 ")", &guest_context_);
   switch (static_cast<vcpu_state>(guest_context_.capture()))
   {
     case vcpu_state::off:
+  hvpp_info("launch(2)");
       setup();
       break;
 
     case vcpu_state::launching:
+  hvpp_info("launch(3)");
+
       state_ = vcpu_state::running;
       break;
 
@@ -244,6 +251,7 @@ void vcpu_t::error() noexcept
 {
   vmx::instruction_error instruction_error = exit_instruction_error();
   hvpp_error("error: %p (%s)\n", instruction_error, vmx::instruction_error_to_string(instruction_error));
+  mp::sleep(1000*1000);
   ia32_asm_int3();
   terminate();
 }
@@ -260,10 +268,8 @@ void vcpu_t::setup() noexcept
 
   load_vmxon();
   load_vmcs();
-
   setup_host();
   setup_guest();
-
   handler_->setup(*this);
 
   vmx::vmlaunch();
@@ -282,8 +288,18 @@ void vcpu_t::load_vmxon() noexcept
   // any of these bits contains an unsupported value.
   // (ref: Vol3C[23.8(Restrictions on VMX Operation)])
   //
+
+  hvpp_info("cr0 (current): %" PRIx64, read<cr0_t>().flags);
+  hvpp_info("cr0 (fixed)  : %" PRIx64, vmx::adjust(read<cr0_t>()).flags);
+  hvpp_info("cr4 (current): %" PRIx64, read<cr4_t>().flags);
+  hvpp_info("cr4 (fixed)  : %" PRIx64, vmx::adjust(read<cr4_t>()).flags);
+
+
   write(vmx::adjust(read<cr0_t>()));
   write(vmx::adjust(read<cr4_t>()));
+
+  hvpp_info("cr0 (xxx)    : %" PRIx64, read<cr0_t>().flags);
+  hvpp_info("cr4 (xxx)    : %" PRIx64, read<cr4_t>().flags);
 
   //
   // Before executing VMXON, software allocates a region of memory
@@ -293,12 +309,21 @@ void vcpu_t::load_vmxon() noexcept
   // write the VMCS revision identifier to the VMXON region.
   // (ref: Vol3C[24.11.5(VMXON Region)])
   //
+  memset(&vmxon_, 0, sizeof(vmxon_));
+
   auto vmx_basic = msr::read<msr::vmx_basic_t>();
   vmxon_.revision_id = vmx_basic.vmcs_revision_id;
+
+  hvpp_info("vmx::on-ri(%" PRIx32 ")", vmxon_.revision_id);
 
   //
   // Enter VMX operation.
   //
+  hvpp_info("vmx::on-va(%" PRIx64 ")", &vmxon_);
+  hvpp_info("vmx::on-pa(%" PRIx64 ")", pa_t::from_va(&vmxon_).value());
+  hvpp_info("vmx::on-vv(%" PRIx64 ")", pa_t::from_va(&vmxon_).va());
+  vmx::vmcs_t* vvv = (vmx::vmcs_t*)pa_t::from_va(&vmxon_).va();
+  hvpp_info("vmx::on-ri(%" PRIx32 ")", vvv->revision_id);
 
   if (vmx::on(pa_t::from_va(&vmxon_)) == vmx::error_code::success)
   {
@@ -312,7 +337,7 @@ void vcpu_t::load_vmxon() noexcept
     // cached from paging structures between separate uses of VMX operation.
     // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
     //
-    vmx::invvpid_all_contexts();
+  //  vmx::invvpid_all_contexts();
 
     //
     // Software can use the INVEPT instruction with the "all-context"
@@ -322,10 +347,12 @@ void vcpu_t::load_vmxon() noexcept
     // cached from EPT paging structures between separate uses of VMX operation.
     // (ref: Vol3C[28.3.3.4(Guidelines for Use of the INVEPT Instruction)])
     //
-    vmx::invept_all_contexts();
+//    vmx::invept_all_contexts();
   }
   else
   {
+        hvpp_info("fail");
+    mp::sleep(1000*1000);
     state_ = vcpu_state::terminated;
     error();
   }
@@ -347,9 +374,12 @@ void vcpu_t::load_vmcs() noexcept
       vmx::vmptrld(pa_t::from_va(&vmcs_)) == vmx::error_code::success)
   {
     /* NOTHING */;
+          hvpp_info("load_vmcs success");
   }
   else
   {
+          hvpp_info("load_vmcs fail");
+    mp::sleep(1000*1000);
     error();
   }
 }

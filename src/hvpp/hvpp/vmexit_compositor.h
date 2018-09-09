@@ -49,7 +49,7 @@ namespace hvpp
 
       void setup(vcpu_t& vp) noexcept override
       {
-        for_each_element(handlers, [&](auto&& handler, int) {
+        for_each_element(handlers, [&](auto&& handler, int i) {
           handler.setup(vp);
         });
       }

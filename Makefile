@@ -15,6 +15,7 @@ CXXFLAGS    := \
 	-Wno-switch \
 	-Wno-strict-aliasing # TEMPORARY
 
+
 AS          := as
 ASFLAGS     := \
 	-c \
@@ -49,13 +50,13 @@ ARCHIVE     := hvpp.a
 #
 
 BIN         := hvpp.ko
-KVERSION    := $(shell uname -r)
+KVERSION    := 4.15.0-33-generic
 KDIR        := /lib/modules/$(KVERSION)
 KBUILD      := $(KDIR)/build
 PWD         := $(shell pwd)
 
 hvpp-objs   := $(OBJECTS_C) $(ARCHIVE)
-ccflags-y   := -fno-stack-protector
+ccflags-y   := -g -fno-stack-protector
 obj-m       += hvpp.o
 
 all: $(SOURCES_CPP) $(SOURCES_S) $(ARCHIVE)
@@ -74,3 +75,8 @@ $(ARCHIVE): $(OBJECTS_CPP) $(OBJECTS_S)
 clean:
 	rm -f $(ARCHIVE) $(OBJECTS_CPP) $(OBJECTS_S)
 	make -C $(KBUILD) M=$(PWD) clean
+
+rload:
+	rsync $(BIN) benny@192.168.63.133:/home/benny
+	ssh -t benny@192.168.63.133 "sudo insmod /home/benny/$(BIN)"
+

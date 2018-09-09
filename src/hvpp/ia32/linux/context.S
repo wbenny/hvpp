@@ -28,11 +28,11 @@
         movq    8(%rsp), %rax
         movq    %rax, CTX_OFF_RIP(%rdi)
 
-        movq    %rsp, %rax
+        movq    (%rsp), %rax
         movq    %rax, CTX_OFF_RFLAGS(%rdi)
 
         xorq    %rax, %rax
-        addq    8, %rsp
+        addq    $8, %rsp
         ret
 
 .globl _ZN4ia329context_t7restoreEv
@@ -43,7 +43,7 @@
  * shadow space without any worries, because this function
  * never returns to the caller.
  */
-        subq    8, %rsp
+        subq    $8, %rsp
 
 /*
  * Build iretq context (SS, RSP, RFLAGS, CS, RIP).
@@ -59,7 +59,7 @@
         movw    %cs, 8(%rsp)
 
         movq    CTX_OFF_RIP(%rdi), %rax
-        movq    %rax, %rsp
+        movq    %rax, (%rsp)
 
         movq    CTX_OFF_RAX(%rdi), %rax
         movq    CTX_OFF_RCX(%rdi), %rcx
