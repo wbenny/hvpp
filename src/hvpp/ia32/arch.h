@@ -276,8 +276,8 @@ struct context_t
 
 static_assert(sizeof(context_t) == 144);
 
-template <typename T> T    read()         noexcept { static_assert(0, "invalid specialization"); }
-template <typename T> void write(T value) noexcept { static_assert(0, "invalid specialization"); }
+template <typename T> T    read()         noexcept { ia32_asm_int3(); }
+template <typename T> void write(T value) noexcept { ia32_asm_int3(); }
 
 //
 // ====================
@@ -296,14 +296,14 @@ template <> inline cr4_t    read() noexcept { return cr4_t    { ia32_asm_read_cr
 //
 // Debug registers
 //
-template <> inline dr0_t    read() noexcept { return dr0_t    { ia32_asm_read_dr(0) };    }
-template <> inline dr1_t    read() noexcept { return dr1_t    { ia32_asm_read_dr(1) };    }
-template <> inline dr2_t    read() noexcept { return dr2_t    { ia32_asm_read_dr(2) };    }
-template <> inline dr3_t    read() noexcept { return dr3_t    { ia32_asm_read_dr(3) };    }
-template <> inline dr4_t    read() noexcept { return dr4_t    { ia32_asm_read_dr(4) };    }
-template <> inline dr5_t    read() noexcept { return dr5_t    { ia32_asm_read_dr(5) };    }
-template <> inline dr6_t    read() noexcept { return dr6_t    { ia32_asm_read_dr(6) };    }
-template <> inline dr7_t    read() noexcept { return dr7_t    { ia32_asm_read_dr(7) };    }
+template <> inline dr0_t    read() noexcept { return dr0_t    { ia32_asm_read_dr0() };    }
+template <> inline dr1_t    read() noexcept { return dr1_t    { ia32_asm_read_dr1() };    }
+template <> inline dr2_t    read() noexcept { return dr2_t    { ia32_asm_read_dr2() };    }
+template <> inline dr3_t    read() noexcept { return dr3_t    { ia32_asm_read_dr3() };    }
+template <> inline dr4_t    read() noexcept { return dr4_t    { ia32_asm_read_dr4() };    }
+template <> inline dr5_t    read() noexcept { return dr5_t    { ia32_asm_read_dr5() };    }
+template <> inline dr6_t    read() noexcept { return dr6_t    { ia32_asm_read_dr6() };    }
+template <> inline dr7_t    read() noexcept { return dr7_t    { ia32_asm_read_dr7() };    }
 
 //
 // RFLAGS
@@ -346,14 +346,14 @@ template <> inline void write(cr4_t value)    noexcept { ia32_asm_write_cr4(valu
 //
 // Debug registers
 //
-template <> inline void write(dr0_t value)    noexcept { ia32_asm_write_dr(0, value.flags); }
-template <> inline void write(dr1_t value)    noexcept { ia32_asm_write_dr(1, value.flags); }
-template <> inline void write(dr2_t value)    noexcept { ia32_asm_write_dr(2, value.flags); }
-template <> inline void write(dr3_t value)    noexcept { ia32_asm_write_dr(3, value.flags); }
-template <> inline void write(dr4_t value)    noexcept { ia32_asm_write_dr(4, value.flags); }
-template <> inline void write(dr5_t value)    noexcept { ia32_asm_write_dr(5, value.flags); }
-template <> inline void write(dr6_t value)    noexcept { ia32_asm_write_dr(6, value.flags); }
-template <> inline void write(dr7_t value)    noexcept { ia32_asm_write_dr(7, value.flags); }
+template <> inline void write(dr0_t value)    noexcept { ia32_asm_write_dr0(value.flags); }
+template <> inline void write(dr1_t value)    noexcept { ia32_asm_write_dr1(value.flags); }
+template <> inline void write(dr2_t value)    noexcept { ia32_asm_write_dr2(value.flags); }
+template <> inline void write(dr3_t value)    noexcept { ia32_asm_write_dr3(value.flags); }
+template <> inline void write(dr4_t value)    noexcept { ia32_asm_write_dr4(value.flags); }
+template <> inline void write(dr5_t value)    noexcept { ia32_asm_write_dr5(value.flags); }
+template <> inline void write(dr6_t value)    noexcept { ia32_asm_write_dr6(value.flags); }
+template <> inline void write(dr7_t value)    noexcept { ia32_asm_write_dr7(value.flags); }
 
 //
 // RFLAGS

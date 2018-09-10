@@ -340,7 +340,7 @@ template <
   typename T,
   typename PAGE_DESCRIPTOR,
   typename = std::enable_if_t<
-    std::is_base_of_v<page_descriptor_tag, PAGE_DESCRIPTOR::descriptor_tag> && (
+    std::is_base_of_v<page_descriptor_tag, typename PAGE_DESCRIPTOR::descriptor_tag> && (
       std::is_pointer_v<T> ||
      (std::is_integral_v<T> && sizeof(T) == sizeof(uintptr_t))
     )
@@ -356,7 +356,7 @@ template <
   typename T,
   typename PAGE_DESCRIPTOR,
   typename = std::enable_if_t<
-    std::is_base_of_v<page_descriptor_tag, PAGE_DESCRIPTOR::descriptor_tag> && (
+    std::is_base_of_v<page_descriptor_tag, typename PAGE_DESCRIPTOR::descriptor_tag> && (
       std::is_pointer_v<T> ||
      (std::is_integral_v<T> && sizeof(T) == sizeof(uintptr_t))
     )
@@ -372,7 +372,7 @@ template <
   typename T,
   typename PAGE_DESCRIPTOR,
   typename = std::enable_if_t<
-    std::is_base_of_v<page_descriptor_tag, PAGE_DESCRIPTOR::descriptor_tag> && (
+    std::is_base_of_v<page_descriptor_tag, typename PAGE_DESCRIPTOR::descriptor_tag> && (
       std::is_pointer_v<T> ||
      (std::is_integral_v<T> && sizeof(T) == sizeof(uintptr_t))
     )
@@ -388,7 +388,7 @@ template <
   typename T,
   typename PAGE_DESCRIPTOR,
   typename = std::enable_if_t<
-    std::is_base_of_v<page_descriptor_tag, PAGE_DESCRIPTOR::descriptor_tag> &&
+    std::is_base_of_v<page_descriptor_tag, typename PAGE_DESCRIPTOR::descriptor_tag> &&
     std::is_integral_v<T>
   >
 >
@@ -402,7 +402,7 @@ template <
   typename T,
   typename PAGE_DESCRIPTOR,
   typename = std::enable_if_t<
-    std::is_base_of_v<page_descriptor_tag, PAGE_DESCRIPTOR::descriptor_tag> &&
+    std::is_base_of_v<page_descriptor_tag, typename PAGE_DESCRIPTOR::descriptor_tag> &&
     std::is_integral_v<T>
   >
 >
@@ -419,7 +419,7 @@ inline constexpr T page_align(T va) noexcept
 
 template <typename T>
 inline constexpr T page_align_up(T va) noexcept
-{ return page_align_up(size, pt_t{}); }
+{ return page_align_up(va, pt_t{}); }
 
 template <typename T>
 inline constexpr uint32_t byte_offset(T va) noexcept

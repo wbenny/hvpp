@@ -10,7 +10,7 @@ struct cpuid_eax_01
   {
     struct
     {
-      int cpu_info[4];
+      uint32_t cpu_info[4];
     };
 
     struct

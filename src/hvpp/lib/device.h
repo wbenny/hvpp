@@ -12,6 +12,8 @@
 class device
 {
   public:
+    virtual ~device() noexcept {}
+
     auto initialize() noexcept -> error_code_t;
     void destroy() noexcept;
 

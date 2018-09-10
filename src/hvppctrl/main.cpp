@@ -36,7 +36,7 @@ void TestCpuid()
   //
   // See vmexit_custom_handler::handle_execute_cpuid().
   //
-  int CpuInfo[4];
+  uint32_t CpuInfo[4];
   ia32_asm_cpuid(CpuInfo, 'ppvh');
 
   printf("CPUID: '%s'\n\n", (const char*)CpuInfo);

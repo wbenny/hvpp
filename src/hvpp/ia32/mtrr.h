@@ -1,8 +1,10 @@
 #pragma once
 #include "memory.h"
 #include "msr.h"
+#include "msr/mtrr.h"
 
 #include <cstdint>
+#include <cinttypes>
 
 namespace ia32 {
 
@@ -98,7 +100,7 @@ class mtrr
       auto dump_range = [](int i, const mtrr_range& mtrr) noexcept
       {
         hvpp_info(
-          "  %3i) %s [%p - %p] (%8u kb)", i,
+          "  %3i) %s [%016" PRIx64 " - %016" PRIx64 "] (%8u kb)", i,
           memory_type_to_string(mtrr.type),
           mtrr.range.begin(),
           mtrr.range.end(),

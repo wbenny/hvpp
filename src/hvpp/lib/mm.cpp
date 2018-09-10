@@ -1,4 +1,3 @@
-#pragma once
 #include "mm.h"
 
 #include "ia32/memory.h"
@@ -334,7 +333,7 @@ namespace memory_manager
 
     int offset = static_cast<int>(ia32::bytes_to_pages(reinterpret_cast<uint8_t*>(address) - base_address));
 
-    if (offset * ia32::page_size > available_size)
+    if (size_t(offset) * ia32::page_size > available_size)
     {
       //
       // We don't own this memory.
