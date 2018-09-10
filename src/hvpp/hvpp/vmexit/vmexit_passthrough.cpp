@@ -20,6 +20,7 @@ void vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept
   // Setup guest VMCS state to bare minimum.
   // This setup mirrors current state of the OS.
   //
+
   vp.cr0_shadow(read<cr0_t>());
   vp.cr4_shadow(read<cr4_t>());
 

@@ -20,11 +20,15 @@ namespace driver
   //
   // Create combined handler from these VM-exit handlers.
   //
-  using vmexit_handler_t = vmexit_compositor_handler<
+  using vmexit_handler_t = vmexit_custom_handler;
+  
+  /*
+  vmexit_compositor_handler<
     vmexit_stats_handler,
     // vmexit_dbgbreak_handler,
     vmexit_custom_handler
     >;
+    */
 
   static_assert(std::is_base_of_v<vmexit_handler, vmexit_handler_t>);
 
@@ -102,9 +106,10 @@ namespace driver
     //
     // Example: Enable tracing of I/O instructions.
     //
+    /*
     std::get<vmexit_stats_handler>(vmexit_handler_->handlers)
       .trace_bitmap().set(int(vmx::exit_reason::execute_io_instruction));
-
+    */
     //
     // Start the hypervisor.
     //
@@ -139,8 +144,9 @@ namespace driver
       //
       // Print statistics into debugger.
       //
+      /*
       std::get<vmexit_stats_handler>(vmexit_handler_->handlers).dump();
-
+      */
       vmexit_handler_->destroy();
       delete vmexit_handler_;
     }

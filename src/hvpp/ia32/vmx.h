@@ -167,7 +167,7 @@ inline error_code vmread(vmcs_t::field vmcs_field, T& value) noexcept
 {
   detail::u64_t<T> u{};
 
-    hvpp_info("vmread: %u to %llx", (uint32_t)vmcs_field, &value);
+    hvpp_info("vmread: %04x to %llx", (uint32_t)vmcs_field, &value);
     mp::sleep(1000*1000);
 
   auto result = static_cast<error_code>(ia32_asm_vmx_vmread(static_cast<uint64_t>(vmcs_field), &u.as_uint64_t));
@@ -185,7 +185,7 @@ inline error_code vmwrite(vmcs_t::field vmcs_field, T value) noexcept
   u.as_value = value;
 
   auto r = static_cast<error_code>(ia32_asm_vmx_vmwrite(static_cast<uint64_t>(vmcs_field), u.as_uint64_t));
-    hvpp_info("vmwrite: %u to %llx (%u)", (uint32_t)vmcs_field, value, (uint32_t)r);
+    hvpp_info("vmwrite: %04x to %llx (%u)", (uint32_t)vmcs_field, value, (uint32_t)r);
 return r;
 }
 

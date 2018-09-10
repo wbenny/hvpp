@@ -4,6 +4,7 @@
 #include "lib/assert.h"
 #include "lib/log.h"
 #include "lib/mp.h"
+#include "vmexit/vmexit_passthrough.h"
 
 #include <iterator> // std::end()
 #include <cinttypes>
@@ -270,10 +271,35 @@ void vcpu_t::setup() noexcept
   load_vmcs();
   setup_host();
   setup_guest();
-  handler_->setup(*this);
 
+  cr0_shadow(read<cr0_t>());
+  cr4_shadow(read<cr4_t>());
+
+  guest_cr0(read<cr0_t>());
+  guest_cr3(read<cr3_t>());
+  guest_cr4(read<cr4_t>());
+
+  guest_debugctl(msr::read<msr::debugctl_t>());
+  guest_dr7(read<dr7_t>());
+  guest_rflags(read<rflags_t>());
+
+  auto gdtr = read<gdtr_t>();
+  guest_gdtr(gdtr);
+  guest_idtr(read<idtr_t>());
+  guest_cs(seg_t{ gdtr, read<cs_t>() });
+  guest_ds(seg_t{ gdtr, read<ds_t>() });
+  guest_es(seg_t{ gdtr, read<es_t>() });
+  guest_fs(seg_t{ gdtr, read<fs_t>() });
+  guest_gs(seg_t{ gdtr, read<gs_t>() });
+  guest_ss(seg_t{ gdtr, read<ss_t>() });
+  guest_tr(seg_t{ gdtr, read<tr_t>() });
+  guest_ldtr(seg_t{ gdtr, read<ldtr_t>() });
+
+  hvpp_info("handler_->setup(*this): %016" PRIx64 ", %016" PRIx64, handler_, this);
+  //((vmexit_passthrough_handler*)handler_)->setup(*this);
   vmx::vmlaunch();
-
+  
+  
   //
   // If we got here, something wrong has happened.
   //
@@ -322,8 +348,6 @@ void vcpu_t::load_vmxon() noexcept
   hvpp_info("vmx::on-va(%" PRIx64 ")", &vmxon_);
   hvpp_info("vmx::on-pa(%" PRIx64 ")", pa_t::from_va(&vmxon_).value());
   hvpp_info("vmx::on-vv(%" PRIx64 ")", pa_t::from_va(&vmxon_).va());
-  vmx::vmcs_t* vvv = (vmx::vmcs_t*)pa_t::from_va(&vmxon_).va();
-  hvpp_info("vmx::on-ri(%" PRIx32 ")", vvv->revision_id);
 
   if (vmx::on(pa_t::from_va(&vmxon_)) == vmx::error_code::success)
   {
@@ -375,6 +399,8 @@ void vcpu_t::load_vmcs() noexcept
   {
     /* NOTHING */;
           hvpp_info("load_vmcs success");
+
+
   }
   else
   {
@@ -407,7 +433,11 @@ void vcpu_t::setup_host() noexcept
   // Note that we're setting just base address of GDTR and IDTR.
   // The limit of these descriptors is fixed at 0xffff for VMX operations.
   //
+  
   host_gdtr(gdtr);
+  
+
+  
   host_idtr(read<idtr_t>());
 
   //
@@ -425,6 +455,7 @@ void vcpu_t::setup_host() noexcept
   host_cr0(read<cr0_t>());
   host_cr3(read<cr3_t>());
   host_cr4(read<cr4_t>());
+
 
   //
   // We also have to set RSP and RIP values which will be set on every VM-exit.
@@ -547,6 +578,8 @@ void vcpu_t::setup_guest() noexcept
   //
   guest_rsp(reinterpret_cast<uint64_t>(std::end(stack_)));
   guest_rip(reinterpret_cast<uint64_t>(&vcpu_t::entry_guest_));
+
+
 }
 
 void vcpu_t::entry_host() noexcept
@@ -588,7 +621,7 @@ void vcpu_t::entry_host() noexcept
     exit_context_.rflags = guest_rflags();
 
     {
-      handler_->handle(*this);
+      //handler_->handle(*this);
 
       if (state_ == vcpu_state::terminated)
       {

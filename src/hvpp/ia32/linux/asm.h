@@ -966,14 +966,24 @@ inline void ia32_asm_inv_pcid(invpcid_t type, invpcid_desc_t* descriptor) noexce
 // VMX.
 //
 
+#define ASM_VMX_VMCLEAR_RAX       ".byte 0x66, 0x0f, 0xc7, 0x30"
+#define ASM_VMX_VMLAUNCH          ".byte 0x0f, 0x01, 0xc2"
+#define ASM_VMX_VMRESUME          ".byte 0x0f, 0x01, 0xc3"
+#define ASM_VMX_VMPTRLD_RAX       ".byte 0x0f, 0xc7, 0x30"
+#define ASM_VMX_VMXOFF            ".byte 0x0f, 0x01, 0xc4"
+#define ASM_VMX_VMXON_RAX         ".byte 0xf3, 0x0f, 0xc7, 0x30"
+#define ASM_VMX_INVEPT            ".byte 0x66, 0x0f, 0x38, 0x80, 0x0A"
+#define ASM_VMX_INVVPID           ".byte 0x66, 0x0f, 0x38, 0x81, 0x0A"
+#define ASM_VMX_VMFUNC            ".byte 0x0f, 0x01, 0xd4"
+
 inline uint8_t ia32_asm_vmx_on(uint64_t* vmxon_pa) noexcept
 {
   uint8_t error = 0;
 
   asm volatile(
-    ".byte 0xf3, 0x0f, 0xc7, 0x30" "; setna %0"
+    ASM_VMX_VMXON_RAX "; setna %0"
     : "=q" (error)
-    : "a" (vmxon_pa)
+    : "a" (vmxon_pa), "m" (*vmxon_pa)
     : "memory", "cc"
     );
 
@@ -992,7 +1002,10 @@ inline uint8_t ia32_asm_vmx_vmlaunch(void) noexcept
   uint8_t error = 0;
 
   asm volatile(
-    "vmlaunch"
+    ASM_VMX_VMLAUNCH "; setna %0"
+    : "=q" (error)
+    : /* no reads  */
+    : "cc"
     );
 
   return error;
@@ -1014,7 +1027,7 @@ inline uint8_t ia32_asm_vmx_vmclear(uint64_t* vmcs_pa) noexcept
   uint8_t error = 0;
 
   asm volatile(
-    ".byte 0x66, 0x0f, 0xc7, 0x30" "; setna %0"
+    ASM_VMX_VMCLEAR_RAX "; setna %0"
     : "=qm" (error)
     : "a" (vmcs_pa), "m" (*vmcs_pa)
     : "cc", "memory"
@@ -1028,10 +1041,10 @@ inline uint8_t ia32_asm_vmx_vmread(uint64_t vmcs_field, uint64_t* value) noexcep
   uint8_t error = 0;
 
   asm volatile(
-    ".byte 0x0f, 0x78, 0x08" "; setna %0"
-    : "=q" (error)
-    : "a" (value), "c" (vmcs_field)
-    : "memory", "cc"
+    "vmread %2, %0; setna %1"
+    : "=r" (*value), "=qm" (error)
+    : "r" (vmcs_field)
+    : "cc"
     );
 
   return error;
@@ -1041,12 +1054,12 @@ inline uint8_t ia32_asm_vmx_vmwrite(uint64_t vmcs_field, uint64_t value) noexcep
 {
   uint8_t error = 0;
 
-   asm volatile (
-      "vmwrite %0, %1"
-      :
-      : "rm" (value),
-        "r" (vmcs_field)
-      );
+  asm volatile(
+    "vmwrite %1, %2; setna %0"
+    : "=qm" (error)
+    : "r" (value), "r" (vmcs_field)
+    : "cc"
+    );
 
   return error;
 }
@@ -1059,6 +1072,7 @@ inline uint64_t ia32_asm_vmx_vmcall(uint64_t rcx, uint64_t rdx, uint64_t r8, uin
     : "c" (rcx), "d" (rdx)
     : "cc"
     );
+  
   return 0;
 }
 
@@ -1077,7 +1091,7 @@ inline uint8_t ia32_asm_vmx_vmptr_write(uint64_t* vmcs_pa) noexcept
   uint8_t error = 0;
 
   asm volatile(
-    ".byte 0x0f, 0xc7, 0x30" "; setna %0"
+    ASM_VMX_VMPTRLD_RAX "; setna %0"
     : "=qm" (error)
     : "a" (vmcs_pa), "m" (*vmcs_pa)
     : "cc", "memory"
@@ -1091,11 +1105,10 @@ inline uint8_t ia32_asm_inv_ept(invept_t type, invept_desc_t* descriptor) noexce
   uint8_t error = 0;
 
   asm volatile(
-    "invept %0, %q1"
-    :
-    : "m" (*descriptor),
-      "r" (type)
-    : "memory"
+    ASM_VMX_INVEPT "; setna %0"
+    : "=q" (error)
+    : "d" (descriptor), "c" (type)
+    : "cc", "memory"
     );
   
   return error;
@@ -1106,11 +1119,10 @@ inline uint8_t ia32_asm_inv_vpid(invvpid_t type, invvpid_desc_t* descriptor) noe
   uint8_t error = 0;
 
   asm volatile(
-    "invvpid %0, %q1"
-    :
-    : "m" (*descriptor),
-      "r" (type)
-    : "memory"
+    ASM_VMX_INVVPID "; setna %0"
+    : "=q" (error)
+    : "d" (descriptor), "c" (type)
+    : "cc", "memory"
     );
 
   return error;

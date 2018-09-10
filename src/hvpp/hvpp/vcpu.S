@@ -39,11 +39,12 @@
 .globl _ZN4hvpp6vcpu_t12entry_guest_Ev
     _ZN4hvpp6vcpu_t12entry_guest_Ev:
 
+        ud2
 /*
- * RCX = &vcpu
+ * RDI = &vcpu
  * RBX = &vcpu.launch_context_
  */
-        leaq    VCPU_OFFSET(%rsp), %rcx
+        leaq    VCPU_OFFSET(%rsp), %rdi
         leaq    VCPU_LAUNCH_CONTEXT_OFFSET(%rsp), %rbx
 
 /*
@@ -56,7 +57,7 @@
  * Restore CPU context
  * Note that RBX is preserved, because it is non-volatile register
  */
-        movq    %rbx, %rcx
+        movq    %rbx, %rdi
         jmp     _ZN4ia329context_t7restoreEv
 
 /*
@@ -73,29 +74,30 @@
 
 .globl _ZN4hvpp6vcpu_t11entry_host_Ev
     _ZN4hvpp6vcpu_t11entry_host_Ev:
-        pushq   %rcx
+        ud2
+        pushq   %rdi
 
 /*
- * RCX = &vcpu.exit_context_
+ * RDI = &vcpu.exit_context_
  */
-        leaq    (VCPU_EXIT_CONTEXT_OFFSET + 8)(%rsp), %rcx
+        leaq    (VCPU_EXIT_CONTEXT_OFFSET + 8)(%rsp), %rdi
         call    _ZN4ia329context_t7captureEv
 
 /*
  * RBX = &vcpu.exit_context_
- * RCX = original value of RCX
+ * RDI = original value of RDI
  * RSP = original value of RSP
  */
-        movq    %rcx, %rbx
-        popq    %rcx
+        movq    %rdi, %rbx
+        popq    %rdi
 
-        movq    %rcx, CTX_OFF_RCX(%rbx)
+        movq    %rdi, CTX_OFF_RDI(%rbx)
         movq    %rsp, CTX_OFF_RSP(%rbx)
 
 /*
- * RCX = &vcpu
+ * RDI = &vcpu
  */
-        leaq    VCPU_OFFSET(%rsp), %rcx
+        leaq    VCPU_OFFSET(%rsp), %rdi
 
 /*
  * Create shadow space
@@ -107,5 +109,5 @@
  * Restore CPU context
  * Note that RBX is preserved, because it is non-volatile register
  */
-        movq    %rbx, %rcx
+        movq    %rbx, %rdi
         jmp     _ZN4ia329context_t7restoreEv

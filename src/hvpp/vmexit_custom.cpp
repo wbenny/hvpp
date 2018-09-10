@@ -6,6 +6,8 @@
 
 void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
 {
+                    hvpp_info("success");
+    mp::sleep(1000*1000);
   base_type::setup(vp);
 
 #if 1
