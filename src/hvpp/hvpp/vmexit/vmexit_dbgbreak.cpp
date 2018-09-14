@@ -2,6 +2,8 @@
 
 #include "hvpp/vcpu.h"
 
+#include "hvpp/lib/debugger.h"
+
 #include <iterator> // std::size()
 
 #define hvpp_break_if(value)                                    \
@@ -11,7 +13,7 @@
     bool flag_set   = true;                                     \
     if (value.compare_exchange_strong(flag_set, flag_clear))    \
     {                                                           \
-      ia32_asm_int3();                                          \
+      debugger::breakpoint();                                   \
     }                                                           \
   } while (0)
 
@@ -55,7 +57,7 @@ void vmexit_dbgbreak_handler::handle(vcpu_t& vp) noexcept
         hvpp_break_if(storage_.cpuid_0[vp.exit_context().eax]);
       }
       else if (vp.exit_context().eax >= 0x8000'0000u &&
-                vp.exit_context().eax < (0x8000'0000u + vmexit_dbgbreak_storage_t::cpuid_8_max))
+               vp.exit_context().eax < (0x8000'0000u + vmexit_dbgbreak_storage_t::cpuid_8_max))
       {
         hvpp_break_if(storage_.cpuid_8[vp.exit_context().eax - 0x8000'0000u]);
       }
@@ -118,7 +120,7 @@ void vmexit_dbgbreak_handler::handle(vcpu_t& vp) noexcept
         hvpp_break_if(storage_.rdmsr_0[vp.exit_context().ecx]);
       }
       else if (vp.exit_context().ecx >= 0xc000'0000u &&
-                vp.exit_context().ecx <= 0xc000'1fffu)
+               vp.exit_context().ecx <= 0xc000'1fffu)
       {
         hvpp_break_if(storage_.rdmsr_c[vp.exit_context().ecx - 0xc000'0000u]);
       }
@@ -134,7 +136,7 @@ void vmexit_dbgbreak_handler::handle(vcpu_t& vp) noexcept
         hvpp_break_if(storage_.wrmsr_0[vp.exit_context().ecx]);
       }
       else if (vp.exit_context().ecx >= 0xc000'0000u &&
-                vp.exit_context().ecx <= 0xc000'1fffu)
+               vp.exit_context().ecx <= 0xc000'1fffu)
       {
         hvpp_break_if(storage_.wrmsr_c[vp.exit_context().ecx - 0xc000'0000u]);
       }

@@ -2,8 +2,8 @@
 
 #include "hvpp/vcpu.h"
 
-#include "lib/log.h"
-#include "lib/mp.h" // mp::cpu_index()
+#include "hvpp/lib/log.h"
+#include "hvpp/lib/mp.h" // mp::cpu_index()
 
 #include <iterator> // std::size()
 

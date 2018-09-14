@@ -8,7 +8,7 @@
 #include "detours/detours.h"
 #include "udis86/udis86.h"
 
-#include "../hvpp/lib/ioctl.h"
+#include "../hvpp/hvpp/lib/ioctl.h"
 
 using ioctl_enable_io_debugbreak = ioctl_read_write_t<1, sizeof(uint16_t)>;
 

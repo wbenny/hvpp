@@ -62,7 +62,7 @@ read and navigate through 5000 pages with browser's built-in PDF reader.
 - Ability to run in VMWare (tested even with KVM - I advise to turn off [Hyper-V Enlightenments][kvm-hv-enlightenments],
   as it can [cause conflicts][ddimon-issue22]). VMWare's nested virtualization makes development and debugging of
   hypervisors much easier.
-- Simple custom memory manager ([see mm.cpp](src/hvpp/lib/mm.cpp)). The need for custom memory manager emerges from the
+- Simple custom memory manager ([see mm.cpp](src/hvpp/hvpp/lib/mm.cpp)). The need for custom memory manager emerges from the
   fact that you should think twice before calling any kernel function from VM-exit handler, because many of them can be
   called at IRQL <= DISPATCH_LEVEL (such as `ExAllocatePoolWithTag`). But in VM-exit handler, interrupts are disabled
   and your [IRQL is effectively HIGH_LEVEL][irql-in-vmx].
@@ -78,10 +78,12 @@ read and navigate through 5000 pages with browser's built-in PDF reader.
 
 ### Code workflow
 
-- Bootstrap of the driver ([driver.cpp](src/hvpp/lib/win32/driver.cpp))
+> Note: **hvpp** is compiled as a static library, which is linked with the **hvppdrv** project.
+
+- Bootstrap of the driver (hvpp, [driver.cpp](src/hvpp/hvpp/lib/win32/driver.cpp))
   - preallocate enough memory and initialize the **hvpp** memory manager
   - initialize the logger
-- Bootstrap of the hypervisor ([main.cpp](src/hvpp/main.cpp))
+- Bootstrap of the hypervisor (hvppdrv, [main.cpp](src/hvppdrv/main.cpp))
   - create **hvpp** instance
   - create **vmexit_handler** instance
 - Start the hypervisor with provided VM-exit handler (`hypervisor::start(vmexit_handler* handler)`)
@@ -90,7 +92,7 @@ read and navigate through 5000 pages with browser's built-in PDF reader.
   - assign provided `vmexit_handler` instance to each VCPU
   - launch all VCPUs - for each VCPU `vmexit_handler::setup()` is called within `vcpu_t::launch()` method, which
     allows anyone to initialize the VM-exit handler and/or modify the VMCS before the launch (see `custom_vmexit_handler::setup()`
-    in [custom_vmexit.cpp](src/hvpp/custom_vmexit.cpp))
+    in hvppdrv, [custom_vmexit.cpp](src/hvppdrv/custom_vmexit.cpp))
 - Hypervisor is now running and handling VM-exits via provided VM-exit handler
 - Terminate the hypervisor (`hypervisor::destroy()`)
   - destroy each VCPU via IPI - for each VCPU `vmexit_handler::invoke_termination()` is called within `vcpu_t::destroy()`
@@ -113,7 +115,7 @@ Enable [Test-Signing][test-signing] boot configuration option (note that you'll 
 
 [Register driver][sc-create] with Service Control Manager (yes, it's important to leave these spaces):
 
-`sc create hvpp type= kernel binPath= "C:\full\path\to\hvpp.sys"`
+`sc create hvpp type= kernel binPath= "C:\full\path\to\hvppdrv.sys"`
 
 Now you should restart your computer for **testsigning** to take effect, otherwise you'll be unable to start the driver.
 But before you do, you might want to prepare [DebugView][tools-debugview] from SysInternals and
@@ -122,7 +124,7 @@ But before you do, you might want to prepare [DebugView][tools-debugview] from S
 After restart, launch `DebugView` and `TraceView`. In `TraceView`:
 - go to `File -> Create New Log Session`, click on `Add Provider`
   - pick `Manually Entered Control GUID or Hashed Name`
-  - paste `916fcd3e-673b-4610-aaba-0b71e28acd40` (arbitrarily chosen, see [lib/win32/tracelog.cpp](src/hvpp/lib/win32/tracelog.cpp))
+  - paste `916fcd3e-673b-4610-aaba-0b71e28acd40` (arbitrarily chosen, see [lib/win32/tracelog.cpp](src/hvpp/hvpp/lib/win32/tracelog.cpp))
   - click `OK`
 - in the next dialog, leave the `Source Of WPP Format Information` set to `Auto`
   - click `OK`
@@ -152,7 +154,7 @@ Run **hvppctrl**:
 
 
 - **hvppctrl** performs `CPUID` instruction with `EAX = 0x70707668 ('hvpp')` which **hvpp** should intercept and return
-  string `hello from hvpp` in EAX, EBX, ECX and EDX registers (see [custom_vmexit.cpp](src/hvpp/custom_vmexit.cpp)).
+  string `hello from hvpp` in EAX, EBX, ECX and EDX registers (see [custom_vmexit.cpp](src/hvppdrv/custom_vmexit.cpp)).
   **hvppctrl** should print this string.
 
 - **hvppctrl** tries to "stealthily" hook `ntdll!ZwClose` function using EPT. The exact process is described

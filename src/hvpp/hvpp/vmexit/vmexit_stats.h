@@ -1,7 +1,7 @@
 #pragma once
 #include "hvpp/vmexit.h"
 
-#include "lib/bitmap.h"
+#include "hvpp/lib/bitmap.h"
 
 #include <atomic>
 

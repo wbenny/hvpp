@@ -25,14 +25,14 @@
     <TargetVersion>Windows7</TargetVersion>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <DriverType>WDM</DriverType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <TargetVersion>Windows7</TargetVersion>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <DriverType>WDM</DriverType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -67,12 +67,12 @@
       <SupportJustMyCode>false</SupportJustMyCode>
     </ClCompile>
     <Inf />
-    <Inf />
     <MASM />
     <Link>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
     </Link>
     <PostBuildEvent />
+    <Lib />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -90,17 +90,14 @@
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent />
+    <Lib>
+      <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
+    </Lib>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <Inf Include="hvpp.inf">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </Inf>
-  </ItemGroup>
   <ItemGroup>
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="device_custom.cpp" />
     <ClCompile Include="hvpp\ept.cpp" />
     <ClCompile Include="hvpp\hypervisor.cpp" />
     <ClCompile Include="hvpp\vcpu.cpp" />
@@ -111,29 +108,25 @@
     <ClCompile Include="hvpp\vmexit\vmexit_dbgbreak.cpp" />
     <ClCompile Include="hvpp\vmexit\vmexit_passthrough.cpp" />
     <ClCompile Include="hvpp\vmexit\vmexit_stats.cpp" />
-    <ClCompile Include="ia32\win32\memory.cpp" />
-    <ClCompile Include="lib\bitmap.cpp" />
-    <ClCompile Include="lib\driver.cpp" />
-    <ClCompile Include="lib\log.cpp" />
-    <ClCompile Include="lib\mm.cpp" />
-    <ClCompile Include="lib\vmware\vmware.cpp" />
-    <ClCompile Include="lib\win32\cr3_guard.cpp" />
-    <ClCompile Include="lib\win32\debugger.cpp" />
-    <ClCompile Include="lib\win32\device.cpp" />
-    <ClCompile Include="lib\win32\driver.cpp" />
-    <ClCompile Include="lib\win32\log.cpp" />
-    <ClCompile Include="lib\win32\mm.cpp" />
-    <ClCompile Include="lib\win32\mp.cpp" />
-    <ClCompile Include="lib\win32\tracelog.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="vmexit_custom.cpp" />
+    <ClCompile Include="hvpp\ia32\win32\memory.cpp" />
+    <ClCompile Include="hvpp\lib\bitmap.cpp" />
+    <ClCompile Include="hvpp\lib\driver.cpp" />
+    <ClCompile Include="hvpp\lib\log.cpp" />
+    <ClCompile Include="hvpp\lib\mm.cpp" />
+    <ClCompile Include="hvpp\lib\vmware\vmware.cpp" />
+    <ClCompile Include="hvpp\lib\win32\cr3_guard.cpp" />
+    <ClCompile Include="hvpp\lib\win32\debugger.cpp" />
+    <ClCompile Include="hvpp\lib\win32\device.cpp" />
+    <ClCompile Include="hvpp\lib\win32\driver.cpp" />
+    <ClCompile Include="hvpp\lib\win32\log.cpp" />
+    <ClCompile Include="hvpp\lib\win32\mm.cpp" />
+    <ClCompile Include="hvpp\lib\win32\mp.cpp" />
+    <ClCompile Include="hvpp\lib\win32\tracelog.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="device_custom.h" />
-    <ClInclude Include="lib\debugger.h" />
-    <ClInclude Include="lib\device.h" />
-    <ClInclude Include="lib\ioctl.h" />
-    <ClInclude Include="vmexit_custom.h" />
+    <ClInclude Include="hvpp\lib\debugger.h" />
+    <ClInclude Include="hvpp\lib\device.h" />
+    <ClInclude Include="hvpp\lib\ioctl.h" />
     <ClInclude Include="hvpp\config.h" />
     <ClInclude Include="hvpp\ept.h" />
     <ClInclude Include="hvpp\hypervisor.h" />
@@ -143,56 +136,56 @@
     <ClInclude Include="hvpp\vmexit\vmexit_passthrough.h" />
     <ClInclude Include="hvpp\vmexit\vmexit_stats.h" />
     <ClInclude Include="hvpp\vmexit_compositor.h" />
-    <ClInclude Include="ia32\arch.h" />
-    <ClInclude Include="ia32\arch\cr.h" />
-    <ClInclude Include="ia32\arch\dr.h" />
-    <ClInclude Include="ia32\arch\rflags.h" />
-    <ClInclude Include="ia32\arch\segment.h" />
-    <ClInclude Include="ia32\arch\xsave.h" />
-    <ClInclude Include="ia32\asm.h" />
-    <ClInclude Include="ia32\cpuid\cpuid_eax_01.h" />
-    <ClInclude Include="ia32\ept.h" />
-    <ClInclude Include="ia32\exception.h" />
-    <ClInclude Include="ia32\memory.h" />
-    <ClInclude Include="ia32\msr.h" />
-    <ClInclude Include="ia32\msr\arch.h" />
-    <ClInclude Include="ia32\msr\mtrr.h" />
-    <ClInclude Include="ia32\msr\vmx.h" />
-    <ClInclude Include="ia32\mtrr.h" />
-    <ClInclude Include="ia32\paging.h" />
-    <ClInclude Include="ia32\vmx.h" />
-    <ClInclude Include="ia32\vmx\exception_bitmap.h" />
-    <ClInclude Include="ia32\vmx\instruction_info.h" />
-    <ClInclude Include="ia32\vmx\instruction_error.h" />
-    <ClInclude Include="ia32\vmx\exit_qualification.h" />
-    <ClInclude Include="ia32\vmx\exit_reason.h" />
-    <ClInclude Include="ia32\vmx\interrupt.h" />
-    <ClInclude Include="ia32\vmx\io_bitmap.h" />
-    <ClInclude Include="ia32\vmx\msr_bitmap.h" />
-    <ClInclude Include="ia32\vmx\vmcs.h" />
-    <ClInclude Include="ia32\win32\asm.h" />
-    <ClInclude Include="lib\assert.h" />
-    <ClInclude Include="lib\bitmap.h" />
-    <ClInclude Include="lib\cr3_guard.h" />
-    <ClInclude Include="lib\driver.h" />
-    <ClInclude Include="lib\error.h" />
-    <ClInclude Include="lib\log.h" />
-    <ClInclude Include="lib\mm.h" />
-    <ClInclude Include="lib\mp.h" />
-    <ClInclude Include="lib\object.h" />
-    <ClInclude Include="lib\spinlock.h" />
-    <ClInclude Include="lib\typelist.h" />
-    <ClInclude Include="lib\vmware\vmware.h" />
+    <ClInclude Include="hvpp\ia32\arch.h" />
+    <ClInclude Include="hvpp\ia32\arch\cr.h" />
+    <ClInclude Include="hvpp\ia32\arch\dr.h" />
+    <ClInclude Include="hvpp\ia32\arch\rflags.h" />
+    <ClInclude Include="hvpp\ia32\arch\segment.h" />
+    <ClInclude Include="hvpp\ia32\arch\xsave.h" />
+    <ClInclude Include="hvpp\ia32\asm.h" />
+    <ClInclude Include="hvpp\ia32\cpuid\cpuid_eax_01.h" />
+    <ClInclude Include="hvpp\ia32\ept.h" />
+    <ClInclude Include="hvpp\ia32\exception.h" />
+    <ClInclude Include="hvpp\ia32\memory.h" />
+    <ClInclude Include="hvpp\ia32\msr.h" />
+    <ClInclude Include="hvpp\ia32\msr\arch.h" />
+    <ClInclude Include="hvpp\ia32\msr\mtrr.h" />
+    <ClInclude Include="hvpp\ia32\msr\vmx.h" />
+    <ClInclude Include="hvpp\ia32\mtrr.h" />
+    <ClInclude Include="hvpp\ia32\paging.h" />
+    <ClInclude Include="hvpp\ia32\vmx.h" />
+    <ClInclude Include="hvpp\ia32\vmx\exception_bitmap.h" />
+    <ClInclude Include="hvpp\ia32\vmx\instruction_info.h" />
+    <ClInclude Include="hvpp\ia32\vmx\instruction_error.h" />
+    <ClInclude Include="hvpp\ia32\vmx\exit_qualification.h" />
+    <ClInclude Include="hvpp\ia32\vmx\exit_reason.h" />
+    <ClInclude Include="hvpp\ia32\vmx\interrupt.h" />
+    <ClInclude Include="hvpp\ia32\vmx\io_bitmap.h" />
+    <ClInclude Include="hvpp\ia32\vmx\msr_bitmap.h" />
+    <ClInclude Include="hvpp\ia32\vmx\vmcs.h" />
+    <ClInclude Include="hvpp\ia32\win32\asm.h" />
+    <ClInclude Include="hvpp\lib\assert.h" />
+    <ClInclude Include="hvpp\lib\bitmap.h" />
+    <ClInclude Include="hvpp\lib\cr3_guard.h" />
+    <ClInclude Include="hvpp\lib\driver.h" />
+    <ClInclude Include="hvpp\lib\error.h" />
+    <ClInclude Include="hvpp\lib\log.h" />
+    <ClInclude Include="hvpp\lib\mm.h" />
+    <ClInclude Include="hvpp\lib\mp.h" />
+    <ClInclude Include="hvpp\lib\object.h" />
+    <ClInclude Include="hvpp\lib\spinlock.h" />
+    <ClInclude Include="hvpp\lib\typelist.h" />
+    <ClInclude Include="hvpp\lib\vmware\vmware.h" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="hvpp\vcpu.asm" />
-    <MASM Include="ia32\context.asm" />
-    <MASM Include="ia32\asm.asm" />
-    <MASM Include="lib\vmware\ioctx.asm" />
+    <MASM Include="hvpp\ia32\context.asm" />
+    <MASM Include="hvpp\ia32\asm.asm" />
+    <MASM Include="hvpp\lib\vmware\ioctx.asm" />
   </ItemGroup>
   <ItemGroup>
     <None Include="hvpp\vcpu.inl" />
-    <None Include="ia32\common.inc" />
+    <None Include="hvpp\ia32\common.inc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

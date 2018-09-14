@@ -3,10 +3,11 @@
 #include "hvpp/config.h"
 #include "hvpp/vcpu.h"
 
-#include "lib/cr3_guard.h"
+#include "hvpp/lib/cr3_guard.h"
+#include "hvpp/lib/debugger.h"
 
 #ifdef HVPP_ENABLE_VMWARE_WORKAROUND
-# include "lib/vmware/vmware.h"
+# include "hvpp/lib/vmware/vmware.h"
 #endif
 
 namespace hvpp {
@@ -225,7 +226,7 @@ void vmexit_passthrough_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
   }
   else if (vp.exit_context().rcx == vmcall_breakpoint_id)
   {
-    ia32_asm_int3();
+    debugger::breakpoint();
   }
   else
   {
