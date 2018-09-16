@@ -24,7 +24,7 @@ namespace mp::detail
     KeDelayExecutionThread(KernelMode, FALSE, &interval);
   }
 
-  void ipi_call(void(*callback)(void*) noexcept, void* context) noexcept
+  void ipi_call(void(*callback)(void*), void* context) noexcept
   {
     struct ipi_ctx
     {

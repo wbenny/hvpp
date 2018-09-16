@@ -12,7 +12,7 @@ namespace mp
     uint32_t cpu_count() noexcept;
     uint32_t cpu_index() noexcept;
     void     sleep(uint32_t milliseconds) noexcept;
-    void     ipi_call(void(*callback)(void*) noexcept, void* context) noexcept;
+    void     ipi_call(void(*callback)(void*), void* context) noexcept;
   }
 
   inline uint32_t cpu_count() noexcept
@@ -24,13 +24,16 @@ namespace mp
   inline void sleep(uint32_t milliseconds) noexcept
   { detail::sleep(milliseconds); }
 
-  inline void ipi_call(void(*callback)(void*) noexcept, void* context) noexcept
+  inline void ipi_call(void(*callback)(void*), void* context) noexcept
   { detail::ipi_call(callback, context); }
+
+  inline void ipi_call(void(*callback)()) noexcept
+  { detail::ipi_call([](void* context) { ((void(*)())context)(); }, callback); }
 
   template <
     typename T
   >
-  inline void ipi_call(T* instance, void (T::*member_function)() noexcept) noexcept
+  inline void ipi_call(T* instance, void (T::*member_function)()) noexcept
   {
     //
     // Inter-Processor Interrupt - runs specified method on all logical CPUs.
@@ -38,7 +41,7 @@ namespace mp
     struct ipi_ctx
     {
       T* instance;
-      void (T::*member_function)() noexcept;
+      void (T::*member_function)();
     } ipi_context {
       instance,
       member_function

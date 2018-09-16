@@ -19,7 +19,7 @@ class device_custom
     error_code_t on_ioctl(void* buffer, size_t buffer_size, uint32_t code) noexcept override;
 
   private:
-    void ioctl_enable_io_debugbreak(void* buffer, size_t buffer_size);
+    error_code_t ioctl_enable_io_debugbreak(void* buffer, size_t buffer_size);
 
     hvpp::vmexit_dbgbreak_handler* handler_ = nullptr;
 };

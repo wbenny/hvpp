@@ -14,13 +14,12 @@ void device_custom::handler(hvpp::vmexit_dbgbreak_handler& handler_instance) noe
   handler_ = &handler_instance;
 }
 
-auto device_custom::on_ioctl(void* buffer, size_t buffer_size, uint32_t code) noexcept -> error_code_t
+error_code_t device_custom::on_ioctl(void* buffer, size_t buffer_size, uint32_t code) noexcept
 {
   switch (code)
   {
     case ioctl_enable_io_debugbreak_t::code():
-      ioctl_enable_io_debugbreak(buffer, buffer_size);
-      return error_code_t{};
+      return ioctl_enable_io_debugbreak(buffer, buffer_size);
 
     default:
       hvpp_assert(0);
@@ -28,7 +27,7 @@ auto device_custom::on_ioctl(void* buffer, size_t buffer_size, uint32_t code) no
   }
 }
 
-void device_custom::ioctl_enable_io_debugbreak(void* buffer, size_t buffer_size)
+error_code_t device_custom::ioctl_enable_io_debugbreak(void* buffer, size_t buffer_size)
 {
   hvpp_assert(handler_);
   hvpp_assert(buffer);
@@ -36,7 +35,7 @@ void device_custom::ioctl_enable_io_debugbreak(void* buffer, size_t buffer_size)
 
   if (!buffer || buffer_size < ioctl_enable_io_debugbreak_t::size())
   {
-    return;
+    return make_error_code_t(std::errc::invalid_argument);
   }
 
   //
@@ -53,7 +52,7 @@ void device_custom::ioctl_enable_io_debugbreak(void* buffer, size_t buffer_size)
     // Set value of the output buffer (example).
     //
     io_port = 0xCAFE;
-    return;
+    return error_code_t{};
   }
 
   handler_->storage().io_in[io_port] = true;
@@ -65,4 +64,6 @@ void device_custom::ioctl_enable_io_debugbreak(void* buffer, size_t buffer_size)
   // Set value of the output buffer (example).
   //
   io_port = 0x1337;
+
+  return error_code_t{};
 }
