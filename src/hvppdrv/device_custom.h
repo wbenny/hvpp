@@ -5,7 +5,7 @@
 
 #include <cstdint>
 
-using ioctl_enable_io_debugbreak = ioctl_read_write_t<1, sizeof(uint16_t)>;
+using ioctl_enable_io_debugbreak_t = ioctl_read_write_t<1, sizeof(uint16_t)>;
 
 class device_custom
   : public device

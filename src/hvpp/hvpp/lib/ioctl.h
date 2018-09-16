@@ -112,7 +112,7 @@ struct ioctl_t
   static constexpr uint32_t size() noexcept { return Size; };
 };
 
-template <uint32_t Id, uint32_t Size>
+template <uint32_t Id>
 using ioctl_none_t = ioctl_t<Id, ioctl_access::none, 0>;
 
 template <uint32_t Id, uint32_t Size>
