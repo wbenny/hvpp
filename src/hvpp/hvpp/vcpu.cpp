@@ -19,7 +19,7 @@ auto vcpu_t::initialize(vmexit_handler* handler) noexcept -> error_code_t
   //
   // Fill out initial stack with garbage.
   //
-  memset(stack_, 0xcc, sizeof(stack_));
+  memset(stack_.data, 0xcc, sizeof(stack_));
 
   //
   // Reset guest and exit context.
@@ -403,7 +403,7 @@ void vcpu_t::setup_host() noexcept
   // RIP - aka instruction pointer - points to function which will be called
   // on every VM-exit.
   //
-  host_rsp(reinterpret_cast<uint64_t>(std::end(stack_)));
+  host_rsp(reinterpret_cast<uint64_t>(std::end(stack_.data)));
   host_rip(reinterpret_cast<uint64_t>(&vcpu_t::entry_host_));
 }
 
@@ -515,7 +515,7 @@ void vcpu_t::setup_guest() noexcept
   // This isn't a problem, because both guest and host will NOT be running at
   // the same time on the same VCPU.
   //
-  guest_rsp(reinterpret_cast<uint64_t>(std::end(stack_)));
+  guest_rsp(reinterpret_cast<uint64_t>(std::end(stack_.data)));
   guest_rip(reinterpret_cast<uint64_t>(&vcpu_t::entry_guest_));
 }
 
@@ -556,6 +556,18 @@ void vcpu_t::entry_host() noexcept
     exit_context_.rsp    = guest_rsp();
     exit_context_.rip    = guest_rip();
     exit_context_.rflags = guest_rflags();
+
+    //
+    // WinDbg will show full callstack (hypervisor + interrupted application)
+    // after these two lines are executed.
+    // See vcpu.asm for more details.
+    //
+    // Note that machine_frame.rip is supposed to hold return address.
+    // exit_instruction_length() is added to the guest_rip() to create
+    // this value.
+    //
+    stack_.machine_frame.rip = exit_context_.rip + exit_instruction_length();
+    stack_.machine_frame.rsp = exit_context_.rsp;
 
     {
       handler_->handle(*this);

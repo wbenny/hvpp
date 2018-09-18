@@ -15,8 +15,6 @@ using namespace ia32;
 
 class vmexit_handler;
 
-static constexpr int vcpu_stack_size = 0x8000;
-
 struct interrupt_info_t
 {
   public:
@@ -103,6 +101,47 @@ enum class vcpu_state
   //
   terminated,
 };
+
+//
+// Definition of the stack structure.
+// See vcpu.asm for more details.
+//
+
+static constexpr int vcpu_stack_size = 0x8000;
+
+struct vcpu_stack_t
+{
+  struct machine_frame_t
+  {
+    uint64_t rip;
+    uint64_t cs;
+    uint64_t eflags;
+    uint64_t rsp;
+    uint64_t ss;
+  };
+
+  struct shadow_space_t
+  {
+    uint64_t dummy[4];
+  };
+
+  union
+  {
+    uint8_t data[vcpu_stack_size];
+
+    struct
+    {
+      uint8_t         dummy[vcpu_stack_size
+                            - sizeof(shadow_space_t)
+                            - sizeof(machine_frame_t)];
+      shadow_space_t  shadow_space;
+      machine_frame_t machine_frame;
+    };
+  };
+};
+
+static_assert(sizeof(vcpu_stack_t) == vcpu_stack_size);
+static_assert(sizeof(vcpu_stack_t::shadow_space_t) == 32);
 
 class vcpu_t
 {
@@ -333,7 +372,7 @@ class vcpu_t
     // If you reorder following three members (stack, guest context and exit
     // context), you have to edit offsets in vcpu.asm.
     //
-    uint8_t            stack_[vcpu_stack_size];
+    vcpu_stack_t       stack_;
     context_t          guest_context_;
     context_t          exit_context_;
 
