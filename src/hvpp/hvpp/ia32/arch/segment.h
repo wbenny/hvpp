@@ -101,14 +101,27 @@ struct seg_descriptor_table_t
     return at(selector);
   }
 };
+
+struct seg_descriptor_table32_t
+{
+  uint16_t limit;
+  uint32_t base_address;
+};
 #pragma pack(pop)
 
 struct gdtr_t : seg_descriptor_table_t {};
 struct idtr_t : seg_descriptor_table_t {};
 
+struct gdtr32_t : seg_descriptor_table32_t {};
+struct idtr32_t : seg_descriptor_table32_t {};
+
 static_assert(sizeof(seg_descriptor_table_t) == 10);
 static_assert(sizeof(gdtr_t) == 10);
 static_assert(sizeof(idtr_t) == 10);
+
+static_assert(sizeof(seg_descriptor_table32_t) == 6);
+static_assert(sizeof(gdtr32_t) == 6);
+static_assert(sizeof(idtr32_t) == 6);
 
 #pragma pack(push, 1)
 struct seg_descriptor_entry_t

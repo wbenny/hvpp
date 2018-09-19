@@ -742,21 +742,60 @@ void vmexit_passthrough_handler::handle_gdtr_idtr_access(vcpu_t& vp) noexcept
   {
     gdtr_t gdtr;
     idtr_t idtr;
+
+    gdtr32_t gdtr32;
+    idtr32_t idtr32;
   };
 
   cr3_guard _(vp.guest_cr3());
+
+  //
+  // In legacy or compatibility mode, the destination operand
+  // is a 6-byte memory location. If the operand-size attribute
+  // is 16 or 32 bits, the 16-bit limit field of the register
+  // is stored in the low 2 bytes of the memory location and the
+  // 32-bit base address is stored in the high 4 bytes.
+  //
+  // In 64-bit mode, the operand size is fixed at 8+2 bytes.
+  // The instruction stores an 8-byte base and a 2-byte limit.
+  // (ref: Vol2B[(SGDT-Store Global Descriptor Table Register)])
+  //
+  // See also: Vol2B[(SIDT-Store Interrupt Descriptor Table Register)]
+  //
+  // TL;DR:
+  //   SGDT and SIDT instructions can be executed both from
+  //   x64 (long) mode and x86 mode (i.e.: by WoW64 processes).
+  //   But descriptor table register on x86 has different size
+  //   (6 bytes) than on x64 (10 bytes).
+  //   The size of written bytes must be correctly emulated.
+  //
+  auto guest_in_long_mode = [&vp]() noexcept -> bool {
+    auto   selector = vp.guest_segment_selector(context_t::seg_cs);
+    auto&  descriptor_entry = vp.guest_gdtr()[selector];
+
+    return descriptor_entry.access.long_mode;
+  };
 
   switch (instruction_info.instruction)
   {
     case vmx::instruction_info_gdtr_idtr_access_t::instruction_sgdt:
       gdtr = vp.guest_gdtr();
-      memcpy(guest_va, &gdtr, sizeof(gdtr));
+      memcpy(guest_va, &gdtr, guest_in_long_mode() ? sizeof(gdtr)
+                                                   : sizeof(gdtr32));
       break;
 
     case vmx::instruction_info_gdtr_idtr_access_t::instruction_sidt:
       idtr = vp.guest_idtr();
-      memcpy(guest_va, &idtr, sizeof(idtr));
+      memcpy(guest_va, &idtr, guest_in_long_mode() ? sizeof(idtr)
+                                                   : sizeof(idtr32));
       break;
+
+    //
+    // LGDT and LIDT instructions can be performed only when CPL=0
+    // (i.e.: in kernel mode).  Kernel mode code in Windows always
+    // runs in long mode, therefore we don't emulate the legacy or
+    // compatibility mode here.
+    //
 
     case vmx::instruction_info_gdtr_idtr_access_t::instruction_lgdt:
       memcpy(&gdtr, guest_va, sizeof(gdtr));
