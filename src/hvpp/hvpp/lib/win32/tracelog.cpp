@@ -2,8 +2,6 @@
 
 #include "../log.h"
 
-#include <iterator> // std::end()
-
 #include <ntddk.h>
 #include <TraceLoggingProvider.h>
 
