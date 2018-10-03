@@ -126,7 +126,11 @@ namespace driver
     //
     if (hypervisor_)
     {
-      hypervisor_->stop();
+      if (hypervisor_->is_started())
+      {
+        hypervisor_->stop();
+      }
+
       hypervisor_->destroy();
       delete hypervisor_;
     }

@@ -26,6 +26,7 @@ auto hypervisor::initialize() noexcept -> error_code_t
   vcpu_list_ = new vcpu_t[mp::cpu_count()];
   handler_ = nullptr;
   check_passed_ = false;
+  started_ = false;
 
   if (!vcpu_list_)
   {
@@ -47,12 +48,14 @@ void hypervisor::destroy() noexcept
     delete[] vcpu_list_;
     vcpu_list_ = nullptr;
     check_passed_ = false;
+    started_ = false;
   }
 }
 
 void hypervisor::start(vmexit_handler* handler) noexcept
 {
   hvpp_assert(vcpu_list_ && check_passed_ && handler);
+  hvpp_assert(!started_);
 
   handler_ = handler;
 
@@ -61,15 +64,31 @@ void hypervisor::start(vmexit_handler* handler) noexcept
 #else
   mp::ipi_call(this, &hypervisor::start_ipi_callback);
 #endif
+
+  started_ = true;
 }
 
 void hypervisor::stop() noexcept
 {
+  hvpp_assert(started_);
+
+  if (!started_)
+  {
+    return;
+  }
+
 #ifdef HVPP_SINGLE_VCPU
   single_cpu_call(stop_ipi_callback);
 #else
   mp::ipi_call(this, &hypervisor::stop_ipi_callback);
 #endif
+
+  started_ = false;
+}
+
+bool hypervisor::is_started() const noexcept
+{
+  return started_;
 }
 
 //
