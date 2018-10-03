@@ -1,7 +1,6 @@
 #pragma once
-#include "hvpp/lib/device.h"
-
-#include "hvpp/vmexit/vmexit_dbgbreak.h"
+#include <hvpp/lib/device.h>
+#include <hvpp/vmexit/vmexit_dbgbreak.h>
 
 #include <cstdint>
 
