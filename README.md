@@ -98,7 +98,7 @@ read and navigate through 5000 pages with browser's built-in PDF reader.
   - destroy each VCPU via IPI - for each VCPU `vmexit_handler::invoke_termination()` is called within `vcpu_t::destroy()`
     method, which should be responsible for switching into VMX mode and then call `vcpu_t::terminate()`
   - this is by default handled via `VMCALL` instruction
-  - `vcpu_t::terminate()` leaves VMX mode with `VMXOFF` instruction (which is available only in VMX mode), 
+  - `vcpu_t::terminate()` leaves VMX mode with `VMXOFF` instruction (which is available only in VMX mode),
 
 ### Compilation
 
@@ -198,7 +198,7 @@ Run **hvppctrl**:
     - because the function is still hooked, the hook function will be called and `HookCallCount` will be incremented
       again
   - prints value of `HookCallCount` and it's expected value - it should be 3
-- unhooks `ntdll!ZwClose` fuction
+- unhooks `ntdll!ZwClose` function
   - disassembles first 16 bytes of this function and prints them
     - printed instructions should now indicate that the function is **NOT** hooked - it should show the same content
       as when this function wasn't hooked
@@ -227,7 +227,7 @@ When you decide you want to turn off the **hvpp**, just execute:
 
 ### Remarks
 
-- **hvpp** is designed to virtualize already running OS - i.e. it's not cappable of running multiple guests like VMWare
+- **hvpp** is designed to virtualize already running OS - i.e. it's not capable of running multiple guests like VMWare
   or VirtualBox. It also lacks support for any nested VMX operations.
 - **hvpp** is designed to run only on 64bit Intel processors, which support VT-x and EPT. This makes the code more
   simple and less bloated.

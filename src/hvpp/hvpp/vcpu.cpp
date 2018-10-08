@@ -504,7 +504,7 @@ void vcpu_t::setup_guest() noexcept
   // Note that we would still get VM-exit for each MSR access, if the MSR ID
   // is out of following ranges:
   //   0x00000000 - 0x00001fff and
-  //   0x80000000 - 0x80001fff
+  //   0xc0000000 - 0xc0001fff
   //
   msr_bitmap(vmx::msr_bitmap_t{});
 
