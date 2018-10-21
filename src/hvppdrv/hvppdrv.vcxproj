@@ -70,6 +70,7 @@
     <MASM />
     <Link>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <AdditionalOptions>/INTEGRITYCHECK %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
@@ -87,6 +88,7 @@
     <Link>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <AdditionalOptions>/INTEGRITYCHECK %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
@@ -99,13 +101,21 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="device_custom.cpp" />
+    <ClCompile Include="hvpp_device.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="vmexit_custom.cpp" />
+    <ClCompile Include="monitor.cpp" />
+    <ClCompile Include="hvpp_vmexit_handler.cpp" />
+    <ClCompile Include="win32\inject.c" />
+    <ClCompile Include="win32\monitor.c" />
+    <ClCompile Include="win32\trace.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="device_custom.h" />
-    <ClInclude Include="vmexit_custom.h" />
+    <ClInclude Include="hvpp_device.h" />
+    <ClInclude Include="monitor.h" />
+    <ClInclude Include="hvpp_vmexit_handler.h" />
+    <ClInclude Include="win32\inject.h" />
+    <ClInclude Include="win32\monitor.h" />
+    <ClInclude Include="win32\trace.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\hvpp\hvpp.vcxproj">

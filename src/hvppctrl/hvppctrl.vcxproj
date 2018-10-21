@@ -95,36 +95,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="detours\detours.cpp" />
-    <ClCompile Include="detours\disasm.cpp" />
-    <ClCompile Include="detours\disolx64.cpp" />
-    <ClCompile Include="detours\disolx86.cpp" />
-    <ClCompile Include="detours\modules.cpp" />
-    <ClCompile Include="lib\mp.cpp" />
+    <ClCompile Include="install.c" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="udis86\decode.c" />
-    <ClCompile Include="udis86\itab.c" />
-    <ClCompile Include="udis86\syn-att.c" />
-    <ClCompile Include="udis86\syn-intel.c" />
-    <ClCompile Include="udis86\syn.c" />
-    <ClCompile Include="udis86\udis86.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="detours\detours.h" />
-    <ClInclude Include="detours\detver.h" />
-    <ClInclude Include="ia32\asm.h" />
-    <ClInclude Include="ia32\win32\asm.h" />
-    <ClInclude Include="lib\mp.h" />
-    <ClInclude Include="udis86\decode.h" />
-    <ClInclude Include="udis86\extern.h" />
-    <ClInclude Include="udis86\itab.h" />
-    <ClInclude Include="udis86\syn.h" />
-    <ClInclude Include="udis86\types.h" />
-    <ClInclude Include="udis86\udint.h" />
-    <ClInclude Include="udis86\udis86.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <MASM Include="ia32\asm.asm" />
+    <ClInclude Include="install.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -14,8 +14,10 @@ class hypervisor
     auto initialize() noexcept -> error_code_t;
     void destroy() noexcept;
 
-    void start(vmexit_handler* handler) noexcept;
+    auto start(vmexit_handler* handler) noexcept -> error_code_t;
     void stop() noexcept;
+
+    bool is_started() const noexcept;
 
   private:
     bool check_cpu_features() noexcept;
@@ -27,6 +29,7 @@ class hypervisor
     vcpu_t* vcpu_list_;
     vmexit_handler* handler_;
     bool check_passed_;
+    bool started_;
 };
 
 }

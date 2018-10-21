@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- ProjectConfigurations -->
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <!-- Common settings -->
+  <PropertyGroup Label="Globals">
+    <RootNamespace>hvppdll</RootNamespace>
+    <ProjectGuid>{558C8AC2-041C-44AC-B41C-2DAB9277A3AB}</ProjectGuid>
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup>
+    <TargetName>$(ProjectName)$(PlatformShortName)</TargetName>
+    <OutDir>$(SolutionDir)bin\$(PlatformShortName)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)bin\obj\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename)%(Extension).obj</ObjectFileName>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)src\DetoursNT\Detours\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <ExceptionHandling>false</ExceptionHandling>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <EntryPointSymbol>NtDllMain</EntryPointSymbol>
+    </Link>
+  </ItemDefinitionGroup>
+  <!-- Debug -->
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Optimization>Disabled</Optimization>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <!-- Release -->
+  <PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Optimization>MaxSpeed</Optimization>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <!-- Targets -->
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
+  </ImportGroup>
+  <!-- Items -->
+  <ItemGroup>
+    <ClCompile Include="crt.cpp" />
+    <ClCompile Include="device.cpp" />
+    <ClCompile Include="hook.cpp" />
+    <ClCompile Include="log.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DetoursNT\DetoursNT\DetoursNT.vcxproj">
+      <Project>{c78b9003-fc49-4bbf-8f29-52fad48bb58a}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ntdbg.h" />
+    <ClInclude Include="..\..\include\ntdll.h" />
+    <ClInclude Include="..\..\include\ntdll_ntdef.h" />
+    <ClInclude Include="..\..\include\ntdll_windows.h" />
+    <ClInclude Include="..\..\include\ntetw.h" />
+    <ClInclude Include="..\..\include\ntexapi.h" />
+    <ClInclude Include="..\..\include\ntgdi.h" />
+    <ClInclude Include="..\..\include\ntioapi.h" />
+    <ClInclude Include="..\..\include\ntkeapi.h" />
+    <ClInclude Include="..\..\include\ntldr.h" />
+    <ClInclude Include="..\..\include\ntlpcapi.h" />
+    <ClInclude Include="..\..\include\ntmisc.h" />
+    <ClInclude Include="..\..\include\ntmmapi.h" />
+    <ClInclude Include="..\..\include\ntnls.h" />
+    <ClInclude Include="..\..\include\ntobapi.h" />
+    <ClInclude Include="..\..\include\ntpebteb.h" />
+    <ClInclude Include="..\..\include\ntpfapi.h" />
+    <ClInclude Include="..\..\include\ntpnpapi.h" />
+    <ClInclude Include="..\..\include\ntpoapi.h" />
+    <ClInclude Include="..\..\include\ntpsapi.h" />
+    <ClInclude Include="..\..\include\ntregapi.h" />
+    <ClInclude Include="..\..\include\ntrtl.h" />
+    <ClInclude Include="..\..\include\ntsam.h" />
+    <ClInclude Include="..\..\include\ntseapi.h" />
+    <ClInclude Include="..\..\include\ntsmss.h" />
+    <ClInclude Include="..\..\include\nttmapi.h" />
+    <ClInclude Include="..\..\include\nttp.h" />
+    <ClInclude Include="..\..\include\ntwow64.h" />
+    <ClInclude Include="..\..\include\ntxcapi.h" />
+    <ClInclude Include="..\..\include\ntzwapi.h" />
+    <ClInclude Include="..\..\include\subprocesstag.h" />
+    <ClInclude Include="..\..\include\winsta.h" />
+    <ClInclude Include="crt.h" />
+    <ClInclude Include="device.h" />
+    <ClInclude Include="hook.h" />
+    <ClInclude Include="log.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="hook.inl" />
+  </ItemGroup>
+</Project>

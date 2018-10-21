@@ -130,6 +130,7 @@
     <ClInclude Include="hvpp\config.h" />
     <ClInclude Include="hvpp\ept.h" />
     <ClInclude Include="hvpp\hypervisor.h" />
+    <ClInclude Include="hvpp\lib\list.h" />
     <ClInclude Include="hvpp\vcpu.h" />
     <ClInclude Include="hvpp\vmexit.h" />
     <ClInclude Include="hvpp\vmexit\vmexit_dbgbreak.h" />

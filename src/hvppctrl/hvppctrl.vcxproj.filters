@@ -13,116 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source Files\ia32">
-      <UniqueIdentifier>{954e9a3e-d5ee-44a9-8c4a-f07315886feb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\detours">
-      <UniqueIdentifier>{5496b528-bb5e-4c74-8cc4-23f2e3e272cd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\detours">
-      <UniqueIdentifier>{d658c96b-fdca-479b-935f-b4af37e86f9f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\udis86">
-      <UniqueIdentifier>{df2ac193-816a-46f3-8e42-52a98af2b6c3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\udis86">
-      <UniqueIdentifier>{d3118134-63fa-43a8-ad0a-454304d5655a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\ia32">
-      <UniqueIdentifier>{713cc511-5407-4587-b6a3-f29377dedf69}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\ia32\win32">
-      <UniqueIdentifier>{6d4b3e43-7851-467a-9e29-1d556446f6d9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\lib">
-      <UniqueIdentifier>{0e081687-3159-4d80-a2af-e12e63f1dfb6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\lib">
-      <UniqueIdentifier>{bef50090-a281-4179-84b3-13bf7d79c204}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="detours\detours.cpp">
-      <Filter>Source Files\detours</Filter>
-    </ClCompile>
-    <ClCompile Include="detours\disolx64.cpp">
-      <Filter>Source Files\detours</Filter>
-    </ClCompile>
-    <ClCompile Include="detours\disolx86.cpp">
-      <Filter>Source Files\detours</Filter>
-    </ClCompile>
-    <ClCompile Include="detours\modules.cpp">
-      <Filter>Source Files\detours</Filter>
-    </ClCompile>
-    <ClCompile Include="detours\disasm.cpp">
-      <Filter>Source Files\detours</Filter>
-    </ClCompile>
-    <ClCompile Include="udis86\decode.c">
-      <Filter>Source Files\udis86</Filter>
-    </ClCompile>
-    <ClCompile Include="udis86\itab.c">
-      <Filter>Source Files\udis86</Filter>
-    </ClCompile>
-    <ClCompile Include="udis86\syn.c">
-      <Filter>Source Files\udis86</Filter>
-    </ClCompile>
-    <ClCompile Include="udis86\syn-att.c">
-      <Filter>Source Files\udis86</Filter>
-    </ClCompile>
-    <ClCompile Include="udis86\syn-intel.c">
-      <Filter>Source Files\udis86</Filter>
-    </ClCompile>
-    <ClCompile Include="udis86\udis86.c">
-      <Filter>Source Files\udis86</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\mp.cpp">
-      <Filter>Source Files\lib</Filter>
+    <ClCompile Include="install.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="detours\detours.h">
-      <Filter>Header Files\detours</Filter>
+    <ClInclude Include="install.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="detours\detver.h">
-      <Filter>Header Files\detours</Filter>
-    </ClInclude>
-    <ClInclude Include="udis86\decode.h">
-      <Filter>Header Files\udis86</Filter>
-    </ClInclude>
-    <ClInclude Include="udis86\extern.h">
-      <Filter>Header Files\udis86</Filter>
-    </ClInclude>
-    <ClInclude Include="udis86\itab.h">
-      <Filter>Header Files\udis86</Filter>
-    </ClInclude>
-    <ClInclude Include="udis86\syn.h">
-      <Filter>Header Files\udis86</Filter>
-    </ClInclude>
-    <ClInclude Include="udis86\types.h">
-      <Filter>Header Files\udis86</Filter>
-    </ClInclude>
-    <ClInclude Include="udis86\udint.h">
-      <Filter>Header Files\udis86</Filter>
-    </ClInclude>
-    <ClInclude Include="udis86\udis86.h">
-      <Filter>Header Files\udis86</Filter>
-    </ClInclude>
-    <ClInclude Include="ia32\asm.h">
-      <Filter>Header Files\ia32</Filter>
-    </ClInclude>
-    <ClInclude Include="ia32\win32\asm.h">
-      <Filter>Header Files\ia32\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\mp.h">
-      <Filter>Header Files\lib</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <MASM Include="ia32\asm.asm">
-      <Filter>Source Files\ia32</Filter>
-    </MASM>
   </ItemGroup>
 </Project>

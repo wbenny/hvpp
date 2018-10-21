@@ -17,24 +17,54 @@
       <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
       <Extensions>inf;inv;inx;mof;mc;</Extensions>
     </Filter>
+    <Filter Include="Source Files\win32">
+      <UniqueIdentifier>{1bb1ef99-5cdb-4fbe-8329-381042d7b27f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\win32">
+      <UniqueIdentifier>{f83e9c38-5d45-497d-b106-7e5529cc6a23}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vmexit_custom.cpp">
+    <ClCompile Include="monitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="device_custom.cpp">
+    <ClCompile Include="hvpp_device.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp_vmexit_handler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win32\monitor.c">
+      <Filter>Source Files\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="win32\inject.c">
+      <Filter>Source Files\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="win32\trace.c">
+      <Filter>Source Files\win32</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="vmexit_custom.h">
+    <ClInclude Include="monitor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="device_custom.h">
+    <ClInclude Include="hvpp_device.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp_vmexit_handler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win32\monitor.h">
+      <Filter>Header Files\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="win32\inject.h">
+      <Filter>Header Files\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="win32\trace.h">
+      <Filter>Header Files\win32</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

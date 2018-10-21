@@ -2,221 +2,18 @@
 #include <cstdint>
 
 #include <windows.h>
-
-#include "ia32/asm.h"
-#include "lib/mp.h"
-#include "detours/detours.h"
-#include "udis86/udis86.h"
+#include <evntrace.h>
+#include <evntcons.h>
 
 #include "../hvpp/hvpp/lib/ioctl.h"
 
-using ioctl_enable_io_debugbreak_t = ioctl_read_write_t<1, sizeof(uint16_t)>;
+using ioctl_monitor_start_t     = ioctl_read_t<1, sizeof(uint64_t)>;
+using ioctl_monitor_stop_t      = ioctl_none_t<1>;
 
-#define PAGE_SIZE       4096
-#define PAGE_ALIGN(Va)  ((PVOID)((ULONG_PTR)(Va) & ~(PAGE_SIZE - 1)))
+using ioctl_hypervisor_start_t  = ioctl_none_t<2>;
+using ioctl_hypervisor_stop_t   = ioctl_none_t<3>;
 
-// #define ia32_asm_vmx_vmcall(...)
-
-static int HookCallCount = 0;
-
-using pfnZwClose = NTSTATUS (*)(_In_ HANDLE Handle);
-
-DECLSPEC_NOINLINE
-NTSTATUS
-Hook_ZwClose(
-  _In_ HANDLE Handle
-  )
-{
-  HookCallCount += 1;
-  return 0;
-}
-
-void TestCpuid()
-{
-  //
-  // See vmexit_custom_handler::handle_execute_cpuid().
-  //
-  uint32_t CpuInfo[4];
-  ia32_asm_cpuid(CpuInfo, 'ppvh');
-
-  printf("CPUID: '%s'\n\n", (const char*)CpuInfo);
-}
-
-void TestHook()
-{
-  pfnZwClose ZwCloseFn = (pfnZwClose)GetProcAddress(LoadLibraryA("ntdll.dll"), "ZwClose");
-
-  //
-  // Save pointer to the function from which we want to hide the hook.
-  // Also, since EPTs have 4kb (PAGE_SIZE) granularity, it will allow
-  // us to switch just whole pages - not only few bytes.  Therefore
-  // we'll store pointer which is aligned to the page boundary.
-  //
-  PVOID OriginalFunction        = (PVOID)ZwCloseFn;
-  PVOID OriginalFunctionAligned = PAGE_ALIGN(OriginalFunction);
-
-  //
-  // Allocate memory where we'll copy the original content of the page
-  // we're about to hook.  We'll allocate size of 2 pages, since malloc()
-  // doesn't guarantee the return address is page aligned.  We have to
-  // do it ourselves.
-  //
-  PVOID OriginalFunctionBackup  = malloc(PAGE_SIZE * 2);
-  PVOID OriginalFunctionBackupAligned = PAGE_ALIGN((ULONG_PTR)OriginalFunctionBackup + PAGE_SIZE);
-  memcpy(OriginalFunctionBackupAligned, OriginalFunctionAligned, PAGE_SIZE);
-
-  //
-  // Store pointer to the function which will be called instead of
-  // the original one.
-  //
-  PVOID HookedFunction          = (PVOID)&Hook_ZwClose;
-
-  //
-  // Print useful information.
-  //
-  printf("OriginalFunction        : 0x%p\n", OriginalFunction);
-  printf("OriginalFunctionAligned : 0x%p\n", OriginalFunctionAligned);
-  printf("OriginalPage            : 0x%p\n", OriginalFunctionBackup);
-  printf("OriginalPageAligned     : 0x%p\n", OriginalFunctionBackupAligned);
-  printf("HookedFunction          : 0x%p\n", HookedFunction);
-  printf("\n");
-
-  //
-  // Define locally functions for disassembling, (un)hooking and
-  // (un)hiding.  Disassembling is useful to check what's in the
-  // memory if we request read access.
-  //
-  auto Disassemble = [](void* Address)
-  {
-    ud_t u;
-    ud_init(&u);
-
-    ud_set_input_buffer(&u, (uint8_t*)Address, 16);
-    ud_set_mode(&u, 64);
-    ud_set_syntax(&u, UD_SYN_INTEL);
-
-    while (ud_disassemble(&u))
-    {
-      printf("\t%s\n", ud_insn_asm(&u));
-    }
-  };
-
-  auto Hook = [](void** OriginalFunction, void* HookedFunction)
-  {
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourAttach(OriginalFunction, HookedFunction);
-    DetourTransactionCommit();
-  };
-
-  auto Unhook = [](void** OriginalFunction, void* HookedFunction)
-  {
-    DetourTransactionBegin();
-    DetourUpdateThread(GetCurrentThread());
-    DetourDetach(OriginalFunction, HookedFunction);
-    DetourTransactionCommit();
-  };
-
-  auto Hide = [](void* PageRead, void* PageExecute)
-  {
-    struct CONTEXT { void* PageRead; void* PageExecute; } Context { PageRead, PageExecute };
-    ForEachLogicalCore([](void* ContextPtr) {
-      CONTEXT* Context = (CONTEXT*)ContextPtr;
-      ia32_asm_vmx_vmcall(0xc1, (uint64_t)Context->PageRead, (uint64_t)Context->PageExecute, 0);
-    }, &Context);
-  };
-
-  auto Unhide = []()
-  {
-    ForEachLogicalCore([](void*) { ia32_asm_vmx_vmcall(0xc2, 0, 0, 0); }, nullptr);
-  };
-
-  //
-  // Lock the pages in the RAM.  Hopefully, they won't be swapped out.
-  //
-
-  VirtualLock(OriginalFunctionAligned, PAGE_SIZE);
-  VirtualLock(OriginalFunctionBackupAligned, PAGE_SIZE);
-
-  //
-  // No hooks, no hiding - call the original function.
-  //
-
-  printf("Original:\n");
-  Disassemble(ZwCloseFn);
-  ZwCloseFn(NULL);
-  printf("HookCallCount = %i (expected: 0)\n\n", HookCallCount);
-  printf("\n");
-
-  //
-  // Hook the function and call it.  If the hooking was successful,
-  // HookCallCount should be already incremented.
-  //
-
-  printf("Hook:\n");
-  Hook(&OriginalFunction, HookedFunction);
-  Disassemble(ZwCloseFn);
-  ZwCloseFn(NULL);
-  printf("HookCallCount = %i (expected: 1)\n\n", HookCallCount);
-  printf("\n");
-
-  //
-  // Hide the hook and instruct the hypervisor to return memory of
-  // "OriginalFunctionBackupAligned" when read    is requested and
-  // "OriginalFunctionAligned"       when execute is requested.
-  //
-  // The output of Disassemble() should be same as when we called it
-  // without any hooks, but the call of the function should be detoured
-  // to our hook function - therefore HookCallCount should be incremented
-  // again.
-  //
-
-  printf("Hide:\n");
-  Hide(OriginalFunctionBackupAligned, OriginalFunctionAligned);
-  Disassemble(ZwCloseFn);
-  ZwCloseFn(NULL);
-  printf("HookCallCount = %i (expected: 2)\n\n", HookCallCount);
-  printf("\n");
-
-  //
-  // Unhide the hook and instruct the hypervisor to return original
-  // pages for both read and execute.  The output of Disassemble()
-  // should be same as when we called it after hooking and the call
-  // should be still detoured to our hook function.  HookCallCount
-  // should be incremented again.
-  //
-
-  printf("Unhide:\n");
-  Unhide();
-  Disassemble(ZwCloseFn);
-  ZwCloseFn(NULL);
-  printf("HookCallCount = %i (expected: 3)\n\n", HookCallCount);
-  printf("\n");
-
-  //
-  // Unhook the function.  Disassemble() should be same as when we
-  // called it without any hooks and the call of the function should
-  // call the original function - therefore HookCallCount shouldn't
-  // be incremented this time.
-  //
-
-  printf("Unhook:\n");
-  Unhook(&OriginalFunction, HookedFunction);
-  Disassemble(ZwCloseFn);
-  ZwCloseFn(NULL);
-  printf("HookCallCount = %i (expected: 3)\n\n", HookCallCount);
-  printf("\n");
-
-  //
-  // Finally, unlock the pages and free them.
-  //
-
-  VirtualUnlock(OriginalFunctionAligned, PAGE_SIZE);
-  VirtualUnlock(OriginalFunctionBackupAligned, PAGE_SIZE);
-  free(OriginalFunctionBackup);
-}
-
-void TestIoControl()
+void EnableMonitor()
 {
   HANDLE DeviceHandle;
 
@@ -234,40 +31,247 @@ void TestIoControl()
     return;
   }
 
-  //
-  // Issue IOCTL call to the driver.
-  // When kernel debugger is attached, this IOCTL will instruct
-  // the hypervisor to set one-time breakpoint when IN/OUT
-  // instruction from/to port 0x64 (keyboard I/O port) is executed.
-  //
-  // See hvpp/device_custom.cpp.
-  //
-
-  UINT16 IoPort = 0x64;
+  HANDLE ProcessId = (HANDLE)(ULONG_PTR)GetCurrentProcessId();
   DWORD BytesReturned;
   DeviceIoControl(DeviceHandle,
-                  ioctl_enable_io_debugbreak_t::code(),
-                  &IoPort,
-                  sizeof(IoPort),
-                  &IoPort,
-                  sizeof(IoPort),
+                  ioctl_monitor_start_t::code(),
+                  &ProcessId,
+                  sizeof(ProcessId),
+                  NULL,
+                  0,
                   &BytesReturned,
                   NULL);
 
   CloseHandle(DeviceHandle);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+//
+// GUID:
+//   {a4b4ba50-a667-43f5-919b-1e52a6d69bd5}
+//
+
+GUID ProviderGuid = {
+  0xa4b4ba50, 0xa667, 0x43f5, { 0x91, 0x9b, 0x1e, 0x52, 0xa6, 0xd6, 0x9b, 0xd5 }
+};
+
+//
+// GUID:
+//   {53d82d11-cede-4dff-8eb4-f06631800128}
+//
+
+GUID SessionGuid = {
+  0x53d82d11, 0xcede, 0x4dff, { 0x8e, 0xb4, 0xf0, 0x66, 0x31, 0x80, 0x1, 0x28 }
+};
+
+TCHAR SessionName[] = TEXT("InjSession");
+
+VOID
+WINAPI
+TraceEventCallback(
+  _In_ PEVENT_RECORD EventRecord
+  )
+{
+  if (!EventRecord->UserData)
+  {
+    return;
+  }
 
   //
-  // Return value should be 0x1337 if the kernel debugger
-  // is attached, 0xCAFE otherwise.
+  // TODO: Check that EventRecord contains only WCHAR string.
   //
-  printf("IOCTL return value: 0x%04x (size: %u)\n", IoPort, BytesReturned);
+
+  wprintf(L"[PID:%04X][TID:%04X] %s\n",
+          EventRecord->EventHeader.ProcessId,
+          EventRecord->EventHeader.ThreadId,
+          (PWCHAR)EventRecord->UserData);
+}
+
+ULONG
+NTAPI
+TraceStart(
+  VOID
+  )
+{
+  //
+  // Start new trace session.
+  // For an awesome blogpost on ETW API, see:
+  // https://caseymuratori.com/blog_0025
+  //
+
+  ULONG ErrorCode;
+
+  TRACEHANDLE TraceSessionHandle = INVALID_PROCESSTRACE_HANDLE;
+  TRACEHANDLE TraceHandle = INVALID_PROCESSTRACE_HANDLE;
+  EVENT_TRACE_LOGFILE TraceLogfile = { 0 };
+
+  BYTE Buffer[sizeof(EVENT_TRACE_PROPERTIES) + 4096];
+  RtlZeroMemory(Buffer, sizeof(Buffer));
+
+  PEVENT_TRACE_PROPERTIES EventTraceProperties = (PEVENT_TRACE_PROPERTIES)Buffer;
+  EventTraceProperties->Wnode.BufferSize = sizeof(Buffer);
+
+  RtlZeroMemory(Buffer, sizeof(Buffer));
+  EventTraceProperties->Wnode.BufferSize = sizeof(Buffer);
+  EventTraceProperties->Wnode.ClientContext = 1; // Use QueryPerformanceCounter, see MSDN
+  EventTraceProperties->Wnode.Flags = WNODE_FLAG_TRACED_GUID;
+  EventTraceProperties->LogFileMode = PROCESS_TRACE_MODE_REAL_TIME;
+  EventTraceProperties->LoggerNameOffset = sizeof(EVENT_TRACE_PROPERTIES);
+
+  ErrorCode = StartTrace(&TraceSessionHandle, SessionName, EventTraceProperties);
+  if (ErrorCode != ERROR_SUCCESS)
+  {
+    goto Exit;
+  }
+
+  //
+  // Enable tracing of our provider.
+  //
+
+  ErrorCode = EnableTrace(TRUE, 0, 0, &ProviderGuid, TraceSessionHandle);
+  if (ErrorCode != ERROR_SUCCESS)
+  {
+    goto Exit;
+  }
+
+  TraceLogfile.LoggerName = SessionName;
+  TraceLogfile.ProcessTraceMode = PROCESS_TRACE_MODE_EVENT_RECORD | PROCESS_TRACE_MODE_REAL_TIME;
+  TraceLogfile.EventRecordCallback = &TraceEventCallback;
+
+  //
+  // Open real-time tracing session.
+  //
+
+  TraceHandle = OpenTrace(&TraceLogfile);
+  if (TraceHandle == INVALID_PROCESSTRACE_HANDLE)
+  {
+    //
+    // Synthetic error code.
+    //
+    ErrorCode = ERROR_FUNCTION_FAILED;
+    goto Exit;
+  }
+
+  //
+  // Process trace events.  This call is blocking.
+  //
+
+  ErrorCode = ProcessTrace(&TraceHandle, 1, NULL, NULL);
+
+Exit:
+  if (TraceHandle != INVALID_PROCESSTRACE_HANDLE)
+  {
+    CloseTrace(TraceHandle);
+  }
+
+  if (TraceSessionHandle != INVALID_PROCESSTRACE_HANDLE)
+  {
+    CloseTrace(TraceSessionHandle);
+  }
+
+  RtlZeroMemory(Buffer, sizeof(Buffer));
+  EventTraceProperties->Wnode.BufferSize = sizeof(Buffer);
+  StopTrace(0, SessionName, EventTraceProperties);
+
+  if (ErrorCode != ERROR_SUCCESS)
+  {
+    printf("Error: %08x\n", ErrorCode);
+  }
+
+  return ErrorCode;
+}
+
+VOID
+NTAPI
+TraceStop(
+  VOID
+  )
+{
+  BYTE Buffer[sizeof(EVENT_TRACE_PROPERTIES) + 4096];
+  RtlZeroMemory(Buffer, sizeof(Buffer));
+
+  PEVENT_TRACE_PROPERTIES EventTraceProperties = (PEVENT_TRACE_PROPERTIES)Buffer;
+  EventTraceProperties->Wnode.BufferSize = sizeof(Buffer);
+
+  StopTrace(0, SessionName, EventTraceProperties);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+BOOL
+WINAPI
+CtrlCHandlerRoutine(
+  _In_ DWORD dwCtrlType
+  )
+{
+  if (dwCtrlType == CTRL_C_EVENT)
+  {
+    //
+    // Ctrl+C was pressed, stop the trace session.
+    //
+    printf("Ctrl+C pressed, stopping trace session...\n");
+
+    TraceStop();
+  }
+
+  return FALSE;
+}
+
+DWORD
+WINAPI
+TraceThreadRoutine(
+  LPVOID lpParam
+  )
+{
+  //
+  // Stop any previous trace session (if exists).
+  //
+
+  TraceStop();
+
+  printf("Starting tracing session...\n");
+
+  ULONG ErrorCode = TraceStart();
+
+  return ErrorCode;
 }
 
 int main()
 {
-  TestCpuid();
-  TestHook();
-  TestIoControl();
+  //LoadLibrary(TEXT("hvppdllx64.dll"));
+
+  SetConsoleCtrlHandler(&CtrlCHandlerRoutine, TRUE);
+
+  HANDLE TraceHandle = CreateThread(NULL, 0, &TraceThreadRoutine, NULL, 0, NULL);
+  Sleep(100);
+
+  EnableMonitor();
+  //system("start notepad");
+
+  STARTUPINFO StartupInfo = { 0 };
+  PROCESS_INFORMATION ProcessInformation;
+
+  StartupInfo.cb = sizeof(StartupInfo);
+
+  CreateProcess(TEXT("C:\\windows\\notepad.exe"),   // Name of program to execute
+                NULL,                  // Command line
+                NULL,                  // Process handle not inheritable
+                NULL,                  // Thread handle not inheritable
+                FALSE,                 // Set handle inheritance to FALSE
+                0,                     // No creation flags
+                NULL,                  // Use parent's environment block
+                NULL,                  // Use parent's starting directory
+                &StartupInfo,          // Pointer to STARTUPINFO structure
+                &ProcessInformation);  // Pointer to PROCESS_INFORMATION structure
+
+  CloseHandle(ProcessInformation.hProcess);
+  CloseHandle(ProcessInformation.hThread);
+
+  printf("Waiting to stop...\n");
+  WaitForSingleObject(TraceHandle, INFINITE);
+
+  //LoadLibrary(TEXT("hvppdllx64.dll"));
 
   return 0;
 }

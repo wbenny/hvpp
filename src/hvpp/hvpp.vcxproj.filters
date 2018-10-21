@@ -290,6 +290,9 @@
     <ClInclude Include="hvpp\lib\ioctl.h">
       <Filter>Header Files\hvpp\lib</Filter>
     </ClInclude>
+    <ClInclude Include="hvpp\lib\list.h">
+      <Filter>Header Files\hvpp\lib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="hvpp\ia32\context.asm">
