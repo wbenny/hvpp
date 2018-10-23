@@ -4,13 +4,14 @@
 
 namespace hvpp {
 
-auto vmexit_c_wrapper_handler::initialize(const c_handler_array_t& c_handlers) noexcept -> error_code_t
+auto vmexit_c_wrapper_handler::initialize(const c_handler_array_t& c_handlers, void* context) noexcept -> error_code_t
 {
   //
   // Make local copy of the C-handlers.
   //
 
   c_handlers_ = c_handlers;
+  context_ = context;
 
   return error_code_t{};
 }
@@ -36,6 +37,7 @@ void vmexit_c_wrapper_handler::handle(vcpu_t& vp) noexcept
 
     passthrough_context context;
     context.passthrough_routine = (passthrough_fn_t)&vmexit_c_wrapper_handler::handle_passthrough;
+    context.context             = context_;
     context.handler_instance    = this;
     context.handler_method      = cpp_handler;
     context.vcpu                = &vp;

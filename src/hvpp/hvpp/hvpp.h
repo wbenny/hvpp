@@ -833,11 +833,15 @@ typedef VOID (NTAPI* PVMEXIT_PASSTROUGH_ROUTINE)(
 typedef struct _VMEXIT_PASSTHROUGH
 {
   PVMEXIT_PASSTROUGH_ROUTINE PasstroughRoutine;
+  PVOID Context;
   // UCHAR Data[1];
 } VMEXIT_PASSTHROUGH, *PVMEXIT_PASSTHROUGH;
 
 #define HvppVmExitPassthrough(Passthrough)                    \
   (((PVMEXIT_PASSTHROUGH)(Passthrough))->PasstroughRoutine(Passthrough));
+
+#define HvppVmExitContext(Passthrough)                        \
+  ((PVMEXIT_PASSTHROUGH)(Passthrough)->Context)
 
 //////////////////////////////////////////////////////////////////////////
 // VM-exit handler.
@@ -851,6 +855,7 @@ typedef VOID (NTAPI* PVMEXIT_HANDLER_ROUTINE)(
 typedef struct _VMEXIT_HANDLER
 {
   PVMEXIT_HANDLER_ROUTINE HandlerRoutine[VMEXIT_REASON_MAX];
+  PVOID Context;
 } VMEXIT_HANDLER, *PVMEXIT_HANDLER;
 
 //////////////////////////////////////////////////////////////////////////

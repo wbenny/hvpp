@@ -16,7 +16,7 @@ class vmexit_c_wrapper_handler
 
     using c_handler_array_t = std::array<c_handler_fn_t, 65>;
 
-    auto initialize(const c_handler_array_t& c_handlers) noexcept -> error_code_t;
+    auto initialize(const c_handler_array_t& c_handlers, void* context = nullptr) noexcept -> error_code_t;
     void destroy() noexcept;
 
     void handle(vcpu_t& vp) noexcept override;
@@ -27,6 +27,7 @@ class vmexit_c_wrapper_handler
     struct passthrough_context
     {
       passthrough_fn_t          passthrough_routine;
+      void*                     context;
       vmexit_c_wrapper_handler* handler_instance;
       handler_fn_t              handler_method;
       vcpu_t*                   vcpu;
@@ -35,6 +36,7 @@ class vmexit_c_wrapper_handler
     static void handle_passthrough(passthrough_context* context) noexcept;
 
     c_handler_array_t c_handlers_;
+    void* context_;
 };
 
 }

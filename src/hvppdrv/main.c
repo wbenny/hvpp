@@ -80,10 +80,12 @@ DriverEntry(
   PHVPP Hypervisor;
   HvppInitialize(&Hypervisor);
 
-  VMEXIT_HANDLER VmExitHandler = { 0 };
-  VmExitHandler.HandlerRoutine[VMEXIT_REASON_EXECUTE_CPUID] = &HvppHandleExecuteCpuid;
-  VmExitHandler.HandlerRoutine[VMEXIT_REASON_EXECUTE_VMCALL] = &HvppHandleExecuteVmcall;
-  VmExitHandler.HandlerRoutine[VMEXIT_REASON_EPT_VIOLATION] = &HvppHandleEptViolation;
+  VMEXIT_HANDLER VmExitHandler = { {
+    [VMEXIT_REASON_EXECUTE_CPUID] = &HvppHandleExecuteCpuid,
+    [VMEXIT_REASON_EXECUTE_VMCALL] = &HvppHandleExecuteVmcall,
+    [VMEXIT_REASON_EPT_VIOLATION] = &HvppHandleEptViolation,
+  } };
+
   HvppStart(Hypervisor, &VmExitHandler);
 
   return STATUS_SUCCESS;
