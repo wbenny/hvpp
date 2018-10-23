@@ -216,7 +216,7 @@ HvppInitialize(
   // Allocate memory for the hypervisor instance.
   //
 
-  *Hvpp = memory_manager::system_allocate(sizeof(hypervisor));
+  *Hvpp = (PHVPP)new hypervisor();
 
   if (!*Hvpp)
   {
@@ -246,7 +246,8 @@ HvppDestroy(
   //
 
   hvpp_->destroy();
-  memory_manager::system_free(hvpp_);
+  delete &hvpp_->exit_handler();
+  delete  hvpp_;
 
   //
   // Destroy the memory manager and logger.

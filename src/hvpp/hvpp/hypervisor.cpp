@@ -24,7 +24,7 @@ namespace hvpp {
 auto hypervisor::initialize() noexcept -> error_code_t
 {
   vcpu_list_ = new vcpu_t[mp::cpu_count()];
-  handler_ = nullptr;
+  exit_handler_ = nullptr;
   check_passed_ = false;
   started_ = false;
 
@@ -72,7 +72,7 @@ auto hypervisor::start(vmexit_handler* handler) noexcept -> error_code_t
     return make_error_code_t(std::errc::operation_not_permitted);
   }
 
-  handler_ = handler;
+  exit_handler_ = handler;
 
 #ifdef HVPP_SINGLE_VCPU
   single_cpu_call(start_ipi_callback);
@@ -106,6 +106,11 @@ void hypervisor::stop() noexcept
 bool hypervisor::is_started() const noexcept
 {
   return started_;
+}
+
+auto hypervisor::exit_handler() noexcept -> vmexit_handler&
+{
+  return *exit_handler_;
 }
 
 //
@@ -174,7 +179,7 @@ void hypervisor::start_ipi_callback() noexcept
   //   - create new error_category for VMX errors
   //
   auto idx = mp::cpu_index();
-  vcpu_list_[idx].initialize(handler_);
+  vcpu_list_[idx].initialize(exit_handler_);
   vcpu_list_[idx].launch();
 }
 

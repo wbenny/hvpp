@@ -18,6 +18,7 @@ class hypervisor
     void stop() noexcept;
 
     bool is_started() const noexcept;
+    auto exit_handler() noexcept -> vmexit_handler&;
 
   private:
     bool check_cpu_features() noexcept;
@@ -27,7 +28,7 @@ class hypervisor
     void check_ipi_callback() noexcept;
 
     vcpu_t* vcpu_list_;
-    vmexit_handler* handler_;
+    vmexit_handler* exit_handler_;
     bool check_passed_;
     bool started_;
 };
