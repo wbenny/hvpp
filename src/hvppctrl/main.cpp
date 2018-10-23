@@ -237,9 +237,17 @@ TraceThreadRoutine(
   return ErrorCode;
 }
 
+extern "C" void __cpuid(int[4], int);
+#pragma intrinsic(__cpuid)
+
 int main()
 {
   //LoadLibrary(TEXT("hvppdllx64.dll"));
+
+  uint32_t CpuInfo[4];
+  __cpuid((int*)CpuInfo, (int)'ppvh');
+
+  printf("CPUID: '%s'\n\n", (const char*)CpuInfo);
 
   SetConsoleCtrlHandler(&CtrlCHandlerRoutine, TRUE);
 

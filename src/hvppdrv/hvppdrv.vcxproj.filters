@@ -46,6 +46,9 @@
     <ClCompile Include="win32\trace.c">
       <Filter>Source Files\win32</Filter>
     </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="monitor.h">

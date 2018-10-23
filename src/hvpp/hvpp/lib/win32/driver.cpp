@@ -1,7 +1,9 @@
 #include "../driver.h"
-#include "../device.h"
 
+#include "../device.h"
 #include "../error.h"
+
+#include "../../config.h"
 
 #include <algorithm>
 
@@ -23,6 +25,8 @@
 EXTERN_C DRIVER_INITIALIZE DriverEntry;
 
 PDRIVER_OBJECT GlobalDriverObject = nullptr;
+
+#if !defined(HVPP_CUSTOM_DRIVER_ENTRY)
 
 NTSTATUS
 ErrorCodeToNtStatus(
@@ -169,3 +173,5 @@ DriverEntry(
 
   return ErrorCodeToNtStatus(err);
 }
+
+#endif

@@ -5,6 +5,8 @@
 #include "mp.h"
 #include "log.h"
 
+#include "../config.h"
+
 #include <cinttypes>
 
 namespace driver::common
@@ -87,15 +89,21 @@ namespace driver::common
       return err;
     }
 
+#if defined(HVPP_CUSTOM_DRIVER_ENTRY)
+    return error_code_t{};
+#else
     return ::driver::initialize();
+#endif
   }
 
   void destroy() noexcept
   {
+#if !defined(HVPP_CUSTOM_DRIVER_ENTRY)
     //
     // Call driver's destroy() function.
     //
     ::driver::destroy();
+#endif
 
     //
     // Destroy memory manager and logger.

@@ -102,6 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hvpp_device.cpp" />
+    <ClCompile Include="main.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="monitor.cpp" />
     <ClCompile Include="hvpp_vmexit_handler.cpp" />

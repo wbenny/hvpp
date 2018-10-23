@@ -1,5 +1,7 @@
 #pragma once
 
+#define HVPP_CUSTOM_DRIVER_ENTRY
+
 //
 // Uncomment this if you want to subvert just one CPU (with ID 0).
 // This can be helpful for debugging purposes.
