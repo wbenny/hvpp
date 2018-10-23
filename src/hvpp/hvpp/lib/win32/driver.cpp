@@ -170,7 +170,8 @@ DriverEntry(
   DriverObject->MajorFunction[IRP_MJ_WRITE]          = &DriverDispatch;
   DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = &DriverDispatch;
 
-  auto err = driver::common::initialize();
+  auto err = driver::common::initialize(&driver::initialize,
+                                        &driver::destroy);
 
   return ErrorCodeToNtStatus(err);
 }

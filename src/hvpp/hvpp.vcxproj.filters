@@ -108,9 +108,6 @@
     <ClCompile Include="hvpp\lib\win32\mm.cpp">
       <Filter>Source Files\hvpp\lib\win32</Filter>
     </ClCompile>
-    <ClCompile Include="hvpp\lib\win32\driver.cpp">
-      <Filter>Source Files\hvpp\lib\win32</Filter>
-    </ClCompile>
     <ClCompile Include="hvpp\lib\driver.cpp">
       <Filter>Source Files\hvpp\lib</Filter>
     </ClCompile>
@@ -131,6 +128,12 @@
     </ClCompile>
     <ClCompile Include="hvpp\lib\win32\device.cpp">
       <Filter>Source Files\hvpp\lib\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\hvpp.cpp">
+      <Filter>Source Files\hvpp</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\vmexit\vmexit_c_wrapper.cpp">
+      <Filter>Source Files\hvpp\vmexit</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -289,6 +292,12 @@
     </ClInclude>
     <ClInclude Include="hvpp\lib\ioctl.h">
       <Filter>Header Files\hvpp\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\hvpp.h">
+      <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\vmexit\vmexit_c_wrapper.h">
+      <Filter>Header Files\hvpp\vmexit</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

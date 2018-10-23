@@ -14,6 +14,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hvppdrv", "src\hvppdrv\hvpp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hvppctrl", "src\hvppctrl\hvppctrl.vcxproj", "{A72DAEF5-C739-4E70-B57E-4310ABA03749}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hvpp-entry", "src\hvpp\hvpp-entry.vcxproj", "{D16E66B1-31BC-465F-916E-430803FFDE99}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "hvpp-lib", "hvpp-lib", "{AD8F16CD-1F36-4BF7-91FF-E04713C7EC63}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hvppdrv_c", "src\hvppdrv_c\hvppdrv_c.vcxproj", "{9D8BC3BA-1749-4974-9BEC-00231849A63C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -32,9 +38,21 @@ Global
 		{A72DAEF5-C739-4E70-B57E-4310ABA03749}.Debug|x64.Build.0 = Debug|x64
 		{A72DAEF5-C739-4E70-B57E-4310ABA03749}.Release|x64.ActiveCfg = Release|x64
 		{A72DAEF5-C739-4E70-B57E-4310ABA03749}.Release|x64.Build.0 = Release|x64
+		{D16E66B1-31BC-465F-916E-430803FFDE99}.Debug|x64.ActiveCfg = Debug|x64
+		{D16E66B1-31BC-465F-916E-430803FFDE99}.Debug|x64.Build.0 = Debug|x64
+		{D16E66B1-31BC-465F-916E-430803FFDE99}.Release|x64.ActiveCfg = Release|x64
+		{D16E66B1-31BC-465F-916E-430803FFDE99}.Release|x64.Build.0 = Release|x64
+		{9D8BC3BA-1749-4974-9BEC-00231849A63C}.Debug|x64.ActiveCfg = Debug|x64
+		{9D8BC3BA-1749-4974-9BEC-00231849A63C}.Debug|x64.Build.0 = Debug|x64
+		{9D8BC3BA-1749-4974-9BEC-00231849A63C}.Release|x64.ActiveCfg = Release|x64
+		{9D8BC3BA-1749-4974-9BEC-00231849A63C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2FC6C155-2BDF-4761-B9B5-7DFE9C2BB4F4} = {AD8F16CD-1F36-4BF7-91FF-E04713C7EC63}
+		{D16E66B1-31BC-465F-916E-430803FFDE99} = {AD8F16CD-1F36-4BF7-91FF-E04713C7EC63}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B2F42D07-8CF5-40C5-924F-6EAB82D9ABF0}

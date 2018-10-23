@@ -11,13 +11,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{46A74761-6CFA-41AF-A536-47F08E2C7B48}</ProjectGuid>
+    <ProjectGuid>{D16E66B1-31BC-465F-916E-430803FFDE99}</ProjectGuid>
     <TemplateGuid>{1bc93793-694f-48fe-9372-81e2b05556fd}</TemplateGuid>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
     <Configuration>Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">Win32</Platform>
-    <RootNamespace>hvppdrv</RootNamespace>
+    <RootNamespace>hvpp-entry</RootNamespace>
     <WindowsTargetPlatformVersion>$(LatestTargetPlatformVersion)</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -25,14 +25,14 @@
     <TargetVersion>Windows7</TargetVersion>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <DriverType>WDM</DriverType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <TargetVersion>Windows7</TargetVersion>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <DriverType>WDM</DriverType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -45,14 +45,14 @@
   <PropertyGroup />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-    <IncludePath>$(ProjectDir);$(ProjectDir)..\hvpp;$(VC_IncludePath);$(IncludePath);$(KMDF_INC_PATH)$(KMDF_VER_PATH)</IncludePath>
+    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(IncludePath);$(KMDF_INC_PATH)$(KMDF_VER_PATH)</IncludePath>
     <OutDir>$(SolutionDir)bin\$(PlatformShortName)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\obj\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
     <EnableInf2cat>false</EnableInf2cat>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-    <IncludePath>$(ProjectDir);$(ProjectDir)..\hvpp;$(VC_IncludePath);$(IncludePath);$(KMDF_INC_PATH)$(KMDF_VER_PATH)</IncludePath>
+    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(IncludePath);$(KMDF_INC_PATH)$(KMDF_VER_PATH)</IncludePath>
     <OutDir>$(SolutionDir)bin\$(PlatformShortName)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\obj\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
     <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
@@ -72,6 +72,7 @@
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
     </Link>
     <PostBuildEvent />
+    <Lib />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -89,27 +90,19 @@
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent />
+    <Lib>
+      <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
+    </Lib>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <Inf Include="hvppdrv.inf">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </Inf>
-  </ItemGroup>
   <ItemGroup>
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="device_custom.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="vmexit_custom.cpp" />
+    <ClCompile Include="hvpp\lib\win32\driver.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="device_custom.h" />
-    <ClInclude Include="vmexit_custom.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\hvpp\hvpp-entry.vcxproj">
-      <Project>{d16e66b1-31bc-465f-916e-430803ffde99}</Project>
+    <ProjectReference Include="hvpp.vcxproj">
+      <Project>{2fc6c155-2bdf-4761-b9b5-7dfe9c2bb4f4}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

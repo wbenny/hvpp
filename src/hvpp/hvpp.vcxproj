@@ -99,12 +99,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hvpp\ept.cpp" />
+    <ClCompile Include="hvpp\hvpp.cpp" />
     <ClCompile Include="hvpp\hypervisor.cpp" />
     <ClCompile Include="hvpp\vcpu.cpp" />
     <ClCompile Include="hvpp\vmexit.cpp">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="hvpp\vmexit\vmexit_c_wrapper.cpp" />
     <ClCompile Include="hvpp\vmexit\vmexit_dbgbreak.cpp" />
     <ClCompile Include="hvpp\vmexit\vmexit_passthrough.cpp" />
     <ClCompile Include="hvpp\vmexit\vmexit_stats.cpp" />
@@ -117,13 +119,13 @@
     <ClCompile Include="hvpp\lib\win32\cr3_guard.cpp" />
     <ClCompile Include="hvpp\lib\win32\debugger.cpp" />
     <ClCompile Include="hvpp\lib\win32\device.cpp" />
-    <ClCompile Include="hvpp\lib\win32\driver.cpp" />
     <ClCompile Include="hvpp\lib\win32\log.cpp" />
     <ClCompile Include="hvpp\lib\win32\mm.cpp" />
     <ClCompile Include="hvpp\lib\win32\mp.cpp" />
     <ClCompile Include="hvpp\lib\win32\tracelog.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="hvpp\hvpp.h" />
     <ClInclude Include="hvpp\lib\debugger.h" />
     <ClInclude Include="hvpp\lib\device.h" />
     <ClInclude Include="hvpp\lib\ioctl.h" />
@@ -132,6 +134,7 @@
     <ClInclude Include="hvpp\hypervisor.h" />
     <ClInclude Include="hvpp\vcpu.h" />
     <ClInclude Include="hvpp\vmexit.h" />
+    <ClInclude Include="hvpp\vmexit\vmexit_c_wrapper.h" />
     <ClInclude Include="hvpp\vmexit\vmexit_dbgbreak.h" />
     <ClInclude Include="hvpp\vmexit\vmexit_passthrough.h" />
     <ClInclude Include="hvpp\vmexit\vmexit_stats.h" />

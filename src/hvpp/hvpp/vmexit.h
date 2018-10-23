@@ -240,7 +240,7 @@ class vmexit_handler
     //
     virtual void handle_vm_fallback(vcpu_t& vp) noexcept;
 
-  private:
+  protected:
     using handler_fn_t = void (vmexit_handler::*)(vcpu_t&);
     std::array<handler_fn_t, 65> handlers_;
 };

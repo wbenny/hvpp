@@ -9,13 +9,28 @@
 
 namespace driver::common
 {
-  void*  system_memory = nullptr;
-  size_t system_memory_size = 0;
+  void*  system_memory_ = nullptr;
+  size_t system_memory_size_ = 0;
 
-  auto initialize() noexcept -> error_code_t
+  driver_initialize_fn driver_initialize_;
+  driver_destroy_fn    driver_destroy_;
+
+  auto initialize(
+    driver_initialize_fn driver_initialize,
+    driver_destroy_fn driver_destroy
+    ) noexcept -> error_code_t
   {
-    hvpp_assert(system_memory == nullptr);
-    hvpp_assert(system_memory_size == 0);
+    hvpp_assert(system_memory_ == nullptr);
+    hvpp_assert(system_memory_size_ == 0);
+
+    //
+    // Either both must be set or both must be nullptr,
+    // nothing else.
+    //
+    hvpp_assert(!(!!driver_initialize ^ !!driver_destroy));
+
+    driver_initialize_ = driver_initialize;
+    driver_destroy_ = driver_destroy;
 
     //
     // Initialize logger and memory manager.
@@ -63,18 +78,18 @@ namespace driver::common
     //
     // Round up to page boundary.
     //
-    system_memory_size = ia32::round_to_pages(required_memory_size);
+    system_memory_size_ = ia32::round_to_pages(required_memory_size);
 
     hvpp_info("Number of processors: %u", mp::cpu_count());
     hvpp_info("Reserved memory:      %" PRIu64 " MB",
-              system_memory_size / 1024 / 1024);
+              system_memory_size_ / 1024 / 1024);
 
     //
     // Allocate memory.
     //
-    system_memory = memory_manager::system_allocate(required_memory_size);
+    system_memory_ = memory_manager::system_allocate(required_memory_size);
 
-    if (!system_memory)
+    if (!system_memory_)
     {
       return make_error_code_t(std::errc::not_enough_memory);
     }
@@ -82,20 +97,25 @@ namespace driver::common
     //
     // Assign allocated memory to the memory manager.
     //
-    if (auto err = memory_manager::assign(system_memory, system_memory_size))
+    if (auto err = memory_manager::assign(system_memory_, system_memory_size_))
     {
       return err;
     }
 
-    return ::driver::initialize();
+    return  driver_initialize_
+      ? driver_initialize_()
+      : error_code_t{};
   }
 
   void destroy() noexcept
   {
     //
-    // Call driver's destroy() function.
+    // Call driver's destroy() function, if provided.
     //
-    ::driver::destroy();
+    if (driver_destroy_)
+    {
+      driver_destroy_();
+    }
 
     //
     // Destroy memory manager and logger.
@@ -106,9 +126,9 @@ namespace driver::common
     //
     // Return allocated memory back to the system.
     //
-    if (system_memory)
+    if (system_memory_)
     {
-      memory_manager::system_free(system_memory);
+      memory_manager::system_free(system_memory_);
     }
   }
 }

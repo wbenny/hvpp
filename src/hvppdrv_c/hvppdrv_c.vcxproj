@@ -11,13 +11,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{46A74761-6CFA-41AF-A536-47F08E2C7B48}</ProjectGuid>
+    <ProjectGuid>{9D8BC3BA-1749-4974-9BEC-00231849A63C}</ProjectGuid>
     <TemplateGuid>{1bc93793-694f-48fe-9372-81e2b05556fd}</TemplateGuid>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
     <Configuration>Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">Win32</Platform>
-    <RootNamespace>hvppdrv</RootNamespace>
+    <RootNamespace>hvppdrv_c</RootNamespace>
     <WindowsTargetPlatformVersion>$(LatestTargetPlatformVersion)</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -91,7 +91,7 @@
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Inf Include="hvppdrv.inf">
+    <Inf Include="hvppdrv_c.inf">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </Inf>
   </ItemGroup>
@@ -99,17 +99,15 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="device_custom.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="vmexit_custom.cpp" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="vmexit_custom.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="device_custom.h" />
     <ClInclude Include="vmexit_custom.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\hvpp\hvpp-entry.vcxproj">
-      <Project>{d16e66b1-31bc-465f-916e-430803ffde99}</Project>
+    <ProjectReference Include="..\hvpp\hvpp.vcxproj">
+      <Project>{2fc6c155-2bdf-4761-b9b5-7dfe9c2bb4f4}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
