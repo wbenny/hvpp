@@ -24,7 +24,9 @@ EXTERN_C DRIVER_INITIALIZE DriverEntry;
 
 PDRIVER_OBJECT GlobalDriverObject = nullptr;
 
+static
 NTSTATUS
+NTAPI
 ErrorCodeToNtStatus(
   error_code_t error
   )
@@ -39,9 +41,10 @@ ErrorCodeToNtStatus(
 
 
 NTSTATUS
+NTAPI
 DriverDispatch(
-  PDEVICE_OBJECT DeviceObject,
-  PIRP Irp
+  _In_ PDEVICE_OBJECT DeviceObject,
+  _In_ PIRP Irp
   )
 {
   PIO_STACK_LOCATION IoStackLocation;
@@ -138,6 +141,7 @@ DriverDispatch(
 
 EXTERN_C
 VOID
+NTAPI
 DriverUnload(
   _In_ PDRIVER_OBJECT DriverObject
   )
@@ -149,6 +153,7 @@ DriverUnload(
 
 EXTERN_C
 NTSTATUS
+NTAPI
 DriverEntry(
   _In_ PDRIVER_OBJECT DriverObject,
   _In_ PUNICODE_STRING RegistryPath

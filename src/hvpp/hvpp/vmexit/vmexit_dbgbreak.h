@@ -21,7 +21,7 @@ class vmexit_dbgbreak_handler
   : public vmexit_handler
 {
   public:
-    auto initialize() noexcept->error_code_t;
+    auto initialize() noexcept -> error_code_t;
     void destroy() noexcept;
 
     void handle(vcpu_t& vp) noexcept override;

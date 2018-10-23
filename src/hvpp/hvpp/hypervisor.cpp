@@ -43,6 +43,11 @@ auto hypervisor::initialize() noexcept -> error_code_t
 
 void hypervisor::destroy() noexcept
 {
+  if (started_)
+  {
+    stop();
+  }
+
   if (vcpu_list_)
   {
     delete[] vcpu_list_;
@@ -52,10 +57,20 @@ void hypervisor::destroy() noexcept
   }
 }
 
-void hypervisor::start(vmexit_handler* handler) noexcept
+auto hypervisor::start(vmexit_handler* handler) noexcept -> error_code_t
 {
   hvpp_assert(vcpu_list_ && check_passed_ && handler);
   hvpp_assert(!started_);
+
+  if (!vcpu_list_ || !check_passed_ || !handler)
+  {
+    return make_error_code_t(std::errc::invalid_argument);
+  }
+
+  if (started_)
+  {
+    return make_error_code_t(std::errc::operation_not_permitted);
+  }
 
   handler_ = handler;
 
@@ -66,6 +81,8 @@ void hypervisor::start(vmexit_handler* handler) noexcept
 #endif
 
   started_ = true;
+
+  return error_code_t{};
 }
 
 void hypervisor::stop() noexcept
