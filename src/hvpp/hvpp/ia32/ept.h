@@ -166,9 +166,6 @@ struct ept_pml4e_t
 //
 // EPT Pointer structure
 //
-// Must be aligned to 4kb boundary.
-// Points to EPML4 (ept_pml4e_t).
-//
 struct ept_ptr_t
 {
   static constexpr int page_walk_length_4 = 3;
@@ -343,12 +340,12 @@ struct epte_t
 
   epte_t* subtable() const noexcept
   {
-    return is_present()
+    return present()
       ? reinterpret_cast<epte_t*>(pa_t::from_pfn(page_frame_number).va())
       : nullptr;
   }
 
-  bool is_present() const noexcept
+  bool present() const noexcept
   {
     return read_access || write_access || execute_access;
   }

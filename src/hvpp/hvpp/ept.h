@@ -66,8 +66,8 @@ class ept_t
     void unmap_table(epte_t* table, pml level = pml::pml4) noexcept;
     void unmap_entry(epte_t* entry, pml level) noexcept;
 
-    alignas(page_size) ept_ptr_t eptptr_;
-                       epte_t*   epml4_;
+    ept_ptr_t eptptr_;
+    epte_t*   epml4_;
 };
 
 }

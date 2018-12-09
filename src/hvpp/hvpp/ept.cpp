@@ -348,7 +348,7 @@ epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
   // Returns nullptr for unmapped (non-present) physical addresses.
   //
   auto pml4e = &epml4_[guest_pa.index(pml::pml4)];
-  auto pdpte = pml4e->is_present()
+  auto pdpte = pml4e->present()
     ? &pml4e->subtable()[guest_pa.index(pml::pdpt)]
     : nullptr;
 
@@ -357,7 +357,7 @@ epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
     return pdpte;
   }
 
-  auto pde = pdpte->is_present()
+  auto pde = pdpte->present()
     ? &pdpte->subtable()[guest_pa.index(pml::pd)]
     : nullptr;
 
@@ -366,7 +366,7 @@ epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
     return pde;
   }
 
-  auto pte = pde->is_present()
+  auto pte = pde->present()
     ? &pde->subtable()[guest_pa.index(pml::pt)]
     : nullptr;
 
@@ -379,7 +379,7 @@ epte_t* ept_t::map_subtable(epte_t* table) noexcept
   // Get or create next level of EPT table hierarchy.
   // PML4 -> PDPT -> PD -> PT
   //
-  if (table->is_present())
+  if (table->present())
   {
     return table->subtable();
   }
@@ -450,7 +450,7 @@ void ept_t::unmap_table(epte_t* table, pml level /* = pml::pml4 */) noexcept
   //
   // Table must be present and it cannot be large page.
   //
-  hvpp_assert(table && table->is_present() && !table->large_page);
+  hvpp_assert(table && table->present() && !table->large_page);
 
   //
   // PTs already point to real physical addresses - we can't unmap them.
@@ -471,7 +471,7 @@ void ept_t::unmap_entry(epte_t* entry, pml level) noexcept
 {
   hvpp_assert(entry);
 
-  if (!entry->is_present())
+  if (!entry->present())
   {
     //
     // Don't do anything if entry is already unmapped.
