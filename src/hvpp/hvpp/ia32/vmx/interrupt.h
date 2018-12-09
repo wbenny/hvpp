@@ -34,6 +34,24 @@ struct interrupt_info_t
   };
 };
 
+struct interruptibility_state_t
+{
+  union
+  {
+    uint32_t flags;
+
+    struct
+    {
+      uint32_t blocking_by_sti : 1;
+      uint32_t blocking_by_mov_ss : 1;
+      uint32_t blocking_by_smi : 1;
+      uint32_t blocking_by_nmi : 1;
+      uint32_t enclave_interruption : 1;
+      uint32_t reserved : 27;
+    };
+  };
+};
+
 inline constexpr const char* interrupt_type_to_string(interrupt_type value) noexcept
 {
   switch (value)

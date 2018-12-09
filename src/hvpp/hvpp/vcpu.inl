@@ -802,6 +802,18 @@ void vcpu_t::guest_segment(int index, seg_t<> seg) noexcept
   guest_segment_selector(index, seg.selector);
 }
 
+auto vcpu_t::guest_interruptibility_state() const noexcept -> vmx::interruptibility_state_t
+{
+  vmx::interruptibility_state_t interruptibility_state;
+  vmx::vmread(vmx::vmcs_t::field::guest_interruptibility_state, interruptibility_state);
+  return interruptibility_state;
+}
+
+void vcpu_t::guest_interruptibility_state(vmx::interruptibility_state_t interruptibility_state) noexcept
+{
+  vmx::vmwrite(vmx::vmcs_t::field::guest_interruptibility_state, interruptibility_state);
+}
+
 //
 // host state
 //

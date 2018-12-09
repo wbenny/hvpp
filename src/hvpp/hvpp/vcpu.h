@@ -308,6 +308,9 @@ class vcpu_t
     auto guest_segment(int index) const noexcept -> seg_t<>;
     void guest_segment(int index, seg_t<> seg) noexcept;
 
+    auto guest_interruptibility_state() const noexcept -> vmx::interruptibility_state_t;
+    void guest_interruptibility_state(vmx::interruptibility_state_t interruptibility_state) noexcept;
+
   private:
     //
     // Host state
