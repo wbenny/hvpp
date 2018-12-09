@@ -6,7 +6,7 @@
 
 namespace memory_manager::detail
 {
-  void* system_allocate(size_t size) noexcept
+  auto system_allocate(size_t size) noexcept -> void*
   {
     return ExAllocatePoolWithTag(NonPagedPool,
                                  size,
@@ -15,6 +15,14 @@ namespace memory_manager::detail
 
   void system_free(void* address) noexcept
   {
+    //
+    // ExFreePoolWithTag doesn't support freeing NULL.
+    //
+    if (address == nullptr)
+    {
+      return;
+    }
+
     ExFreePoolWithTag(address, HVPP_MEMORY_TAG);
   }
 }

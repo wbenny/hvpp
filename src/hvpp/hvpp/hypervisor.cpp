@@ -4,6 +4,7 @@
 #include "ia32/cpuid/cpuid_eax_01.h"
 #include "lib/assert.h"
 #include "lib/log.h"
+#include "lib/mm.h"
 #include "lib/mp.h"
 
 #ifdef HVPP_SINGLE_VCPU
@@ -178,6 +179,8 @@ void hypervisor::start_ipi_callback() noexcept
   //   - error handling
   //   - create new error_category for VMX errors
   //
+  memory_manager::allocator_guard _;
+
   auto idx = mp::cpu_index();
   vcpu_list_[idx].initialize(exit_handler_);
   vcpu_list_[idx].launch();
@@ -185,6 +188,8 @@ void hypervisor::start_ipi_callback() noexcept
 
 void hypervisor::stop_ipi_callback() noexcept
 {
+  memory_manager::allocator_guard _;
+
   auto idx = mp::cpu_index();
   vcpu_list_[idx].destroy();
 }

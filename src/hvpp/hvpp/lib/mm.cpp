@@ -1,11 +1,13 @@
 #include "mm.h"
 
 #include "hvpp/ia32/memory.h"
+#include "hvpp/config.h"
 
 #include "assert.h"
 #include "bitmap.h"
 #include "object.h"
 #include "spinlock.h"
+#include "mp.h"
 
 #include <cstring>
 #include <limits>
@@ -43,38 +45,74 @@
 
 namespace memory_manager
 {
-  uint8_t*  base_address = nullptr;         // Pool base address
-  size_t    available_size = 0;             // Available memory in the pool
-
   using pgbmp_t = object_t<bitmap>;
-  pgbmp_t   page_bitmap;                    // Bitmap holding used pages
-  int       page_bitmap_buffer_size = 0;    //
-
   using pgmap_t = uint16_t;
-  pgmap_t*  page_allocation_map = nullptr;  // Map holding number of allocated pages
-  int       page_allocation_map_size = 0;   //
 
-  int       last_page_offset = 0;           // Last returned page offset - used as hint
+  struct global_t
+  {
+    uint8_t*    base_address;               // Pool base address
+    size_t      available_size;             // Available memory in the pool
 
-  size_t    number_of_allocated_bytes = 0;
-  size_t    number_of_free_bytes = 0;
+    pgbmp_t     page_bitmap;                // Bitmap holding used pages
+    int         page_bitmap_buffer_size;    //
 
-  object_t<ia32::physical_memory_descriptor> memory_descriptor;
-  object_t<ia32::mtrr> memory_type_range_registers;
-  object_t<spinlock> lock;
+    pgmap_t*    page_allocation_map;        // Map holding number of allocated pages
+    int         page_allocation_map_size;   //
+
+    int         last_page_offset;           // Last returned page offset - used as hint
+
+    size_t      allocated_bytes;
+    size_t      free_bytes;
+
+    allocator_t allocator[HVPP_MAX_CPU];
+
+    object_t<ia32::physical_memory_descriptor> memory_descriptor;
+    object_t<ia32::mtrr> memory_type_range_registers;
+    object_t<spinlock> lock;
+  };
+
+  global_t global;
+
+  const allocator_t system_allocator = { &system_allocate, &system_free };
+  const allocator_t custom_allocator = { &allocate,        &free        };
+
+  allocator_guard::allocator_guard() noexcept
+    : allocator_guard(custom_allocator)
+  {
+
+  }
+
+  allocator_guard::allocator_guard(const allocator_t& new_allocator) noexcept
+    : previous_allocator_(allocator())
+  {
+    allocator(new_allocator);
+  }
+
+  allocator_guard::~allocator_guard() noexcept
+  {
+    allocator(previous_allocator_);
+  }
 
   auto initialize() noexcept -> error_code_t
   {
     //
     // Initialize physical memory descriptor and MTRRs.
     //
-    memory_descriptor.initialize();
-    memory_type_range_registers.initialize();
+    global.memory_descriptor.initialize();
+    global.memory_type_range_registers.initialize();
 
     //
     // Initialize lock.
     //
-    lock.initialize();
+    global.lock.initialize();
+
+    //
+    // Set system allocator by default.
+    //
+    for (auto& allocator_item : global.allocator)
+    {
+      allocator_item = system_allocator;
+    }
 
     return error_code_t{};
   }
@@ -86,14 +124,14 @@ namespace memory_manager
     // Note that this method doesn't acquire the lock and
     // assumes all allocations has been already freed.
     //
-    memory_type_range_registers.destroy();
-    memory_descriptor.destroy();
-    lock.destroy();
+    global.memory_type_range_registers.destroy();
+    global.memory_descriptor.destroy();
+    global.lock.destroy();
 
     //
     // If no memory has been assigned - leave.
     //
-    if (!base_address)
+    if (!global.base_address)
     {
       return;
     }
@@ -109,34 +147,34 @@ namespace memory_manager
     // These two calls are needed to assure that the next two
     // asserts below will pass.
     //
-    free(page_bitmap->buffer());
-    free(page_allocation_map);
+    free(global.page_bitmap->buffer());
+    free(global.page_allocation_map);
 
     //
     // Checks for memory leaks.
     //
-    hvpp_assert(page_bitmap->all_clear());
+    hvpp_assert(global.page_bitmap->all_clear());
 
     //
     // Checks for allocator corruption.
     //
     hvpp_assert(std::all_of(
-      page_allocation_map,
-      page_allocation_map + page_allocation_map_size / sizeof(pgmap_t),
+      global.page_allocation_map,
+      global.page_allocation_map + global.page_allocation_map_size / sizeof(pgmap_t),
       [](auto page_count) { return page_count == 0; }));
 
-    base_address = nullptr;
-    available_size = 0;
+    global.base_address = nullptr;
+    global.available_size = 0;
 
-    page_bitmap.destroy();
-    page_bitmap_buffer_size = 0;
+    global.page_bitmap.destroy();
+    global.page_bitmap_buffer_size = 0;
 
-    page_allocation_map = nullptr;
-    page_allocation_map_size = 0;
+    global.page_allocation_map = nullptr;
+    global.page_allocation_map_size = 0;
 
-    last_page_offset = 0;
-    number_of_allocated_bytes = 0;
-    number_of_free_bytes = 0;
+    global.last_page_offset = 0;
+    global.allocated_bytes = 0;
+    global.free_bytes = 0;
   }
 
   auto assign(void* address, size_t size) noexcept -> error_code_t
@@ -207,37 +245,35 @@ namespace memory_manager
     // Construct the page bitmap.
     //
     uint8_t* page_bitmap_buffer = reinterpret_cast<uint8_t*>(address);
-    page_bitmap_buffer_size = static_cast<int>(ia32::round_to_pages(size / ia32::page_size / 8));
-    memset(page_bitmap_buffer, 0, page_bitmap_buffer_size);
+    global.page_bitmap_buffer_size = static_cast<int>(ia32::round_to_pages(size / ia32::page_size / 8));
+    memset(page_bitmap_buffer, 0, global.page_bitmap_buffer_size);
 
     int page_bitmap_size_in_bits = static_cast<int>(size / ia32::page_size);
-    page_bitmap.initialize(page_bitmap_buffer, page_bitmap_size_in_bits);
+    global.page_bitmap.initialize(page_bitmap_buffer, page_bitmap_size_in_bits);
 
     //
     // Construct the page allocation map.
     //
-    page_allocation_map = reinterpret_cast<pgmap_t*>(page_bitmap_buffer + page_bitmap_buffer_size);
-    page_allocation_map_size = static_cast<int>(ia32::round_to_pages(size / ia32::page_size) * sizeof(pgmap_t));
-    memset(page_allocation_map, 0, page_allocation_map_size);
+    global.page_allocation_map = reinterpret_cast<pgmap_t*>(page_bitmap_buffer + global.page_bitmap_buffer_size);
+    global.page_allocation_map_size = static_cast<int>(ia32::round_to_pages(size / ia32::page_size) * sizeof(pgmap_t));
+    memset(global.page_allocation_map, 0, global.page_allocation_map_size);
 
     //
     // Compute available memory.
     //
-    int reserved_bytes = static_cast<int>(page_bitmap_buffer_size + page_allocation_map_size);
-
-    base_address = reinterpret_cast<uint8_t*>(address);
-    available_size = size - reserved_bytes;
+    global.base_address = reinterpret_cast<uint8_t*>(address);
+    global.available_size = size;
 
     //
     // Mark memory of page_bitmap and page_allocation_map as allocated.
     // The return value of these allocations should return the exact
     // address of page_bitmap_buffer and page_allocation_map.
     //
-    void* page_bitmap_buffer_tmp  = allocate(page_bitmap_buffer_size);
-    void* page_allocation_map_tmp = allocate(page_allocation_map_size);
+    void* page_bitmap_buffer_tmp  = allocate(global.page_bitmap_buffer_size);
+    void* page_allocation_map_tmp = allocate(global.page_allocation_map_size);
 
-    hvpp_assert(reinterpret_cast<uintptr_t>(page_bitmap_buffer)  == reinterpret_cast<uintptr_t>(page_bitmap_buffer_tmp));
-    hvpp_assert(reinterpret_cast<uintptr_t>(page_allocation_map) == reinterpret_cast<uintptr_t>(page_allocation_map_tmp));
+    hvpp_assert(reinterpret_cast<uintptr_t>(       page_bitmap_buffer)  == reinterpret_cast<uintptr_t>(page_bitmap_buffer_tmp));
+    hvpp_assert(reinterpret_cast<uintptr_t>(global.page_allocation_map) == reinterpret_cast<uintptr_t>(page_allocation_map_tmp));
 
     (void)(page_bitmap_buffer_tmp);
     (void)(page_allocation_map_tmp);
@@ -247,20 +283,21 @@ namespace memory_manager
     // This should help with debugging uninitialized variables
     // and class members.
     //
-    memset(base_address + reserved_bytes, 0xcc, available_size);
+    int reserved_bytes = static_cast<int>(global.page_bitmap_buffer_size + global.page_allocation_map_size);
+    memset(global.base_address + reserved_bytes, 0xcc, size - reserved_bytes);
 
     //
     // Set initial values of allocated/free bytes.
     //
-    number_of_allocated_bytes = 0;
-    number_of_free_bytes = size;
+    global.allocated_bytes = 0;
+    global.free_bytes = size;
 
     return error_code_t{};
   }
 
-  void* allocate(size_t size) noexcept
+  auto allocate(size_t size) noexcept -> void*
   {
-    hvpp_assert(base_address != nullptr && available_size > 0);
+    hvpp_assert(global.base_address != nullptr && global.available_size > 0);
 
     //
     // Return at least 1 page, even if someone required 0.
@@ -286,16 +323,16 @@ namespace memory_manager
     int previous_page_offset;
 
     {
-      std::lock_guard _(*lock);
+      std::lock_guard _(*global.lock);
 
-      last_page_offset = page_bitmap->find_first_clear(last_page_offset, page_count);
+      global.last_page_offset = global.page_bitmap->find_first_clear(global.last_page_offset, page_count);
 
-      if (last_page_offset == -1)
+      if (global.last_page_offset == -1)
       {
-        last_page_offset = 0;
-        last_page_offset = page_bitmap->find_first_clear(last_page_offset, page_count);
+        global.last_page_offset = 0;
+        global.last_page_offset = global.page_bitmap->find_first_clear(global.last_page_offset, page_count);
 
-        if (last_page_offset == -1)
+        if (global.last_page_offset == -1)
         {
           //
           // Not enough memory...
@@ -305,14 +342,14 @@ namespace memory_manager
         }
       }
 
-      page_bitmap->set(last_page_offset, page_count);
-      page_allocation_map[last_page_offset] = static_cast<pgmap_t>(page_count);
+      global.page_bitmap->set(global.last_page_offset, page_count);
+      global.page_allocation_map[global.last_page_offset] = static_cast<pgmap_t>(page_count);
 
-      previous_page_offset = last_page_offset;
-      last_page_offset += page_count;
+      previous_page_offset = global.last_page_offset;
+      global.last_page_offset += page_count;
 
-      number_of_allocated_bytes += page_count * ia32::page_size;
-      number_of_free_bytes      -= page_count * ia32::page_size;
+      global.allocated_bytes += page_count * ia32::page_size;
+      global.free_bytes      -= page_count * ia32::page_size;
     }
 
     //
@@ -321,7 +358,7 @@ namespace memory_manager
     // everything neccessary has been done (bitmap + page allocation map
     // manipulation).
     //
-    return base_address + previous_page_offset * ia32::page_size;
+    return global.base_address + previous_page_offset * ia32::page_size;
   }
 
   void free(void* address) noexcept
@@ -331,9 +368,18 @@ namespace memory_manager
     //
     hvpp_assert(ia32::byte_offset(address) == 0);
 
-    int offset = static_cast<int>(ia32::bytes_to_pages(reinterpret_cast<uint8_t*>(address) - base_address));
+    int offset = static_cast<int>(ia32::bytes_to_pages(reinterpret_cast<uint8_t*>(address) - global.base_address));
 
-    if (size_t(offset) * ia32::page_size > available_size)
+    if (address == nullptr)
+    {
+      //
+      // Return immediatelly if we're trying to free NULL.
+      //
+      // hvpp_assert(0);
+      return;
+    }
+
+    if (size_t(offset) * ia32::page_size > global.available_size)
     {
       //
       // We don't own this memory.
@@ -342,9 +388,9 @@ namespace memory_manager
       return;
     }
 
-    std::lock_guard _(*lock);
+    std::lock_guard _(*global.lock);
 
-    if (page_allocation_map[offset] == 0)
+    if (global.page_allocation_map[offset] == 0)
     {
       //
       // This memory wasn't allocated.
@@ -356,49 +402,80 @@ namespace memory_manager
     //
     // Clear number of allocated pages.
     //
-    int page_count = page_allocation_map[offset];
-    page_allocation_map[offset] = 0;
+    int page_count = global.page_allocation_map[offset];
+    global.page_allocation_map[offset] = 0;
 
     //
     // Clear pages in the bitmap.
     //
-    page_bitmap->clear(offset, page_count);
+    global.page_bitmap->clear(offset, page_count);
 
-    number_of_allocated_bytes -= page_count * ia32::page_size;
-    number_of_free_bytes      += page_count * ia32::page_size;
+    global.allocated_bytes -= page_count * ia32::page_size;
+    global.free_bytes      += page_count * ia32::page_size;
   }
 
-  size_t allocated_bytes() noexcept
+  auto system_allocate(size_t size) noexcept -> void*
   {
-    return number_of_allocated_bytes;
+    return detail::system_allocate(size);
   }
 
-  size_t free_bytes() noexcept
+  void system_free(void* address) noexcept
   {
-    return number_of_free_bytes;
+    detail::system_free(address);
   }
 
-  const ia32::physical_memory_descriptor& physical_memory_descriptor() noexcept
+  auto allocated_bytes() noexcept -> size_t
   {
-    return *memory_descriptor;
+    return global.allocated_bytes;
   }
 
-  const ia32::mtrr& mtrr() noexcept
+  auto free_bytes() noexcept -> size_t
   {
-    return *memory_type_range_registers;
+    return global.free_bytes;
+  }
+
+  auto allocator() noexcept -> const allocator_t&
+  {
+    return global.allocator[mp::cpu_index()];
+  }
+
+  void allocator(const allocator_t& new_allocator) noexcept
+  {
+    global.allocator[mp::cpu_index()] = new_allocator;
+  }
+
+  auto physical_memory_descriptor() noexcept -> const ia32::physical_memory_descriptor&
+  {
+    return *global.memory_descriptor;
+  }
+
+  auto mtrr() noexcept -> const ia32::mtrr&
+  {
+    return *global.memory_type_range_registers;
   }
 }
 
-void* operator new  (size_t size)                                    { return memory_manager::allocate(size); }
-void* operator new[](size_t size)                                    { return memory_manager::allocate(size); }
-void* operator new  (size_t size, std::align_val_t)                  { return memory_manager::allocate(size); }
-void* operator new[](size_t size, std::align_val_t)                  { return memory_manager::allocate(size); }
+namespace detail
+{
+  void generic_free(void* address) noexcept
+  {
+    reinterpret_cast<uint8_t*>(address) >= memory_manager::global.base_address &&
+    reinterpret_cast<uint8_t*>(address) < memory_manager::global.base_address + memory_manager::global.available_size
+      ? memory_manager::free       (address)
+      : memory_manager::system_free(address);
+  }
+}
 
-void operator delete  (void* address)                                { memory_manager::free(address); }
-void operator delete[](void* address)                                { memory_manager::free(address); }
-void operator delete[](void* address, std::size_t)                   { memory_manager::free(address); }
-void operator delete  (void* address, std::size_t)                   { memory_manager::free(address); }
-void operator delete  (void* address, std::align_val_t)              { memory_manager::free(address); }
-void operator delete[](void* address, std::align_val_t)              { memory_manager::free(address); }
-void operator delete[](void* address, std::size_t, std::align_val_t) { memory_manager::free(address); }
-void operator delete  (void* address, std::size_t, std::align_val_t) { memory_manager::free(address); }
+void* operator new  (size_t size)                                    { return memory_manager::global.allocator[mp::cpu_index()].allocate(size); }
+void* operator new[](size_t size)                                    { return memory_manager::global.allocator[mp::cpu_index()].allocate(size); }
+void* operator new  (size_t size, std::align_val_t)                  { return memory_manager::global.allocator[mp::cpu_index()].allocate(size); }
+void* operator new[](size_t size, std::align_val_t)                  { return memory_manager::global.allocator[mp::cpu_index()].allocate(size); }
+
+void operator delete  (void* address)                                { detail::generic_free(address); }
+void operator delete[](void* address)                                { detail::generic_free(address); }
+void operator delete[](void* address, std::size_t)                   { detail::generic_free(address); }
+void operator delete  (void* address, std::size_t)                   { detail::generic_free(address); }
+void operator delete  (void* address, std::align_val_t)              { detail::generic_free(address); }
+void operator delete[](void* address, std::align_val_t)              { detail::generic_free(address); }
+void operator delete[](void* address, std::size_t, std::align_val_t) { detail::generic_free(address); }
+void operator delete  (void* address, std::size_t, std::align_val_t) { detail::generic_free(address); }

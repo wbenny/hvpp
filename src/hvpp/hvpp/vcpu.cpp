@@ -3,6 +3,7 @@
 
 #include "lib/assert.h"
 #include "lib/log.h"
+#include "lib/mm.h"
 
 #include <iterator> // std::end()
 
@@ -521,6 +522,8 @@ void vcpu_t::setup_guest() noexcept
 
 void vcpu_t::entry_host() noexcept
 {
+  memory_manager::allocator_guard _;
+
   //
   // Reset RIP-adjust flag.
   //

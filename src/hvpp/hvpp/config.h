@@ -1,6 +1,12 @@
 #pragma once
 
 //
+// Maximum number of CPUs.
+//
+
+#define HVPP_MAX_CPU  256
+
+//
 // Uncomment this if you want to subvert just one CPU (with ID 0).
 // This can be helpful for debugging purposes.
 //
