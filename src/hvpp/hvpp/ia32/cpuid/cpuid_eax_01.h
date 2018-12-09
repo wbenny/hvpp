@@ -90,7 +90,7 @@ struct cpuid_eax_01
           uint32_t avx_support : 1;
           uint32_t half_precision_conversion_instructions : 1;
           uint32_t rdrand_instruction : 1;
-          uint32_t reserved2 : 1;
+          uint32_t hypervisor_present : 1;
         };
       } feature_information_ecx;
 
