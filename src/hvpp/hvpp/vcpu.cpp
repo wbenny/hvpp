@@ -162,7 +162,7 @@ void vcpu_t::terminate() noexcept
     exit_context_.rip += exit_instruction_length();
 
     //
-    // When running in VMX root mode, the processor will set limits of the
+    // When running in VMX-root mode, the processor will set limits of the
     // GDT and IDT to 0xffff (notice that there are no Host VMCS fields to
     // set these values). This causes problems with PatchGuard, which will
     // believe that the GDTR and IDTR have been modified by malware, and
@@ -522,6 +522,10 @@ void vcpu_t::setup_guest() noexcept
 
 void vcpu_t::entry_host() noexcept
 {
+  //
+  // Because we're in VMX-root mode, the system memory allocator
+  // has to be disabled.
+  //
   memory_manager::allocator_guard _;
 
   //

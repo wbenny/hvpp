@@ -77,7 +77,7 @@ enum class vcpu_state
   off,
 
   //
-  // VCPU is in VMX root mode; host & guest VMCS is being initialized.
+  // VCPU is in VMX-root mode; host & guest VMCS is being initialized.
   //
   initializing,
 
@@ -97,7 +97,7 @@ enum class vcpu_state
   terminating,
 
   //
-  // VCPU is terminated, VMX root mode has been left.
+  // VCPU is terminated, VMX-root mode has been left.
   //
   terminated,
 };
@@ -349,7 +349,7 @@ class vcpu_t
     void host_tr(seg_t<tr_t> tr) noexcept;
 
     //
-    // ldtr does not exist in VMX root mode.
+    // ldtr does not exist in VMX-root mode.
     //
     // auto host_ldtr() const noexcept -> seg_t<ldtr_t>;
     // void host_ldtr(seg_t<ldtr_t> ldtr)  noexcept;

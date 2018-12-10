@@ -229,7 +229,11 @@ void ept_t::split(pa_t guest_pa, pa_t host_pa) noexcept
   // Make sure that the fetched entry is indeed large.
   // We can't split non-large pages - they already are splitted.
   //
-  hvpp_assert(entry->large_page);
+  if (!entry->large_page)
+  {
+    //hvpp_assert(0);
+    return;
+  }
 
   //
   // Unmap the entry, i.e. make it non-present and reset the PFN.
@@ -318,7 +322,7 @@ void ept_t::join(pa_t guest_pa, pa_t host_pa) noexcept
   //
   if (entry->large_page)
   {
-    hvpp_assert(0);
+    //hvpp_assert(0);
     return;
   }
 
