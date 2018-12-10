@@ -445,9 +445,9 @@ auto vcpu_t::exit_guest_physical_address() const noexcept -> pa_t
   return result;
 }
 
-auto vcpu_t::exit_guest_linear_address() const noexcept -> la_t
+auto vcpu_t::exit_guest_linear_address() const noexcept -> va_t
 {
-  la_t result;
+  va_t result;
   vmx::vmread(vmx::vmcs_t::field::vmexit_guest_linear_address, result);
   return result;
 }

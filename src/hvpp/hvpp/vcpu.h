@@ -249,7 +249,7 @@ class vcpu_t
     auto exit_reason() const noexcept -> vmx::exit_reason;
     auto exit_qualification() const noexcept -> vmx::exit_qualification_t;
     auto exit_guest_physical_address() const noexcept -> pa_t;
-    auto exit_guest_linear_address() const noexcept -> la_t;
+    auto exit_guest_linear_address() const noexcept -> va_t;
 
     //
     // Guest state

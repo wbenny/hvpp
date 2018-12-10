@@ -205,7 +205,7 @@ void vmexit_custom_handler::handle_ept_violation(vcpu_t& vp) noexcept
 {
   auto exit_qualification = vp.exit_qualification().ept_violation;
   auto guest_pa = vp.exit_guest_physical_address();
-  auto guest_la = vp.exit_guest_linear_address();
+  auto guest_va = vp.exit_guest_linear_address();
 
   auto& data = data_[mp::cpu_index()];
 
@@ -217,7 +217,7 @@ void vmexit_custom_handler::handle_ept_violation(vcpu_t& vp) noexcept
     // the "data.page_read" we've saved before in the VMCALL
     // handler and set the access to RW.
     //
-    hvpp_trace("data_read LA: 0x%p PA: 0x%p", guest_la, guest_pa.value());
+    hvpp_trace("data_read LA: 0x%p PA: 0x%p", guest_va.value(), guest_pa.value());
 
     vp.ept().map_4kb(data.page_exec, data.page_read, epte_t::access_type::read_write);
   }
@@ -229,7 +229,7 @@ void vmexit_custom_handler::handle_ept_violation(vcpu_t& vp) noexcept
     // the "data.page_execute" we've saved before in the VMCALL
     // handler and set the access to execute-only.
     //
-    hvpp_trace("data_execute LA: 0x%p PA: 0x%p", guest_la, guest_pa.value());
+    hvpp_trace("data_execute LA: 0x%p PA: 0x%p", guest_va.value(), guest_pa.value());
 
     vp.ept().map_4kb(data.page_exec, data.page_exec, epte_t::access_type::execute);
   }
