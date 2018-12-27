@@ -452,14 +452,9 @@ epte_t* ept_t::map_pt(pa_t guest_pa, pa_t host_pa, epte_t* pt,
 void ept_t::unmap_table(epte_t* table, pml level /* = pml::pml4 */) noexcept
 {
   //
-  // Table must be present and it cannot be large page.
-  //
-  hvpp_assert(table && table->present() && !table->large_page);
-
-  //
   // PTs already point to real physical addresses - we can't unmap them.
   //
-  hvpp_assert(level != pml::pt);
+  hvpp_assert(table && level != pml::pt);
 
   //
   // Unmap each of 512 entries in the table.
@@ -506,22 +501,19 @@ void ept_t::unmap_entry(epte_t* entry, pml level) noexcept
     {
       case pml::pml4:
       case pml::pdpt:
-        if (!subtable->large_page)
-        {
-          unmap_table(subtable, level - 1);
-        }
+        unmap_table(subtable, level - 1);
         delete[] subtable;
         break;
 
-        case pml::pd:
-          delete[] subtable;
-          break;
+      case pml::pd:
+        delete[] subtable;
+        break;
 
-        case pml::pt:
-        default:
-          hvpp_assert(0);
-          break;
-        }
+      case pml::pt:
+      default:
+        hvpp_assert(0);
+        break;
+      }
   }
 
   //
