@@ -146,14 +146,12 @@ static_assert(sizeof(vcpu_stack_t::shadow_space_t) == 32);
 class vcpu_t
 {
   public:
-    auto initialize(vmexit_handler* handler = nullptr) noexcept -> error_code_t;
+    auto initialize(vmexit_handler& handler) noexcept -> error_code_t;
     void destroy() noexcept;
 
     void launch() noexcept;
     void terminate() noexcept;
 
-    auto exit_handler() const noexcept -> vmexit_handler*;
-    void exit_handler(vmexit_handler* handler) noexcept;
 
     ept_t& ept() noexcept { return ept_; }
 

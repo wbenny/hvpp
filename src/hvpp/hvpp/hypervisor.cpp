@@ -58,12 +58,12 @@ void hypervisor::destroy() noexcept
   }
 }
 
-auto hypervisor::start(vmexit_handler* handler) noexcept -> error_code_t
+auto hypervisor::start(vmexit_handler& handler) noexcept -> error_code_t
 {
-  hvpp_assert(vcpu_list_ && check_passed_ && handler);
+  hvpp_assert(vcpu_list_ && check_passed_);
   hvpp_assert(!started_);
 
-  if (!vcpu_list_ || !check_passed_ || !handler)
+  if (!vcpu_list_ || !check_passed_)
   {
     return make_error_code_t(std::errc::invalid_argument);
   }
@@ -73,7 +73,7 @@ auto hypervisor::start(vmexit_handler* handler) noexcept -> error_code_t
     return make_error_code_t(std::errc::operation_not_permitted);
   }
 
-  exit_handler_ = handler;
+  exit_handler_ = &handler;
 
 #ifdef HVPP_SINGLE_VCPU
   single_cpu_call(start_ipi_callback);
@@ -182,7 +182,7 @@ void hypervisor::start_ipi_callback() noexcept
   memory_manager::allocator_guard _;
 
   auto idx = mp::cpu_index();
-  vcpu_list_[idx].initialize(exit_handler_);
+  vcpu_list_[idx].initialize(*exit_handler_);
   vcpu_list_[idx].launch();
 }
 

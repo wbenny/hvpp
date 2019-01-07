@@ -14,7 +14,7 @@ class hypervisor
     auto initialize() noexcept -> error_code_t;
     void destroy() noexcept;
 
-    auto start(vmexit_handler* handler) noexcept -> error_code_t;
+    auto start(vmexit_handler& handler) noexcept -> error_code_t;
     void stop() noexcept;
 
     bool is_started() const noexcept;

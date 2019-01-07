@@ -286,7 +286,7 @@ HvppStart(
   // Start the hypervisor.
   //
 
-  return ErrorCodeToNtStatus(hvpp_->start(exit_handler));
+  return ErrorCodeToNtStatus(hvpp_->start(*exit_handler));
 }
 
 VOID

@@ -108,7 +108,7 @@ namespace driver
     //
     // Start the hypervisor.
     //
-    hypervisor_->start(vmexit_handler_);
+    hypervisor_->start(*vmexit_handler_);
 
     //
     // Tell debugger we're started.

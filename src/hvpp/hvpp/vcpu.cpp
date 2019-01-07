@@ -15,7 +15,7 @@ namespace hvpp {
 // Public
 //
 
-auto vcpu_t::initialize(vmexit_handler* handler) noexcept -> error_code_t
+auto vcpu_t::initialize(vmexit_handler& handler) noexcept -> error_code_t
 {
   //
   // Fill out initial stack with garbage.
@@ -39,12 +39,7 @@ auto vcpu_t::initialize(vmexit_handler* handler) noexcept -> error_code_t
   //
   // Initialize VM-exit handler.
   //
-  if (!handler)
-  {
-    return make_error_code_t(std::errc::invalid_argument);
-  }
-
-  handler_ = handler;
+  handler_ = &handler;
 
   //
   // Initialize VMXON region and VMCS.
