@@ -61,10 +61,10 @@ namespace hvpp
         });
       }
 
-      void invoke_termination() noexcept override
+      void invoke_termination(vcpu_t& vp) noexcept override
       {
         for_each_element(handlers, [&](auto&& handler, int) {
-          handler.invoke_termination();
+          handler.invoke_termination(vp);
         });
       }
   };

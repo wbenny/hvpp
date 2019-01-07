@@ -103,9 +103,9 @@ void vmexit_handler::handle(vcpu_t& vp) noexcept
   (this->*handlers_[handler_index])(vp);
 }
 
-void vmexit_handler::invoke_termination() noexcept
+void vmexit_handler::invoke_termination(vcpu_t& vp) noexcept
 {
-
+  (void)(vp);
 }
 
 //

@@ -157,7 +157,7 @@ class vmexit_handler
     // Note that this method is not called in VMX-root mode,
     // therefore you should avoid usage of VMXOFF instruction.
     //
-    virtual void invoke_termination() noexcept;
+    virtual void invoke_termination(vcpu_t& vp) noexcept;
 
   protected:
     //

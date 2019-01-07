@@ -109,7 +109,7 @@ void vcpu_t::destroy() noexcept
   // index.
   //
   state_ = vcpu_state::terminating;
-  handler_->invoke_termination();
+  handler_->invoke_termination(*this);
 
   //
   // Deallocate EPT.

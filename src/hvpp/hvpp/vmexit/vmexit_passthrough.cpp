@@ -45,8 +45,10 @@ void vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept
   vp.guest_ldtr(seg_t{ gdtr, read<ldtr_t>() });
 }
 
-void vmexit_passthrough_handler::invoke_termination() noexcept
+void vmexit_passthrough_handler::invoke_termination(vcpu_t& vp) noexcept
 {
+  (void)(vp);
+
   vmx::vmcall(vmcall_terminate_id);
 }
 
