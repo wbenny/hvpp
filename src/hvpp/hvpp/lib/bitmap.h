@@ -93,7 +93,7 @@ class bitmap_local
     bitmap_local() : bitmap(buffer_, SIZE_IN_BITS) { }
     bitmap_local(const bitmap_local& other) noexcept = delete;
     bitmap_local(bitmap_local&& other) noexcept = default;
-    bitmap_local& operator=(const bitmap_local& other) = delete;
+    bitmap_local& operator=(const bitmap_local& other) noexcept = delete;
     bitmap_local& operator=(bitmap_local&& other) = default;
 
     ~bitmap_local() noexcept = default;

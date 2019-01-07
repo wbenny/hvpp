@@ -89,6 +89,8 @@ class pa_t
     bool  operator!=(pa_t other) const noexcept { return value_ != other.value_;        }
     bool  operator! (          ) const noexcept { return !value_;                       }
 
+    explicit operator bool()     const noexcept { return value_ != 0;                   }
+
     //
     // Getters
     //
@@ -232,7 +234,7 @@ class mapping_t
     void* map(pa_t pa) noexcept
     {
       //
-      // Make this entry present & writeable.
+      // Make this entry present & writable.
       //
       pte_->present = true;
       pte_->write = true;
