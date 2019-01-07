@@ -27,11 +27,16 @@ namespace memory_manager
   {
     public:
       allocator_guard() noexcept;
+      allocator_guard(const allocator_guard& other) noexcept = delete;
+      allocator_guard(allocator_guard&& other) noexcept = delete;
       allocator_guard(const allocator_t& new_allocator) noexcept;
       ~allocator_guard() noexcept;
 
+      allocator_guard& operator=(const allocator_guard& other) noexcept = delete;
+      allocator_guard& operator=(allocator_guard&& other) noexcept = delete;
+
     private:
-      const allocator_t& previous_allocator_;
+      allocator_t previous_allocator_;
   };
 
   extern const allocator_t system_allocator;
