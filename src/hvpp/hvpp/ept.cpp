@@ -57,7 +57,7 @@ void ept_t::destroy() noexcept
   }
 }
 
-void ept_t::map_identity() noexcept
+void ept_t::map_identity(epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
 {
   //
   // This method will map the EPT in such way that they'll mirror
@@ -94,7 +94,7 @@ void ept_t::map_identity() noexcept
 
   for (pa_t pa = 0; pa < _512gb; pa += ept_pd_t::size)
   {
-    map_2mb(pa, pa);
+    map_2mb(pa, pa, access);
   }
 }
 
@@ -130,7 +130,8 @@ epte_t* ept_t::map_1gb(pa_t guest_pa, pa_t host_pa,
   return map(guest_pa, host_pa, access, pml::pdpt);
 }
 
-void ept_t::split_1gb_to_2mb(pa_t guest_pa, pa_t host_pa) noexcept
+void ept_t::split_1gb_to_2mb(pa_t guest_pa, pa_t host_pa,
+                             epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
 {
   //
   // Split
@@ -138,10 +139,11 @@ void ept_t::split_1gb_to_2mb(pa_t guest_pa, pa_t host_pa) noexcept
   //          into
   //    PD entries (512, large, 2MB).
   //
-  split<ept_pdpt_t, ept_pd_t>(guest_pa, host_pa);
+  split<ept_pdpt_t, ept_pd_t>(guest_pa, host_pa, access);
 }
 
-void ept_t::split_2mb_to_4kb(pa_t guest_pa, pa_t host_pa) noexcept
+void ept_t::split_2mb_to_4kb(pa_t guest_pa, pa_t host_pa,
+                             epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
 {
   //
   // Split
@@ -149,10 +151,11 @@ void ept_t::split_2mb_to_4kb(pa_t guest_pa, pa_t host_pa) noexcept
   //          into
   //    PT entries (512, 4kb).
   //
-  split<ept_pd_t, ept_pt_t>(guest_pa, host_pa);
+  split<ept_pd_t, ept_pt_t>(guest_pa, host_pa, access);
 }
 
-void ept_t::join_2mb_to_1gb(pa_t guest_pa, pa_t host_pa) noexcept
+void ept_t::join_2mb_to_1gb(pa_t guest_pa, pa_t host_pa,
+                             epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
 {
   //
   // Join (merge)
@@ -160,10 +163,11 @@ void ept_t::join_2mb_to_1gb(pa_t guest_pa, pa_t host_pa) noexcept
   //          into
   //    PDPT entry (1, large, 1GB).
   //
-  join<ept_pd_t, ept_pdpt_t>(guest_pa, host_pa);
+  join<ept_pd_t, ept_pdpt_t>(guest_pa, host_pa, access);
 }
 
-void ept_t::join_4kb_to_2mb(pa_t guest_pa, pa_t host_pa) noexcept
+void ept_t::join_4kb_to_2mb(pa_t guest_pa, pa_t host_pa,
+                             epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
 {
   //
   // Join (merge)
@@ -171,7 +175,7 @@ void ept_t::join_4kb_to_2mb(pa_t guest_pa, pa_t host_pa) noexcept
   //          into
   //    PD entry (1, large, 2MB).
   //
-  join<ept_pt_t, ept_pd_t>(guest_pa, host_pa);
+  join<ept_pt_t, ept_pd_t>(guest_pa, host_pa, access);
 }
 
 ept_ptr_t ept_t::ept_pointer() const noexcept
@@ -187,7 +191,7 @@ template <
   typename ept_table_from_t,
   typename ept_table_to_t
 >
-void ept_t::split(pa_t guest_pa, pa_t host_pa) noexcept
+void ept_t::split(pa_t guest_pa, pa_t host_pa, epte_t::access_type access) noexcept
 {
   //
   // Sanity compile-time checks - allow to use only EPT descriptors.
@@ -260,8 +264,7 @@ void ept_t::split(pa_t guest_pa, pa_t host_pa) noexcept
   {
     map(guest_pa + (i * ept_table_to_t::size), // offset = iteration * page_size
         host_pa  + (i * ept_table_to_t::size), // offset = iteration * page_size
-        epte_t::access_type::read_write_execute,
-        ept_table_to_t::level);
+        access, ept_table_to_t::level);
   }
 }
 
@@ -269,7 +272,7 @@ template <
   typename ept_table_from_t,
   typename ept_table_to_t
 >
-void ept_t::join(pa_t guest_pa, pa_t host_pa) noexcept
+void ept_t::join(pa_t guest_pa, pa_t host_pa, epte_t::access_type access) noexcept
 {
   //
   // Sanity compile-time checks - allow to use only EPT descriptors.
@@ -338,10 +341,7 @@ void ept_t::join(pa_t guest_pa, pa_t host_pa) noexcept
   // Map the unmapped physical memory range again, this time with single
   // large EPT entry.
   //
-  map(guest_pa,
-      host_pa,
-      epte_t::access_type::read_write_execute,
-      ept_table_to_t::level);
+  map(guest_pa, host_pa, access, ept_table_to_t::level);
 }
 
 epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
