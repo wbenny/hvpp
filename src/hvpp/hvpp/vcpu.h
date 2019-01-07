@@ -152,11 +152,16 @@ class vcpu_t
     void launch() noexcept;
     void terminate() noexcept;
 
+    void ept_enable(uint16_t count = 1) noexcept;
+    void ept_disable() noexcept;
 
-    ept_t& ept() noexcept { return ept_; }
+    auto ept_index() noexcept -> uint16_t;
+    void ept_index(uint16_t index) noexcept;
 
-    context_t& exit_context() { return exit_context_; }
-    void suppress_rip_adjust() noexcept { suppress_rip_adjust_ = true; }
+    auto ept(uint16_t index = 0) noexcept -> ept_t&;
+
+    auto exit_context() noexcept -> context_t&;
+    void suppress_rip_adjust() noexcept;
 
     //
     // VMCS manipulation. Implementation is in vcpu.inl.
@@ -168,19 +173,22 @@ class vcpu_t
 
     auto exit_instruction_info_guest_va() const noexcept -> void*;
 
-  private:
     //
     // Control state
     //
 
   public:
+    //
+    // (publicly read-only fields)
+    //
+
     auto vcpu_id() const noexcept -> uint16_t;
+    auto ept_pointer() const noexcept -> ept_ptr_t;
+    auto vmcs_link_pointer() const noexcept -> pa_t;     // technically, this is guest state
 
   private:
     void vcpu_id(uint16_t virtual_processor_identifier) noexcept;
-    auto ept_pointer() const noexcept -> ept_ptr_t;
     void ept_pointer(ept_ptr_t ept_pointer) noexcept;
-    auto vmcs_link_pointer() const noexcept -> pa_t;     // technically, this is guest state
     void vmcs_link_pointer(pa_t link_pointer) noexcept;
 
   public:
@@ -393,7 +401,11 @@ class vcpu_t
 
     vmexit_handler*    handler_;
     vcpu_state         state_;
-    ept_t              ept_;
+
+    ept_t*             ept_;
+    uint16_t           ept_count_;
+    uint16_t           ept_index_;
+
     bool               suppress_rip_adjust_;
 };
 

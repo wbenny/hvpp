@@ -21,6 +21,19 @@ void vmexit_c_wrapper_handler::destroy() noexcept
 
 }
 
+void vmexit_c_wrapper_handler::setup(vcpu_t& vp) noexcept
+{
+  base_type::setup(vp);
+
+  //
+  // Enable only 1 EPT table in C-wrapper for now.
+  // The option of having multiple EPTs should be considered
+  // in the future.
+  //
+  vp.ept_enable();
+  vp.ept().map_identity();
+}
+
 void vmexit_c_wrapper_handler::handle(vcpu_t& vp) noexcept
 {
   auto exit_reason = vp.exit_reason();

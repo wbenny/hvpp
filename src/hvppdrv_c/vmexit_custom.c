@@ -48,7 +48,7 @@ HvppHandleExecuteVmcall(
   UNREFERENCED_PARAMETER(Vcpu);
 
   PVCPU_CONTEXT Context = HvppVcpuExitContext(Vcpu);
-  PEPT Ept = HvppVcpuGetEpt(Vcpu);
+  PEPT Ept = HvppVcpuGetCurrentEpt(Vcpu);
 
   PPER_VCPU_DATA Data = &PerVcpuData[KeGetCurrentProcessorNumberEx(NULL)];
 
@@ -112,7 +112,7 @@ HvppHandleEptViolation(
   GuestPhysicalAddress.QuadPart = (LONGLONG)HvppVmRead(VMCS_VMEXIT_GUEST_PHYSICAL_ADDRESS);
   GuestLinearAddress            = (PVOID)   HvppVmRead(VMCS_VMEXIT_GUEST_LINEAR_ADDRESS);
 
-  PEPT Ept = HvppVcpuGetEpt(Vcpu);
+  PEPT Ept = HvppVcpuGetCurrentEpt(Vcpu);
 
   PPER_VCPU_DATA Data = &PerVcpuData[KeGetCurrentProcessorNumberEx(NULL)];
 

@@ -48,12 +48,12 @@ auto vcpu_t::initialize(vmexit_handler& handler) noexcept -> error_code_t
   memset(&vmcs_, 0, sizeof(vmcs_));
 
   //
-  // Initialize EPT.
+  // Let EPT be uninitialized.
+  // VM-exit handler is responsible for EPT setup.
   //
-  if (auto err = ept_.initialize())
-  {
-    return err;
-  }
+  ept_ = nullptr;
+  ept_count_ = 0;
+  ept_index_ = 0;
 
   //
   // This is not really needed.
@@ -98,18 +98,22 @@ auto vcpu_t::initialize(vmexit_handler& handler) noexcept -> error_code_t
 void vcpu_t::destroy() noexcept
 {
   //
+  // Signalize that this VCPU is terminating.
+  //
+  state_ = vcpu_state::terminating;
+
+  //
   // Notify the exit handler that we're about to terminate.
   // Exit handler should invoke VMEXIT in such way, that causes
   // handler to call vcpu_t::terminate(); e.g. VMCALL with specific
   // index.
   //
-  state_ = vcpu_state::terminating;
   handler_->invoke_termination(*this);
 
   //
-  // Deallocate EPT.
+  // Destroy EPT.
   //
-  ept_.destroy();
+  ept_disable();
 }
 
 void vcpu_t::launch() noexcept
@@ -148,88 +152,162 @@ void vcpu_t::terminate() noexcept
 {
   hvpp_assert(state_ != vcpu_state::off && state_ != vcpu_state::terminated);
 
-  if (state_ != vcpu_state::off && state_ != vcpu_state::terminated)
+  //
+  // Advance RIP before we exit VMX-root mode. This skips the "vmcall"
+  // instruction.
+  //
+  exit_context_.rip += exit_instruction_length();
+
+  //
+  // When running in VMX-root mode, the processor will set limits of the
+  // GDT and IDT to 0xffff (notice that there are no Host VMCS fields to
+  // set these values). This causes problems with PatchGuard, which will
+  // believe that the GDTR and IDTR have been modified by malware, and
+  // eventually crash the system. Since we know what the original state
+  // of the GDTR and IDTR was, simply restore it now.
+  //
+  write<gdtr_t>(guest_gdtr());
+  write<idtr_t>(guest_idtr());
+
+  //
+  // Our callback routine may have interrupted an arbitrary user process,
+  // and therefore not a thread running with a systemwide page directory.
+  // Therefore if we return back to the original caller after turning off
+  // VMX, it will keep our current "host" CR3 value which we set on entry
+  // to the PML4 of the SYSTEM process.  We want to return back with the
+  // correct value of the "guest" CR3, so that the currently executing
+  // process continues to run with its expected address space mappings.
+  //
+  write<cr3_t>(guest_cr3());
+
+  //
+  // Software can use the INVVPID instruction with the "all-context"
+  // INVVPID type immediately after execution of the VMXON instruction
+  // or immediately prior to execution of the VMXOFF instruction.
+  // Either prevents potentially undesired retention of information
+  // cached from paging structures between separate uses of VMX operation.
+  // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
+  //
+  vmx::invvpid_all_contexts();
+
+  //
+  // Software can use the INVEPT instruction with the "all-context"
+  // INVEPT type immediately after execution of the VMXON instruction
+  // or immediately prior to execution of the VMXOFF instruction.
+  // Either prevents potentially undesired retention of information
+  // cached from EPT paging structures between separate uses of VMX operation.
+  // (ref: Vol3C[28.3.3.4(Guidelines for Use of the INVEPT Instruction)])
+  //
+  vmx::invept_all_contexts();
+
+  //
+  // Turn off VMX-root mode on this logical processor.
+  //
+  // This instruction brings us back to ring 0 from the "ring -1".
+  // Note that in non VMX-root mode, all VMX-instructions (incl.
+  // invept/invvpid) raise #UD (invalid instruction opcode exception).
+  //
+  vmx::off();
+
+  //
+  // Disable VMX-enable bit so that other hypervisors (or us)
+  // can load again.
+  //
+  auto cr4 = read<cr4_t>();
+  cr4.vmx_enable = false;
+  write<cr4_t>(cr4);
+
+  //
+  // Signalize that this VCPU has terminated.
+  //
+  state_ = vcpu_state::terminated;
+}
+
+void vcpu_t::ept_enable(uint16_t count /* = 1 */) noexcept
+{
+  hvpp_assert(ept_ == nullptr && count > 0);
+
+  //
+  // Allocate all EPTs and initialize them.
+  //
+  ept_ = new ept_t[count];
+  ept_count_ = count;
+
+  for (uint16_t i = 0; i < count; i += 1)
   {
-    //
-    // Advance RIP before we exit VMX-root mode. This skips the "vmcall"
-    // instruction.
-    //
-    exit_context_.rip += exit_instruction_length();
-
-    //
-    // When running in VMX-root mode, the processor will set limits of the
-    // GDT and IDT to 0xffff (notice that there are no Host VMCS fields to
-    // set these values). This causes problems with PatchGuard, which will
-    // believe that the GDTR and IDTR have been modified by malware, and
-    // eventually crash the system. Since we know what the original state
-    // of the GDTR and IDTR was, simply restore it now.
-    //
-    write<gdtr_t>(guest_gdtr());
-    write<idtr_t>(guest_idtr());
-
-    //
-    // Our callback routine may have interrupted an arbitrary user process,
-    // and therefore not a thread running with a systemwide page directory.
-    // Therefore if we return back to the original caller after turning off
-    // VMX, it will keep our current "host" CR3 value which we set on entry
-    // to the PML4 of the SYSTEM process.  We want to return back with the
-    // correct value of the "guest" CR3, so that the currently executing
-    // process continues to run with its expected address space mappings.
-    //
-    write<cr3_t>(guest_cr3());
-
-    //
-    // Software can use the INVVPID instruction with the "all-context"
-    // INVVPID type immediately after execution of the VMXON instruction
-    // or immediately prior to execution of the VMXOFF instruction.
-    // Either prevents potentially undesired retention of information
-    // cached from paging structures between separate uses of VMX operation.
-    // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
-    //
-    vmx::invvpid_all_contexts();
-
-    //
-    // Software can use the INVEPT instruction with the "all-context"
-    // INVEPT type immediately after execution of the VMXON instruction
-    // or immediately prior to execution of the VMXOFF instruction.
-    // Either prevents potentially undesired retention of information
-    // cached from EPT paging structures between separate uses of VMX operation.
-    // (ref: Vol3C[28.3.3.4(Guidelines for Use of the INVEPT Instruction)])
-    //
-    vmx::invept_all_contexts();
-
-    //
-    // Turn off VMX-root mode on this logical processor.
-    //
-    // This instruction brings us back to ring 0 from the "ring -1".
-    // Note that in non VMX-root mode, all VMX-instructions (incl.
-    // invept/invvpid) raise #UD (invalid instruction opcode exception).
-    //
-    vmx::off();
-
-    //
-    // Disable VMX-enable bit so that other hypervisors (or us)
-    // can load again.
-    //
-    auto cr4 = read<cr4_t>();
-    cr4.vmx_enable = false;
-    write<cr4_t>(cr4);
-
-    //
-    // Signalize that this VCPU has terminated.
-    //
-    state_ = vcpu_state::terminated;
+    ept_[i].initialize();
   }
+
+  //
+  // Enable EPT.
+  //
+  auto procbased_ctls2 = processor_based_controls2();
+  procbased_ctls2.enable_ept = true;
+  processor_based_controls2(procbased_ctls2);
+
+  //
+  // Automatically select the first EPT.
+  //
+  ept_index(0);
 }
 
-void vcpu_t::exit_handler(vmexit_handler* handler) noexcept
+void vcpu_t::ept_disable() noexcept
 {
-  handler_ = handler;
+  if (!ept_)
+  {
+    return;
+  }
+
+  //
+  // Destroy EPT.
+  //
+  for (uint16_t i = 0; i < ept_count_; i++)
+  {
+    ept_[i].destroy();
+  }
+
+  delete[] ept_;
+  ept_ = nullptr;
+
+  //
+  // Disable EPT functionality.
+  //
+  //
+  // #TODO: VMX is already disabled when we're here.
+  //
+//   auto procbased_ctls2 = processor_based_controls2();
+//   procbased_ctls2.enable_ept = false;
+//   processor_based_controls2(procbased_ctls2);
 }
 
-vmexit_handler* vcpu_t::exit_handler() const noexcept
+auto vcpu_t::ept_index() noexcept -> uint16_t
 {
-  return handler_;
+  return ept_index_;
+}
+
+void vcpu_t::ept_index(uint16_t index) noexcept
+{
+  hvpp_assert(index < ept_count_);
+
+  ept_pointer(ept_[index].ept_pointer());
+  ept_index_ = index;
+}
+
+auto vcpu_t::ept(uint16_t index /* = 0 */) noexcept -> ept_t&
+{
+  hvpp_assert(index < ept_count_);
+
+  return ept_[index];
+}
+
+auto vcpu_t::exit_context() noexcept -> context_t&
+{
+  return exit_context_;
+}
+
+void vcpu_t::suppress_rip_adjust() noexcept
+{
+  suppress_rip_adjust_ = true;
 }
 
 //
@@ -247,13 +325,11 @@ void vcpu_t::error() noexcept
 void vcpu_t::setup() noexcept
 {
   //
-  // Setup EPT, enter VMX operation, invalidate EPT and VPID, load VMCS,
-  // set VMCS fields, call handler's setup() method, and launch the VM.
-  // This function should NOT return - the next instruction after vmlaunch
-  // should be at vcpu_t::entry_guest_ (vcpu.asm).
+  // Enter VMX operation, invalidate EPT and VPID, load VMCS,
+  // set VMCS fields, call handler's setup() method, and launch
+  // the VM.  This function should NOT return - the next instruction
+  // after vmlaunch should be at vcpu_t::entry_guest_ (vcpu.asm).
   //
-  ept_.map_identity();
-
   load_vmxon();
   load_vmcs();
 
@@ -329,10 +405,10 @@ void vcpu_t::load_vmxon() noexcept
 
 void vcpu_t::load_vmcs() noexcept
 {
+  hvpp_assert(state_ == vcpu_state::initializing);
+
   auto vmx_basic = msr::read<msr::vmx_basic_t>();
   vmcs_.revision_id = vmx_basic.vmcs_revision_id;
-
-  hvpp_assert(state_ == vcpu_state::initializing);
 
   //
   // Set VMCS to "clear" state and make the VMCS active.
@@ -443,11 +519,6 @@ void vcpu_t::setup_guest() noexcept
   vcpu_id(1);
 
   //
-  // Set EPT pointer.
-  //
-  ept_pointer(ept_.ept_pointer());
-
-  //
   // VMCS link pointer points to the shadow VMCS if VMCS shadowing is
   // enabled.  If VMCS shadowing is disabled, intel advises to set this
   // value to 0xFFFFFFFFFFFFFFFF.
@@ -472,13 +543,12 @@ void vcpu_t::setup_guest() noexcept
   processor_based_controls(procbased_ctls);
 
   //
-  // By default we will enable EPT and VPID.
+  // By default we will enable VPID.
   // Also, enable RDTSCP, XSAVES and INVPCID instructions to be run by
   // guest (otherwise they would cause #UD).
   //
   msr::vmx_procbased_ctls2_t procbased_ctls2{};
   procbased_ctls2.enable_vpid = true;
-  procbased_ctls2.enable_ept = true;
   procbased_ctls2.enable_rdtscp = true;
   procbased_ctls2.enable_xsaves = true;
   procbased_ctls2.enable_invpcid = true;
@@ -518,12 +588,6 @@ void vcpu_t::setup_guest() noexcept
 void vcpu_t::entry_host() noexcept
 {
   //
-  // Because we're in VMX-root mode, the system memory allocator
-  // has to be disabled.
-  //
-  memory_manager::allocator_guard _;
-
-  //
   // Reset RIP-adjust flag.
   //
   suppress_rip_adjust_ = false;
@@ -551,56 +615,64 @@ void vcpu_t::entry_host() noexcept
   //
   ia32_asm_fx_save(&fxsave_area_);
 
-  auto saved_rsp    = exit_context_.rsp;
-  auto saved_rflags = exit_context_.rflags;
-
   {
-    exit_context_.rsp    = guest_rsp();
-    exit_context_.rip    = guest_rip();
-    exit_context_.rflags = guest_rflags();
+    //
+    // Because we're in VMX-root mode, the system memory allocator
+    // has to be disabled.
+    //
+    memory_manager::allocator_guard _;
 
-    //
-    // WinDbg will show full callstack (hypervisor + interrupted application)
-    // after these two lines are executed.
-    // See vcpu.asm for more details.
-    //
-    // Note that machine_frame.rip is supposed to hold return address.
-    // exit_instruction_length() is added to the guest_rip() to create
-    // this value.
-    //
-    stack_.machine_frame.rip = exit_context_.rip + exit_instruction_length();
-    stack_.machine_frame.rsp = exit_context_.rsp;
+    auto captured_rsp    = exit_context_.rsp;
+    auto captured_rflags = exit_context_.rflags;
 
     {
-      handler_->handle(*this);
+      exit_context_.rsp    = guest_rsp();
+      exit_context_.rip    = guest_rip();
+      exit_context_.rflags = guest_rflags();
 
-      if (state_ == vcpu_state::terminated)
+      //
+      // WinDbg will show full callstack (hypervisor + interrupted application)
+      // after these two lines are executed.
+      // See vcpu.asm for more details.
+      //
+      // Note that machine_frame.rip is supposed to hold return address.
+      // exit_instruction_length() is added to the guest_rip() to create
+      // this value.
+      //
+      stack_.machine_frame.rip = exit_context_.rip + exit_instruction_length();
+      stack_.machine_frame.rsp = exit_context_.rsp;
+
       {
-        //
-        // At this point we're not in the VMX-root mode (vmxoff has been
-        // executed) and we want to return control back to whomever caused
-        // this VM-exit.
-        //
-        // Note that at this point, we can't call any VMX instructions,
-        // as they would raise #UD (invalid opcode exception).
-        //
-        goto exit;
+        handler_->handle(*this);
+
+        if (state_ == vcpu_state::terminated)
+        {
+          //
+          // At this point we're not in the VMX-root mode (vmxoff has been
+          // executed) and we want to return control back to whomever caused
+          // this VM-exit.
+          //
+          // Note that at this point, we can't call any VMX instructions,
+          // as they would raise #UD (invalid opcode exception).
+          //
+          goto exit;
+        }
+
+        if (!suppress_rip_adjust_)
+        {
+          exit_context_.rip += exit_instruction_length();
+        }
       }
 
-      if (!suppress_rip_adjust_)
-      {
-        exit_context_.rip += exit_instruction_length();
-      }
+      guest_rsp(exit_context_.rsp);
+      guest_rip(exit_context_.rip);
+      guest_rflags(exit_context_.rflags);
     }
 
-    guest_rsp(exit_context_.rsp);
-    guest_rip(exit_context_.rip);
-    guest_rflags(exit_context_.rflags);
+    exit_context_.rflags = captured_rflags;
+    exit_context_.rsp    = captured_rsp;
+    exit_context_.rip    = reinterpret_cast<uint64_t>(&vmx::vmresume);
   }
-
-  exit_context_.rflags = saved_rflags;
-  exit_context_.rsp    = saved_rsp;
-  exit_context_.rip    = reinterpret_cast<uint64_t>(&vmx::vmresume);
 
 exit:
   ia32_asm_fx_restore(&fxsave_area_);

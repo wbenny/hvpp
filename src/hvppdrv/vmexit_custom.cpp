@@ -8,6 +8,12 @@ void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
 {
   base_type::setup(vp);
 
+  //
+  // Enable EPT and mirror current physical memory.
+  //
+  vp.ept_enable();
+  vp.ept().map_identity();
+
 #if 1
   //
   // Enable exitting on 0x64 I/O port (keyboard).

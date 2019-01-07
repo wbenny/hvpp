@@ -1252,9 +1252,41 @@ HvppIsStarted(
 
 #pragma region vcpu.h
 
+VOID
+NTAPI
+HvppVcpuEnableEpt(
+  _In_ PVCPU Vcpu,
+  _In_ USHORT Count
+  );
+
+VOID
+NTAPI
+HvppVcpuDisableEpt(
+  _In_ PVCPU Vcpu
+  );
+
+USHORT
+HvppVcpuGetEptIndex(
+  _In_ PVCPU Vcpu
+  );
+
+VOID
+NTAPI
+HvppVcpuSetEptIndex(
+  _In_ PVCPU Vcpu,
+  _In_ USHORT Index
+  );
+
 PEPT
 NTAPI
 HvppVcpuGetEpt(
+  _In_ PVCPU Vcpu,
+  _In_ USHORT Index
+  );
+
+PEPT
+NTAPI
+HvppVcpuGetCurrentEpt(
   _In_ PVCPU Vcpu
   );
 
