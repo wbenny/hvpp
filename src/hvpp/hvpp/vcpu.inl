@@ -18,6 +18,24 @@ auto vcpu_t::interrupt_info() const noexcept -> interrupt_info_t
   return result;
 }
 
+auto vcpu_t::idt_vectoring_info() const noexcept -> interrupt_info_t
+{
+  interrupt_info_t result;
+  result.info_ = exit_idt_vectoring_info();
+
+  if (result.info_.valid)
+  {
+    if (result.info_.error_code_valid)
+    {
+      result.error_code_ = exit_idt_vectoring_error_code();
+    }
+
+    result.rip_adjust_ = exit_instruction_length();
+  }
+
+  return result;
+}
+
 void vcpu_t::inject(interrupt_info_t interrupt) noexcept
 {
   entry_interruption_info(interrupt.info_);
@@ -421,6 +439,20 @@ auto vcpu_t::exit_interruption_error_code() const noexcept -> exception_error_co
 {
   exception_error_code_t result;
   vmx::vmread(vmx::vmcs_t::field::vmexit_interruption_error_code, result);
+  return result;
+}
+
+auto vcpu_t::exit_idt_vectoring_info() const noexcept -> vmx::interrupt_info_t
+{
+  vmx::interrupt_info_t result;
+  vmx::vmread(vmx::vmcs_t::field::vmexit_idt_vectoring_info, result);
+  return result;
+}
+
+auto vcpu_t::exit_idt_vectoring_error_code() const noexcept -> exception_error_code_t
+{
+  exception_error_code_t result;
+  vmx::vmread(vmx::vmcs_t::field::vmexit_idt_vectoring_error_code, result);
   return result;
 }
 

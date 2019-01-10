@@ -169,6 +169,7 @@ class vcpu_t
 
   public:
     auto interrupt_info() const noexcept -> interrupt_info_t;
+    auto idt_vectoring_info() const noexcept -> interrupt_info_t;
     void inject(interrupt_info_t interrupt) noexcept;
 
     auto exit_instruction_info_guest_va() const noexcept -> void*;
@@ -251,6 +252,9 @@ class vcpu_t
 
     auto exit_interruption_info() const noexcept -> vmx::interrupt_info_t;
     auto exit_interruption_error_code() const noexcept -> exception_error_code_t;
+
+    auto exit_idt_vectoring_info() const noexcept -> vmx::interrupt_info_t;
+    auto exit_idt_vectoring_error_code() const noexcept -> exception_error_code_t;
 
     auto exit_reason() const noexcept -> vmx::exit_reason;
     auto exit_qualification() const noexcept -> vmx::exit_qualification_t;
