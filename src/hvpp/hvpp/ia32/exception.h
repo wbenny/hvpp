@@ -26,6 +26,12 @@ enum class exception_vector : uint32_t
   simd_floating_point_error   = 19,
   virtualization_exception    = 20,
 
+  //
+  // Windows specific.
+  //
+
+  dpc_interrupt               = 47,
+  clock_interrupt             = 209,
   pmi_interrupt               = 254,
 };
 
