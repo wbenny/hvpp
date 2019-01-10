@@ -48,7 +48,7 @@ void vmexit_dbgbreak_handler::handle(vcpu_t& vp) noexcept
   switch (exit_reason)
   {
     case vmx::exit_reason::exception_or_nmi:
-      hvpp_break_if(storage_.expt_vector[static_cast<int>(vp.exit_interrupt_info().vector())]);
+      hvpp_break_if(storage_.expt_vector[static_cast<int>(vp.interrupt_info().vector())]);
       break;
 
     case vmx::exit_reason::execute_cpuid:

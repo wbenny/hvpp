@@ -168,7 +168,7 @@ class vcpu_t
     //
 
   public:
-    auto exit_interrupt_info() const noexcept -> interrupt_info_t;
+    auto interrupt_info() const noexcept -> interrupt_info_t;
     void inject(interrupt_info_t interrupt) noexcept;
 
     auto exit_instruction_info_guest_va() const noexcept -> void*;

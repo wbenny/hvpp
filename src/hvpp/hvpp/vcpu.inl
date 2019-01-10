@@ -1,6 +1,6 @@
 namespace hvpp {
 
-auto vcpu_t::exit_interrupt_info() const noexcept -> interrupt_info_t
+auto vcpu_t::interrupt_info() const noexcept -> interrupt_info_t
 {
   interrupt_info_t result;
   result.info_ = exit_interruption_info();

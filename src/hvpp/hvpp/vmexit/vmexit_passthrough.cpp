@@ -54,7 +54,7 @@ void vmexit_passthrough_handler::invoke_termination(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_exception_or_nmi(vcpu_t& vp) noexcept
 {
-  auto interrupt = vp.exit_interrupt_info();
+  auto interrupt = vp.interrupt_info();
 
   switch (interrupt.type())
   {

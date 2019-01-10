@@ -71,15 +71,15 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
   switch (exit_reason)
   {
     case vmx::exit_reason::exception_or_nmi:
-      switch (vp.exit_interrupt_info().type())
+      switch (vp.interrupt_info().type())
       {
         case vmx::interrupt_type::hardware_exception:
         case vmx::interrupt_type::software_exception:
-          stats.expt_vector[static_cast<int>(vp.exit_interrupt_info().vector())] += 1;
+          stats.expt_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
 
           hvpp_trace_if_enabled(
             "exit_reason::exception_or_nmi: %s",
-            exception_vector_to_string(vp.exit_interrupt_info().vector()));
+            exception_vector_to_string(vp.interrupt_info().vector()));
           break;
       }
       break;
