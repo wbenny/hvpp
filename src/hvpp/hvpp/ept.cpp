@@ -178,6 +178,39 @@ void ept_t::join_4kb_to_2mb(pa_t guest_pa, pa_t host_pa,
   join<ept_pt_t, ept_pd_t>(guest_pa, host_pa, access);
 }
 
+epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
+{
+  //
+  // Get EPT entry at desired level for provided guest physical address.
+  // Start at PML4 and traverse down the paging hierarchy.
+  // Returns nullptr for unmapped (non-present) physical addresses.
+  //
+  auto pml4e = &epml4_[guest_pa.index(pml::pml4)];
+  auto pdpte = pml4e->present()
+    ? &pml4e->subtable()[guest_pa.index(pml::pdpt)]
+    : nullptr;
+
+  if (!pdpte || pdpte->large_page || level == pml::pdpt)
+  {
+    return pdpte;
+  }
+
+  auto pde = pdpte->present()
+    ? &pdpte->subtable()[guest_pa.index(pml::pd)]
+    : nullptr;
+
+  if (!pde || pde->large_page || level == pml::pd)
+  {
+    return pde;
+  }
+
+  auto pte = pde->present()
+    ? &pde->subtable()[guest_pa.index(pml::pt)]
+    : nullptr;
+
+  return pte;
+}
+
 ept_ptr_t ept_t::ept_pointer() const noexcept
 {
   return eptptr_;
@@ -342,39 +375,6 @@ void ept_t::join(pa_t guest_pa, pa_t host_pa, epte_t::access_type access) noexce
   // large EPT entry.
   //
   map(guest_pa, host_pa, access, ept_table_to_t::level);
-}
-
-epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
-{
-  //
-  // Get EPT entry at desired level for provided guest physical address.
-  // Start at PML4 and traverse down the paging hierarchy.
-  // Returns nullptr for unmapped (non-present) physical addresses.
-  //
-  auto pml4e = &epml4_[guest_pa.index(pml::pml4)];
-  auto pdpte = pml4e->present()
-    ? &pml4e->subtable()[guest_pa.index(pml::pdpt)]
-    : nullptr;
-
-  if (!pdpte || pdpte->large_page || level == pml::pdpt)
-  {
-    return pdpte;
-  }
-
-  auto pde = pdpte->present()
-    ? &pdpte->subtable()[guest_pa.index(pml::pd)]
-    : nullptr;
-
-  if (!pde || pde->large_page || level == pml::pd)
-  {
-    return pde;
-  }
-
-  auto pte = pde->present()
-    ? &pde->subtable()[guest_pa.index(pml::pt)]
-    : nullptr;
-
-  return pte;
 }
 
 epte_t* ept_t::map_subtable(epte_t* table) noexcept

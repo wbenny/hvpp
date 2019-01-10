@@ -39,6 +39,7 @@ class ept_t
     void join_4kb_to_2mb(pa_t guest_pa, pa_t host_pa,
                           epte_t::access_type access = epte_t::access_type::read_write_execute) noexcept;
 
+    epte_t*   ept_entry(pa_t guest_pa, pml level = pml::pt) noexcept;
     ept_ptr_t ept_pointer() const noexcept;
 
   private:
@@ -53,8 +54,6 @@ class ept_t
       typename ept_table_to_t
     >
     void join(pa_t guest_pa, pa_t host_pa, epte_t::access_type access) noexcept;
-
-    epte_t* ept_entry(pa_t guest_pa, pml level = pml::pt) noexcept;
 
     epte_t* map_subtable(epte_t* table) noexcept;
 
