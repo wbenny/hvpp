@@ -1031,6 +1031,7 @@ void vmexit_passthrough_handler::handle_vm_fallback(vcpu_t& vp) noexcept
   vp.inject(
     interrupt_info_t(vmx::interrupt_type::hardware_exception,
                      exception_vector::invalid_opcode));
+  vp.suppress_rip_adjust();
 }
 
 }
