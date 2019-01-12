@@ -413,7 +413,7 @@ epte_t* ept_t::map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt,
 
   if (large == pml::pdpt)
   {
-    pdpte->update(host_pa, memory_manager::mtrr().type(guest_pa), true);
+    pdpte->update(host_pa, memory_manager::mtrr().type(guest_pa), true, access);
     return pdpte;
   }
 
@@ -428,7 +428,7 @@ epte_t* ept_t::map_pd(pa_t guest_pa, pa_t host_pa, epte_t* pd,
 
   if (large == pml::pd)
   {
-    pde->update(host_pa, memory_manager::mtrr().type(guest_pa), true);
+    pde->update(host_pa, memory_manager::mtrr().type(guest_pa), true, access);
     return pde;
   }
 
