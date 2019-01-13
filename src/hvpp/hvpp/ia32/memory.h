@@ -411,7 +411,10 @@ namespace detail
 {
   inline uint64_t pa_from_va(void* va, cr3_t cr3) noexcept
   {
-    return pa_t::from_pfn(va_t(va).pt_entry(cr3)->page_frame_number).value();
+    return pa_t::from_pfn(
+      va_t(va).pt_entry(cr3)->page_frame_number
+      ).value() +
+      byte_offset(va);
   }
 }
 
