@@ -276,6 +276,8 @@ class mapping_t
   private:
     void read_write(pa_t pa, void* buffer, size_t size, bool write) noexcept
     {
+      uint8_t* byte_buffer = reinterpret_cast<uint8_t*>(buffer);
+
       //
       // Map each page of the physical memory to the reserved
       // virtual address and then copy.
@@ -292,16 +294,16 @@ class mapping_t
 
         if (write)
         {
-          memcpy(va, buffer, bytes_to_copy);
+          memcpy(va, byte_buffer, bytes_to_copy);
         }
         else
         {
-          memcpy(buffer, va, bytes_to_copy);
+          memcpy(byte_buffer, va, bytes_to_copy);
         }
 
-        pa += bytes_to_copy;
-        buffer = reinterpret_cast<uint8_t*>(buffer) + bytes_to_copy;
-        size -= bytes_to_copy;
+        byte_buffer += bytes_to_copy;
+        pa          += bytes_to_copy;
+        size        -= bytes_to_copy;
 
         unmap();
       }
