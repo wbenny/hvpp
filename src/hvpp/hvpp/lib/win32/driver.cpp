@@ -24,6 +24,12 @@ EXTERN_C DRIVER_INITIALIZE DriverEntry;
 
 PDRIVER_OBJECT GlobalDriverObject = nullptr;
 
+namespace driver
+{
+  void* begin_address = nullptr;
+  void* end_address   = nullptr;
+}
+
 static
 NTSTATUS
 NTAPI
@@ -90,7 +96,7 @@ DriverDispatch(
     case IRP_MJ_DEVICE_CONTROL:
       //
       // Capture the IOCTL code.
-      // 
+      //
       IoControlCode = IoStackLocation->Parameters.DeviceIoControl.IoControlCode;
 
       //
@@ -169,6 +175,9 @@ DriverEntry(
   DriverObject->MajorFunction[IRP_MJ_READ]           = &DriverDispatch;
   DriverObject->MajorFunction[IRP_MJ_WRITE]          = &DriverDispatch;
   DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = &DriverDispatch;
+
+  driver::begin_address = (PVOID)((ULONG_PTR)(DriverObject->DriverStart));
+  driver::end_address   = (PVOID)((ULONG_PTR)(DriverObject->DriverStart) + DriverObject->DriverSize);
 
   auto err = driver::common::initialize(&driver::initialize,
                                         &driver::destroy);

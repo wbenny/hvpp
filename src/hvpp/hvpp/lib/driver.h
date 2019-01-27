@@ -3,6 +3,9 @@
 
 namespace driver
 {
+  extern void* begin_address;
+  extern void* end_address;
+
   namespace common
   {
     using driver_initialize_fn = error_code_t(*)();
