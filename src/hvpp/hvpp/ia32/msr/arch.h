@@ -52,6 +52,52 @@ struct debugctl_t
   };
 };
 
+struct efer_t
+{
+  static constexpr uint32_t msr_id = 0xc0000080;
+  using result_type = efer_t;
+
+  union
+  {
+    uint64_t flags;
+
+    struct
+    {
+      uint64_t syscall_enable : 1;
+      uint64_t reserved1 : 7;
+      uint64_t ia32e_mode_enable : 1;
+      uint64_t reserved2 : 1;
+      uint64_t ia32e_mode_active : 1;
+      uint64_t execute_disable_bit_enable : 1;
+      uint64_t reserved3 : 52;
+    };
+  };
+};
+
+struct star_t
+{
+  static constexpr uint32_t msr_id = 0xc0000081;
+  using result_type = uint64_t;
+};
+
+struct lstar_t
+{
+  static constexpr uint32_t msr_id = 0xc0000082;
+  using result_type = uint64_t;
+};
+
+struct cstar_t
+{
+  static constexpr uint32_t msr_id = 0xc0000083;
+  using result_type = uint64_t;
+};
+
+struct fmask_t
+{
+  static constexpr uint32_t msr_id = 0xc0000084;
+  using result_type = rflags_t;
+};
+
 struct fs_base_t
 {
   static constexpr uint32_t msr_id = 0xc0000100;

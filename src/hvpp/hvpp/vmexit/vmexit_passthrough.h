@@ -59,6 +59,9 @@ class vmexit_passthrough_handler
     void handle_vm_fallback(vcpu_t& vp) noexcept override;
 
     virtual void handle_interrupt(vcpu_t& vp) noexcept;
+
+    virtual void handle_emulate_syscall(vcpu_t& vp) noexcept;
+    virtual void handle_emulate_sysret(vcpu_t& vp) noexcept;
 };
 
 }

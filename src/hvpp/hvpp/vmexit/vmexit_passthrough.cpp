@@ -16,6 +16,21 @@ namespace hvpp {
 static constexpr uint64_t vmcall_terminate_id  = 0xDEAD;
 static constexpr uint64_t vmcall_breakpoint_id = 0xAABB;
 
+namespace detail
+{
+  static bool is_syscall_instruction(const void* address) noexcept
+  {
+    static constexpr uint8_t opcode[] = { 0x0f, 0x05 };
+    return memcmp(address, opcode, sizeof(opcode));
+  }
+
+  static bool is_sysret_instruction(const void* address) noexcept
+  {
+    static constexpr uint8_t opcode[] = { 0x48, 0x0f, 0x07 };
+    return memcmp(address, opcode, sizeof(opcode));
+  }
+}
+
 void vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept
 {
   //
@@ -1012,6 +1027,25 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
     case vmx::interrupt_type::hardware_exception:
       switch (interrupt.vector())
       {
+        case exception_vector::invalid_opcode:
+          {
+            cr3_guard _(vp.guest_cr3());
+
+            if (detail::is_syscall_instruction(vp.exit_context().rip_as_pointer))
+            {
+              handle_emulate_syscall(vp);
+              vp.suppress_rip_adjust();
+              return;
+            }
+            else if (detail::is_sysret_instruction(vp.exit_context().rip_as_pointer))
+            {
+              handle_emulate_sysret(vp);
+              vp.suppress_rip_adjust();
+              return;
+            }
+          }
+          break;
+
         case exception_vector::general_protection:
 
 #ifdef HVPP_ENABLE_VMWARE_WORKAROUND
@@ -1072,4 +1106,143 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
   //
   vp.suppress_rip_adjust();
 }
+
+//
+// SYSCALL/SYSRET emulation inspired by:
+//   https://revers.engineering/syscall-hooking-via-extended-feature-enable-register-efer/
+//
+
+void vmexit_passthrough_handler::handle_emulate_syscall(vcpu_t& vp) noexcept
+{
+  //
+  // Save the address of the instruction following SYSCALL
+  // into RCX and then load RIP from MSR_LSTAR.
+  //
+  auto lstar = msr::read<msr::lstar_t>();
+  vp.exit_context().rcx = vp.exit_context().rip + vp.exit_instruction_length();
+  vp.exit_context().rip = lstar;
+
+  //
+  // Save RFLAGS into R11 and then mask RFLAGS using MSR_FMASK.
+  //
+  auto fmask = msr::read<msr::fmask_t>();
+  vp.exit_context().r11 = vp.exit_context().rflags.flags;
+  vp.exit_context().rflags.flags &= ~fmask.flags;
+
+  //
+  // Load the CS and SS selectors with values derived from
+  // bits 47:32 of MSR_STAR.
+  //
+  auto star = msr::read<msr::star_t>();
+
+  //
+  // Verbose version of:
+  //   cs.access = segment_access_vmx_t{ 0xa09b };
+  //
+  // cs.access.type                       = segment_access_vmx_t::type_execute_read_accessed;
+  // cs.access.descriptor_type            = segment_access_vmx_t::descriptor_type_code_or_data;
+  // cs.access.descriptor_privilege_level = 0;                  // DPL0 == kernel mode
+  // cs.access.present                    = 1;
+  // // cs.access.limit_high              = 0;                  // Unchanged
+  // // cs.access.available_bit           = 0;                  // Unchanged
+  // cs.access.long_mode                  = 1;
+  // cs.access.default_big                = 0;
+  // cs.access.granularity                = segment_access_vmx_t::granularity_4kb;
+  //
+
+  auto cs = vp.guest_cs();
+  cs.base_address = nullptr;                                    // Flat segment
+  cs.limit        = uint32_t(0xffffffff);                       // 4GB limit
+  cs.access       = segment_access_vmx_t{ 0xa09b };             // L+DB+P+S+DPL0+Code
+  cs.selector     = cs_t{ uint16_t((star >> 32) & ~3) };        // STAR[47:32] & ~RPL3
+  vp.guest_cs(cs);
+
+  //
+  // Verbose version of:
+  //   ss.access = segment_access_vmx_t{ 0xc093 };
+  //
+  // ss.access.type                       = segment_access_vmx_t::type_read_write_accessed;
+  // ss.access.descriptor_type            = segment_access_vmx_t::descriptor_type_code_or_data;
+  // ss.access.descriptor_privilege_level = 0;                  // DPL0 == kernel mode
+  // ss.access.present                    = 1;
+  // // ss.access.limit_high              = 0;                  // Unchanged
+  // // ss.access.available_bit           = 0;                  // Unchanged
+  // // ss.access.long_mode               = 0;                  // Unchanged
+  // ss.access.default_big                = 1;
+  // ss.access.granularity                = segment_access_vmx_t::granularity_4kb;
+  //
+
+  auto ss = vp.guest_ss();
+  ss.base_address = nullptr;                                    // Flat segment
+  ss.limit        = uint32_t(0xffffffff);                       // 4GB limit
+  ss.access       = segment_access_vmx_t{ 0xc093 };             // G+DB+P+S+DPL0+Data
+  ss.selector     = ss_t{ uint16_t(((star >> 32) & ~3) + 8) };  // STAR[47:32] + 8
+  vp.guest_ss(ss);
+}
+
+void vmexit_passthrough_handler::handle_emulate_sysret(vcpu_t& vp) noexcept
+{
+  //
+  // Load RIP from RCX.
+  //
+  vp.exit_context().rip = vp.exit_context().rcx;
+
+  //
+  // Load RFLAGS from R11. Clear RF, VM, reserved bits.
+  //
+  vp.exit_context().rflags.flags = vp.exit_context().r11;
+  vp.exit_context().rflags.flags &= ~rflags_t::reserved_bits;
+  vp.exit_context().rflags.flags |=  rflags_t::fixed_bits;
+
+  //
+  // SYSRET loads the CS and SS selectors with values
+  // derived from bits 63:48 of MSR_STAR.
+  //
+  auto star = msr::read<msr::star_t>();
+
+  //
+  // Verbose version of:
+  //   cs.access = segment_access_vmx_t{ 0xa0fb };
+  //
+  // cs.access.type                       = segment_access_vmx_t::type_execute_read_accessed;
+  // cs.access.descriptor_type            = segment_access_vmx_t::descriptor_type_code_or_data;
+  // cs.access.descriptor_privilege_level = 3;                  // DPL3 == user mode
+  // cs.access.present                    = 1;
+  // // cs.access.limit_high              = 0;                  // Unchanged
+  // // cs.access.available_bit           = 0;                  // Unchanged
+  // cs.access.long_mode                  = 1;                  // Enforce return to long (64-bit) mode
+  // cs.access.default_big                = 0;
+  // cs.access.granularity                = segment_access_vmx_t::granularity_4kb;
+  //
+
+  auto cs = vp.guest_cs();
+  cs.base_address = nullptr;                                    // Flat segment
+  cs.limit        = uint32_t(0xffffffff);                       // 4GB limit
+  cs.access       = segment_access_vmx_t{ 0xa0fb };             // L+DB+P+S+DPL3+Code
+  cs.selector     = cs_t{ uint16_t(((star >> 48) + 16) | 3) };  // (STAR[63:48]+16) | 3 (* RPL forced to 3 *)
+  vp.guest_cs(cs);
+
+  //
+  // Verbose version of:
+  //   ss.access = segment_access_vmx_t{ 0xc0f3 };
+  //
+  // ss.access.type                       = segment_access_vmx_t::type_read_write_accessed;
+  // ss.access.descriptor_type            = segment_access_vmx_t::descriptor_type_code_or_data;
+  // ss.access.descriptor_privilege_level = 3;                  // DPL3 == user mode
+  // ss.access.present                    = 1;
+  // // ss.access.limit_high              = 0;                  // Unchanged
+  // // ss.access.available_bit           = 0;                  // Unchanged
+  // // ss.access.long_mode               = 0;                  // Unchanged
+  // ss.access.default_big                = 1;
+  // ss.access.granularity                = segment_access_vmx_t::granularity_4kb;
+  //
+
+  auto ss = vp.guest_ss();
+  ss.base_address = nullptr;                                    // Flat segment
+  ss.limit        = uint32_t(0xffffffff);                       // 4GB limit
+  ss.access       = segment_access_vmx_t{ 0xc0f3 };             // G+DB+P+S+DPL3+Data
+  ss.selector     = ss_t{ uint16_t(((star >> 48) + 8) | 3) };   // (STAR[63:48]+8) | 3 (* RPL forced to 3 *)
+  vp.guest_ss(ss);
+}
+
 }

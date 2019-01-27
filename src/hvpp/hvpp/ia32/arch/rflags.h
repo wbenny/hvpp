@@ -5,6 +5,16 @@ namespace ia32 {
 
 struct rflags_t
 {
+  //
+  // Reserved bits.
+  //
+  static constexpr uint64_t reserved_bits = 0xffc38028;
+
+  //
+  // Bits that are fixed to 1 ("read_as_1" field).
+  //
+  static constexpr uint64_t fixed_bits    = 0x00000002;
+
   union
   {
     uint64_t flags;
