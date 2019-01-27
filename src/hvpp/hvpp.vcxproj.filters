@@ -135,6 +135,9 @@
     <ClCompile Include="hvpp\vmexit\vmexit_c_wrapper.cpp">
       <Filter>Source Files\hvpp\vmexit</Filter>
     </ClCompile>
+    <ClCompile Include="hvpp\ia32\memory.cpp">
+      <Filter>Source Files\hvpp\ia32</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hvpp\lib\bitmap.h">

@@ -101,6 +101,7 @@
     <ClCompile Include="hvpp\ept.cpp" />
     <ClCompile Include="hvpp\hvpp.cpp" />
     <ClCompile Include="hvpp\hypervisor.cpp" />
+    <ClCompile Include="hvpp\ia32\memory.cpp" />
     <ClCompile Include="hvpp\vcpu.cpp" />
     <ClCompile Include="hvpp\vmexit.cpp">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
