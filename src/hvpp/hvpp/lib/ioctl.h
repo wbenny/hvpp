@@ -17,6 +17,9 @@ make_ioctl_code_windows(
   uint32_t size
   ) noexcept
 {
+  //
+  // "Size" isn't part of the IOCTL code on Windows.
+  //
   (void)(size);
 
   //
@@ -65,8 +68,6 @@ make_ioctl_code_linux(
   uint32_t size
   ) noexcept
 {
-  (void)size;
-
   //
   // Took from Linux source code (include/uapi/asm-generic/ioctl.h).
   //
@@ -97,7 +98,7 @@ make_ioctl_code(
 #elif __linux__
   return make_ioctl_code_linux(id, access, size);
 #else
-#error Unsupported architecture!
+#error Unsupported operating system!
 #endif
 }
 

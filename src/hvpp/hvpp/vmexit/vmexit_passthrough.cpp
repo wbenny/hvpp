@@ -865,9 +865,6 @@ void vmexit_passthrough_handler::handle_ldtr_tr_access(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_ept_violation(vcpu_t& vp) noexcept
 {
-  //
-  // TODO
-  //
   handle_fallback(vp);
 }
 

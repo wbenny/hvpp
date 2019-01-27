@@ -49,7 +49,7 @@ ia32::cr3_t kernel_cr3(ia32::cr3_t cr3) noexcept
   if (cr3.pcid == PCID_KERNEL)
   {
     //
-    // CR3 already contains such PML4, which allows us to
+    // CR3 already contains such PML4, that allows us to
     // access kernel-mode address space.  We can just reuse
     // it.
     //
@@ -77,8 +77,8 @@ ia32::cr3_t kernel_cr3(ia32::cr3_t cr3) noexcept
   // field.
   //
   // Note that although this still relies on undocumented KPROCESS
-  // structure fields, the position of "DirectoryTableBase" field
-  // didn't ever change, so let's be confident and just use it.
+  // structure fields, the offset of the "DirectoryTableBase" field
+  // never changed, so let's be confident and just use it.
   //
 #if 0
   hvpp_assert(cr3.pcid == PCID_USER);

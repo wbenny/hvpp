@@ -42,7 +42,6 @@ class device
     { (void)(buffer); (void)(buffer_size); (void)(bytes_read); return error_code_t{}; }
 
     virtual error_code_t on_write(void* buffer, size_t buffer_size, size_t& bytes_written) noexcept
-
     { (void)(buffer); (void)(buffer_size); (void)(bytes_written); return error_code_t{}; }
 
     virtual error_code_t on_ioctl(void* buffer, size_t buffer_size, uint32_t code) noexcept

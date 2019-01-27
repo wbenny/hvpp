@@ -82,10 +82,10 @@ auto vcpu_t::initialize(vmexit_handler& handler) noexcept -> error_code_t
     // in the vcpu.asm file.  If they are ever changed, the static_assert
     // should be hint to fix them in the vcpu.asm as well.
     //
-    constexpr intptr_t VCPU_RSP                         = offsetof(vcpu_t, stack_) + sizeof(vcpu_t::stack_);
-    constexpr intptr_t VCPU_OFFSET                      = -0x8000;  // -vcpu_stack_size
-    constexpr intptr_t VCPU_LAUNCH_CONTEXT_OFFSET       =  0;
-    constexpr intptr_t VCPU_EXIT_CONTEXT_OFFSET         =  144;     // sizeof(context);
+    constexpr intptr_t VCPU_RSP                         =  offsetof(vcpu_t, stack_) + sizeof(vcpu_t::stack_);
+    constexpr intptr_t VCPU_OFFSET                      =  -0x8000;   // -vcpu_stack_size
+    constexpr intptr_t VCPU_LAUNCH_CONTEXT_OFFSET       =   0;
+    constexpr intptr_t VCPU_EXIT_CONTEXT_OFFSET         =   144;      // sizeof(context);
 
     static_assert(VCPU_RSP + VCPU_OFFSET                == offsetof(vcpu_t, stack_));
     static_assert(VCPU_RSP + VCPU_LAUNCH_CONTEXT_OFFSET == offsetof(vcpu_t, guest_context_));
