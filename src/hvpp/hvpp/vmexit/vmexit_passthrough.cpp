@@ -3,6 +3,7 @@
 #include "hvpp/config.h"
 #include "hvpp/vcpu.h"
 
+#include "hvpp/lib/assert.h"
 #include "hvpp/lib/cr3_guard.h"
 #include "hvpp/lib/debugger.h"
 
@@ -54,72 +55,12 @@ void vmexit_passthrough_handler::invoke_termination(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_exception_or_nmi(vcpu_t& vp) noexcept
 {
-  auto interrupt = vp.interrupt_info();
+  handle_interrupt(vp);
+}
 
-  switch (interrupt.type())
-  {
-    case vmx::interrupt_type::hardware_exception:
-      switch (interrupt.vector())
-      {
-        case exception_vector::general_protection:
-
-#ifdef HVPP_ENABLE_VMWARE_WORKAROUND
-
-        {
-            //
-            // VMWare I/O backdoor (port 0x5658/0x5659) workaround.
-            //
-            cr3_guard _(vp.guest_cr3());
-
-            vmx::exit_qualification_io_instruction_t exit_qualification;
-            if (try_decode_io_instruction(vp.exit_context(), exit_qualification))
-            {
-              ia32_asm_io_with_context(exit_qualification, vp.exit_context());
-              return;
-            }
-          }
-
-#endif
-
-          break;
-
-        case exception_vector::page_fault:
-          write<cr2_t>(cr2_t{ vp.exit_qualification().linear_address });
-          break;
-
-        default:
-          break;
-      }
-      break;
-
-    case vmx::interrupt_type::software_exception:
-      switch (interrupt.vector())
-      {
-        case exception_vector::breakpoint:
-          break;
-
-        default:
-          break;
-      }
-      break;
-
-    default:
-      break;
-  }
-
-  //
-  // Just reinject the event.
-  //
-  vp.inject(interrupt);
-
-  //
-  // Do not increment rip by exit_instruction_length() in
-  // vcpu::entry_host().
-  //
-  // The RIP is controlled by entry_instruction_length()
-  // instead, which is taken from interrupt_info::rip_adjust().
-  //
-  vp.suppress_rip_adjust();
+void vmexit_passthrough_handler::handle_external_interrupt(vcpu_t& vp) noexcept
+{
+  handle_interrupt(vp);
 }
 
 void vmexit_passthrough_handler::handle_triple_fault(vcpu_t& vp) noexcept
@@ -134,6 +75,33 @@ void vmexit_passthrough_handler::handle_triple_fault(vcpu_t& vp) noexcept
     ia32_asm_pause();
     ia32_asm_halt();
   }
+}
+
+void vmexit_passthrough_handler::handle_interrupt_window(vcpu_t& vp) noexcept
+{
+  //
+  // Make sure there is an interrupt pending.
+  //
+  hvpp_assert(vp.interrupt_is_pending());
+
+  //
+  // Guest is in the interruptible state.
+  // Dequeue one pending interrupt from the queue
+  // and inject it.
+  //
+  vp.interrupt_inject_pending();
+
+  //
+  // If queue is empty, disable Interrupt-window exiting.
+  //
+  if (!vp.interrupt_is_pending())
+  {
+    auto procbased_ctls = vp.processor_based_controls();
+    procbased_ctls.interrupt_window_exiting = false;
+    vp.processor_based_controls(procbased_ctls);
+  }
+
+  vp.suppress_rip_adjust();
 }
 
 void vmexit_passthrough_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
@@ -404,7 +372,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
 
   if (vp.guest_cs().access.descriptor_privilege_level != 0)
   {
-    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
+    vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
     vp.suppress_rip_adjust();
     return;
   }
@@ -424,7 +392,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
   {
     if (vp.guest_cr4().debugging_extensions)
     {
-      vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::invalid_opcode));
+      vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::invalid_opcode));
       vp.suppress_rip_adjust();
       return;
     }
@@ -458,7 +426,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
 
     write<dr6_t>(dr6);
 
-    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::debug));
+    vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::debug));
 
     auto dr7 = vp.guest_dr7();
     dr7.general_detect = false;
@@ -479,7 +447,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
       exit_qualification.dr_number == 7) &&
       (gp_register >> 32) != 0)
   {
-    vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
+    vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
     vp.suppress_rip_adjust();
     return;
   }
@@ -983,7 +951,7 @@ void vmexit_passthrough_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
   return;
 
 inject_general_protection:
-  vp.inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
+  vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
   vp.suppress_rip_adjust();
 }
 
@@ -1025,10 +993,83 @@ void vmexit_passthrough_handler::handle_execute_vmfunc(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_vm_fallback(vcpu_t& vp) noexcept
 {
-  vp.inject(
+  vp.interrupt_inject(
     interrupt_info_t(vmx::interrupt_type::hardware_exception,
                      exception_vector::invalid_opcode));
   vp.suppress_rip_adjust();
 }
 
+void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
+{
+  //
+  // Common code for handling all exceptions and interrupts.
+  //
+
+  auto interrupt = vp.interrupt_info();
+
+  switch (interrupt.type())
+  {
+    case vmx::interrupt_type::hardware_exception:
+      switch (interrupt.vector())
+      {
+        case exception_vector::general_protection:
+
+#ifdef HVPP_ENABLE_VMWARE_WORKAROUND
+
+          {
+            //
+            // VMWare I/O backdoor (port 0x5658/0x5659) workaround.
+            //
+            cr3_guard _(vp.guest_cr3());
+
+            vmx::exit_qualification_io_instruction_t exit_qualification;
+            if (try_decode_io_instruction(vp.exit_context(), exit_qualification))
+            {
+              ia32_asm_io_with_context(exit_qualification, vp.exit_context());
+              return;
+            }
+          }
+
+#endif
+
+          break;
+
+        case exception_vector::page_fault:
+          write<cr2_t>(cr2_t{ vp.exit_qualification().linear_address });
+          break;
+
+        default:
+          break;
+      }
+      break;
+
+    case vmx::interrupt_type::software_exception:
+      switch (interrupt.vector())
+      {
+        case exception_vector::breakpoint:
+          break;
+
+        default:
+          break;
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  //
+  // Just reinject the event.
+  //
+  vp.interrupt_inject(interrupt);
+
+  //
+  // Do not increment rip by exit_instruction_length() in
+  // vcpu::entry_host().
+  //
+  // The RIP is controlled by entry_instruction_length()
+  // instead, which is taken from interrupt_info::rip_adjust().
+  //
+  vp.suppress_rip_adjust();
+}
 }

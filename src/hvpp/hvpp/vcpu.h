@@ -168,9 +168,19 @@ class vcpu_t
     //
 
   public:
+    //
+    // Make storage for up-to 16 pending interrupts.
+    // In practice I haven't seen more than 2 pending interrupts.
+    //
+    static constexpr int pending_interrupt_queue_size = 16;
+
     auto interrupt_info() const noexcept -> interrupt_info_t;
     auto idt_vectoring_info() const noexcept -> interrupt_info_t;
-    void inject(interrupt_info_t interrupt) noexcept;
+
+    bool interrupt_inject(interrupt_info_t interrupt, bool first = false) noexcept;
+    void interrupt_inject_force(interrupt_info_t interrupt) noexcept;
+    void interrupt_inject_pending() noexcept;
+    bool interrupt_is_pending() const noexcept;
 
     auto exit_instruction_info_guest_va() const noexcept -> void*;
 
@@ -409,6 +419,13 @@ class vcpu_t
     ept_t*             ept_;
     uint16_t           ept_count_;
     uint16_t           ept_index_;
+
+    //
+    // Pending interrupt queue (FIFO).
+    //
+    interrupt_info_t   pending_interrupt_[pending_interrupt_queue_size];
+    uint8_t            pending_interrupt_first_;
+    uint8_t            pending_interrupt_count_;
 
     bool               suppress_rip_adjust_;
 };

@@ -66,6 +66,12 @@ auto vcpu_t::initialize(vmexit_handler& handler) noexcept -> error_code_t
   //
 
   //
+  // Initialize pending-interrupt FIFO queue.
+  //
+  pending_interrupt_first_ = 0;
+  pending_interrupt_count_ = 0;
+
+  //
   // Well, this is also not necessary.
   // This member is reset to "false" on each VM-exit in entry_host() method.
   //

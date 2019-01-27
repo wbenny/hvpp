@@ -36,7 +36,75 @@ auto vcpu_t::idt_vectoring_info() const noexcept -> interrupt_info_t
   return result;
 }
 
-void vcpu_t::inject(interrupt_info_t interrupt) noexcept
+bool vcpu_t::interrupt_inject(interrupt_info_t interrupt, bool first /*= false */) noexcept
+{
+  //
+  // Check the interruptibility state of the guest.
+  // We have to delay the injection if the guest is
+  // not interruptible (e.g.: guest is blocked by
+  // "mov ss", or EFLAGS.IF == 0).
+  //
+  if (auto interruptibility_state = guest_interruptibility_state();
+           interruptibility_state.flags ||
+           !exit_context_.rflags.interrupt_enable_flag)
+  {
+    //
+    // Make sure there aren't too much pending interrupts.
+    // We don't want the queue to overflow.
+    //
+    hvpp_assert(pending_interrupt_count_ < pending_interrupt_queue_size);
+
+    if (first)
+    {
+      //
+      // Enqueue pending interrupt ("push_front").
+      //
+      pending_interrupt_first_ = !pending_interrupt_first_
+        ? pending_interrupt_queue_size - 1
+        : pending_interrupt_first_ - 1;
+
+      pending_interrupt_[pending_interrupt_first_] = interrupt;
+      pending_interrupt_count_ += 1;
+    }
+    else
+    {
+      //
+      // Enqueue pending interrupt ("push_back").
+      //
+      auto index = (pending_interrupt_first_ + pending_interrupt_count_) % pending_interrupt_queue_size;
+
+      pending_interrupt_[index] = interrupt;
+      pending_interrupt_count_ += 1;
+    }
+
+    //
+    // Enable Interrupt-window exiting.
+    //
+    auto procbased_ctls = processor_based_controls();
+    procbased_ctls.interrupt_window_exiting = true;
+    processor_based_controls(procbased_ctls);
+
+    //
+    // "false" signalizes that the interrupt hasn't been
+    // immediately injected.
+    //
+    return false;
+  }
+  else
+  {
+    //
+    // Inject interrupt immediately.
+    //
+    interrupt_inject_force(interrupt);
+
+    //
+    // Signalize immediately injected interrupt.
+    //
+    return true;
+  }
+}
+
+void vcpu_t::interrupt_inject_force(interrupt_info_t interrupt) noexcept
 {
   entry_interruption_info(interrupt.info_);
 
@@ -129,6 +197,37 @@ void vcpu_t::inject(interrupt_info_t interrupt) noexcept
         break;
     }
   }
+}
+
+void vcpu_t::interrupt_inject_pending() noexcept
+{
+  //
+  // Make sure there is at least 1 pending interrupt.
+  //
+  hvpp_assert(
+    interrupt_is_pending()   &&
+    pending_interrupt_count_ <= pending_interrupt_queue_size
+  );
+
+  //
+  // Dequeue pending interrupt ("pop_front").
+  //
+  auto interrupt = pending_interrupt_[pending_interrupt_first_];
+
+  pending_interrupt_first_ += 1;
+  pending_interrupt_count_ -= 1;
+
+  if (!pending_interrupt_count_ || pending_interrupt_first_ == pending_interrupt_queue_size)
+  {
+    pending_interrupt_first_ = 0;
+  }
+
+  interrupt_inject_force(interrupt);
+}
+
+bool vcpu_t::interrupt_is_pending() const noexcept
+{
+  return pending_interrupt_count_ > 0;
 }
 
 auto vcpu_t::exit_instruction_info_guest_va() const noexcept -> void*
