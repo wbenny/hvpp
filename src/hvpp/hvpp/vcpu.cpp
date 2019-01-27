@@ -456,13 +456,13 @@ void vcpu_t::setup_host() noexcept
   // Note that we're setting just selectors (base address - except for FS and
   // GS), limit and access rights are not set).
   //
-  host_cs(seg_t{ gdtr, read<cs_t>() });
-  host_ds(seg_t{ gdtr, read<ds_t>() });
-  host_es(seg_t{ gdtr, read<es_t>() });
-  host_fs(seg_t{ gdtr, read<fs_t>() });
-  host_gs(seg_t{ gdtr, read<gs_t>() });
-  host_ss(seg_t{ gdtr, read<ss_t>() });
-  host_tr(seg_t{ gdtr, read<tr_t>() });
+  host_cs(segment_t{ gdtr, read<cs_t>() });
+  host_ds(segment_t{ gdtr, read<ds_t>() });
+  host_es(segment_t{ gdtr, read<es_t>() });
+  host_fs(segment_t{ gdtr, read<fs_t>() });
+  host_gs(segment_t{ gdtr, read<gs_t>() });
+  host_ss(segment_t{ gdtr, read<ss_t>() });
+  host_tr(segment_t{ gdtr, read<tr_t>() });
 
   host_cr0(read<cr0_t>());
   host_cr3(read<cr3_t>());

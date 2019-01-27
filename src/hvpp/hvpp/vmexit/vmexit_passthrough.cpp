@@ -35,14 +35,14 @@ void vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept
   auto gdtr = read<gdtr_t>();
   vp.guest_gdtr(gdtr);
   vp.guest_idtr(read<idtr_t>());
-  vp.guest_cs(seg_t{ gdtr, read<cs_t>() });
-  vp.guest_ds(seg_t{ gdtr, read<ds_t>() });
-  vp.guest_es(seg_t{ gdtr, read<es_t>() });
-  vp.guest_fs(seg_t{ gdtr, read<fs_t>() });
-  vp.guest_gs(seg_t{ gdtr, read<gs_t>() });
-  vp.guest_ss(seg_t{ gdtr, read<ss_t>() });
-  vp.guest_tr(seg_t{ gdtr, read<tr_t>() });
-  vp.guest_ldtr(seg_t{ gdtr, read<ldtr_t>() });
+  vp.guest_cs(segment_t{ gdtr, read<cs_t>() });
+  vp.guest_ds(segment_t{ gdtr, read<ds_t>() });
+  vp.guest_es(segment_t{ gdtr, read<es_t>() });
+  vp.guest_fs(segment_t{ gdtr, read<fs_t>() });
+  vp.guest_gs(segment_t{ gdtr, read<gs_t>() });
+  vp.guest_ss(segment_t{ gdtr, read<ss_t>() });
+  vp.guest_tr(segment_t{ gdtr, read<tr_t>() });
+  vp.guest_ldtr(segment_t{ gdtr, read<ldtr_t>() });
 }
 
 void vmexit_passthrough_handler::invoke_termination(vcpu_t& vp) noexcept
@@ -742,11 +742,11 @@ void vmexit_passthrough_handler::handle_gdtr_idtr_access(vcpu_t& vp) noexcept
 
   union
   {
-    gdtr_t gdtr;
-    idtr_t idtr;
-
     gdtr32_t gdtr32;
     idtr32_t idtr32;
+
+    gdtr64_t gdtr64;
+    idtr64_t idtr64;
   };
 
   cr3_guard _(vp.guest_cr3());
@@ -781,15 +781,15 @@ void vmexit_passthrough_handler::handle_gdtr_idtr_access(vcpu_t& vp) noexcept
   switch (instruction_info.instruction)
   {
     case vmx::instruction_info_gdtr_idtr_access_t::instruction_sgdt:
-      gdtr = vp.guest_gdtr();
-      memcpy(guest_va, &gdtr, guest_in_long_mode() ? sizeof(gdtr)
-                                                   : sizeof(gdtr32));
+      gdtr64 = vp.guest_gdtr();
+      memcpy(guest_va, &gdtr64, guest_in_long_mode() ? sizeof(gdtr64)
+                                                     : sizeof(gdtr32));
       break;
 
     case vmx::instruction_info_gdtr_idtr_access_t::instruction_sidt:
-      idtr = vp.guest_idtr();
-      memcpy(guest_va, &idtr, guest_in_long_mode() ? sizeof(idtr)
-                                                   : sizeof(idtr32));
+      idtr64 = vp.guest_idtr();
+      memcpy(guest_va, &idtr64, guest_in_long_mode() ? sizeof(idtr64)
+                                                     : sizeof(idtr32));
       break;
 
     //
@@ -800,13 +800,13 @@ void vmexit_passthrough_handler::handle_gdtr_idtr_access(vcpu_t& vp) noexcept
     //
 
     case vmx::instruction_info_gdtr_idtr_access_t::instruction_lgdt:
-      memcpy(&gdtr, guest_va, sizeof(gdtr));
-      vp.guest_gdtr(gdtr);
+      memcpy(&gdtr64, guest_va, sizeof(gdtr64));
+      vp.guest_gdtr(gdtr64);
       break;
 
     case vmx::instruction_info_gdtr_idtr_access_t::instruction_lidt:
-      memcpy(&idtr, guest_va, sizeof(idtr));
-      vp.guest_idtr(idtr);
+      memcpy(&idtr64, guest_va, sizeof(idtr64));
+      vp.guest_idtr(idtr64);
       break;
   }
 }
@@ -834,7 +834,7 @@ void vmexit_passthrough_handler::handle_ldtr_tr_access(vcpu_t& vp) noexcept
       break;
 
     case vmx::instruction_info_ldtr_tr_access_t::instruction_lldt:
-      vp.guest_segment_selector(context_t::seg_ldtr, seg_selector_t{ low_word });
+      vp.guest_segment_selector(context_t::seg_ldtr, segment_selector_t{ low_word });
       break;
 
     case vmx::instruction_info_ldtr_tr_access_t::instruction_ltr:
@@ -853,11 +853,11 @@ void vmexit_passthrough_handler::handle_ldtr_tr_access(vcpu_t& vp) noexcept
         //   LTR instruction sets busy bit in the TSS and we need to
         //   emulate this behavior.
         //
-        auto selector = seg_selector_t{ low_word };
+        auto selector = segment_selector_t{ low_word };
         vp.guest_segment_selector(context_t::seg_tr, selector);
 
         auto& descriptor = vp.guest_gdtr()[selector];
-        descriptor.access.type |= seg_access_t::type_tss_busy_flag;
+        descriptor.access.type |= segment_access_t::type_tss_busy_flag;
       }
       break;
   }

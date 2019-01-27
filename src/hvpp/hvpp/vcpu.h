@@ -289,34 +289,34 @@ class vcpu_t
     auto guest_idtr() const noexcept -> idtr_t;
     void guest_idtr(idtr_t idtr) noexcept;
 
-    auto guest_cs() const noexcept -> seg_t<cs_t>;
-    void guest_cs(seg_t<cs_t> cs) noexcept;
-    auto guest_ds() const noexcept -> seg_t<ds_t>;
-    void guest_ds(seg_t<ds_t> ds) noexcept;
-    auto guest_es() const noexcept -> seg_t<es_t>;
-    void guest_es(seg_t<es_t> es) noexcept;
-    auto guest_fs() const noexcept -> seg_t<fs_t>;
-    void guest_fs(seg_t<fs_t> fs) noexcept;
-    auto guest_gs() const noexcept -> seg_t<gs_t>;
-    void guest_gs(seg_t<gs_t> gs) noexcept;
-    auto guest_ss() const noexcept -> seg_t<ss_t>;
-    void guest_ss(seg_t<ss_t> ss) noexcept;
-    auto guest_tr() const noexcept -> seg_t<tr_t>;
-    void guest_tr(seg_t<tr_t> tr) noexcept;
-    auto guest_ldtr() const noexcept -> seg_t<ldtr_t>;
-    void guest_ldtr(seg_t<ldtr_t> ldtr) noexcept;
+    auto guest_cs() const noexcept -> segment_t<cs_t>;
+    void guest_cs(segment_t<cs_t> cs) noexcept;
+    auto guest_ds() const noexcept -> segment_t<ds_t>;
+    void guest_ds(segment_t<ds_t> ds) noexcept;
+    auto guest_es() const noexcept -> segment_t<es_t>;
+    void guest_es(segment_t<es_t> es) noexcept;
+    auto guest_fs() const noexcept -> segment_t<fs_t>;
+    void guest_fs(segment_t<fs_t> fs) noexcept;
+    auto guest_gs() const noexcept -> segment_t<gs_t>;
+    void guest_gs(segment_t<gs_t> gs) noexcept;
+    auto guest_ss() const noexcept -> segment_t<ss_t>;
+    void guest_ss(segment_t<ss_t> ss) noexcept;
+    auto guest_tr() const noexcept -> segment_t<tr_t>;
+    void guest_tr(segment_t<tr_t> tr) noexcept;
+    auto guest_ldtr() const noexcept -> segment_t<ldtr_t>;
+    void guest_ldtr(segment_t<ldtr_t> ldtr) noexcept;
 
     auto guest_segment_base_address(int index) const noexcept -> void*;
     void guest_segment_base_address(int index, void* base_address) noexcept;
     auto guest_segment_limit(int index) const noexcept -> uint32_t;
     void guest_segment_limit(int index, uint32_t limit) noexcept;
-    auto guest_segment_access(int index) const noexcept -> seg_access_vmx_t;
-    void guest_segment_access(int index, seg_access_vmx_t access_rights) noexcept;
-    auto guest_segment_selector(int index) const noexcept -> seg_selector_t;
-    void guest_segment_selector(int index, seg_selector_t selector) noexcept;
+    auto guest_segment_access(int index) const noexcept -> segment_access_vmx_t;
+    void guest_segment_access(int index, segment_access_vmx_t access_rights) noexcept;
+    auto guest_segment_selector(int index) const noexcept -> segment_selector_t;
+    void guest_segment_selector(int index, segment_selector_t selector) noexcept;
 
-    auto guest_segment(int index) const noexcept -> seg_t<>;
-    void guest_segment(int index, seg_t<> seg) noexcept;
+    auto guest_segment(int index) const noexcept -> segment_t<>;
+    void guest_segment(int index, segment_t<> seg) noexcept;
 
     auto guest_interruptibility_state() const noexcept -> vmx::interruptibility_state_t;
     void guest_interruptibility_state(vmx::interruptibility_state_t interruptibility_state) noexcept;
@@ -343,26 +343,26 @@ class vcpu_t
     auto host_idtr() const noexcept -> idtr_t;
     void host_idtr(idtr_t idtr) noexcept;
 
-    auto host_cs() const noexcept -> seg_t<cs_t>;
-    void host_cs(seg_t<cs_t> cs) noexcept;
-    auto host_ds() const noexcept -> seg_t<ds_t>;
-    void host_ds(seg_t<ds_t> ds) noexcept;
-    auto host_es() const noexcept -> seg_t<es_t>;
-    void host_es(seg_t<es_t> es) noexcept;
-    auto host_fs() const noexcept -> seg_t<fs_t>;
-    void host_fs(seg_t<fs_t> fs) noexcept;
-    auto host_gs() const noexcept -> seg_t<gs_t>;
-    void host_gs(seg_t<gs_t> gs) noexcept;
-    auto host_ss() const noexcept -> seg_t<ss_t>;
-    void host_ss(seg_t<ss_t> ss) noexcept;
-    auto host_tr() const noexcept -> seg_t<tr_t>;
-    void host_tr(seg_t<tr_t> tr) noexcept;
+    auto host_cs() const noexcept -> segment_t<cs_t>;
+    void host_cs(segment_t<cs_t> cs) noexcept;
+    auto host_ds() const noexcept -> segment_t<ds_t>;
+    void host_ds(segment_t<ds_t> ds) noexcept;
+    auto host_es() const noexcept -> segment_t<es_t>;
+    void host_es(segment_t<es_t> es) noexcept;
+    auto host_fs() const noexcept -> segment_t<fs_t>;
+    void host_fs(segment_t<fs_t> fs) noexcept;
+    auto host_gs() const noexcept -> segment_t<gs_t>;
+    void host_gs(segment_t<gs_t> gs) noexcept;
+    auto host_ss() const noexcept -> segment_t<ss_t>;
+    void host_ss(segment_t<ss_t> ss) noexcept;
+    auto host_tr() const noexcept -> segment_t<tr_t>;
+    void host_tr(segment_t<tr_t> tr) noexcept;
 
     //
     // ldtr does not exist in VMX-root mode.
     //
-    // auto host_ldtr() const noexcept -> seg_t<ldtr_t>;
-    // void host_ldtr(seg_t<ldtr_t> ldtr)  noexcept;
+    // auto host_ldtr() const noexcept -> segment_t<ldtr_t>;
+    // void host_ldtr(segment_t<ldtr_t> ldtr)  noexcept;
     //
 
   private:
