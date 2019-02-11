@@ -21,13 +21,13 @@ namespace detail
   static bool is_syscall_instruction(const void* address) noexcept
   {
     static constexpr uint8_t opcode[] = { 0x0f, 0x05 };
-    return memcmp(address, opcode, sizeof(opcode));
+    return memcmp(address, opcode, sizeof(opcode)) == 0;
   }
 
   static bool is_sysret_instruction(const void* address) noexcept
   {
     static constexpr uint8_t opcode[] = { 0x48, 0x0f, 0x07 };
-    return memcmp(address, opcode, sizeof(opcode));
+    return memcmp(address, opcode, sizeof(opcode)) == 0;
   }
 }
 
