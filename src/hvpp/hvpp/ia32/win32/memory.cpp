@@ -47,5 +47,7 @@ namespace ia32::detail
 
       range_list[count] = memory_range(address, address + size);
     } while (++count < range_list_size);
+	
+    ExFreePool(physical_memory_ranges);
   }
 }
