@@ -282,8 +282,8 @@ And notes from LordNoteworthy ([github](https://github.com/LordNoteworthy), [twi
 If you find this project interesting, you can buy me a coffee
 
 ```
-  BTC 12hwTTPYDbkVqsfpGjrsVa7WpShvQn24ro
-  LTC LLDVqnBEMS8Tv7ZF1otcy56HDhkXVVFJDH
+  BTC 3GwZMNGvLCZMi7mjL8K6iyj6qGbhkVMNMF
+  LTC MQn5YC7bZd4KSsaj8snSg4TetmdKDkeCYk
 ```
 
   [simplevisor]: <https://github.com/ionescu007/SimpleVisor>
