@@ -266,13 +266,28 @@ struct context_t
 
   rflags_t rflags;
 
-  int  capture() noexcept;
+  int capture() noexcept;
 
   [[noreturn]]
   void restore() noexcept;
 
-  void clear() noexcept { memset(this, 0, sizeof(*this)); }
+  void clear() noexcept
+  { memset(this, 0, sizeof(*this)); }
 };
+
+inline bool operator==(const context_t& lhs, const context_t& rhs) noexcept
+{
+  return lhs.rip          == rhs.rip          &&
+         lhs.rflags.flags == rhs.rflags.flags &&
+         !memcmp(lhs.gp_register,
+                 rhs.gp_register,
+                 sizeof(lhs.gp_register));
+}
+
+inline bool operator!=(const context_t& lhs, const context_t& rhs) noexcept
+{
+  return !(lhs == rhs);
+}
 
 static_assert(sizeof(context_t) == 144);
 
