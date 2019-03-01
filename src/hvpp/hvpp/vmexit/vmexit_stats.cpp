@@ -71,17 +71,15 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
   switch (exit_reason)
   {
     case vmx::exit_reason::exception_or_nmi:
-      switch (vp.interrupt_info().type())
-      {
-        case vmx::interrupt_type::hardware_exception:
-        case vmx::interrupt_type::software_exception:
-          stats.expt_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
+      stats.expt_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
 
-          hvpp_trace_if_enabled(
-            "exit_reason::exception_or_nmi: %s",
-            exception_vector_to_string(vp.interrupt_info().vector()));
-          break;
-      }
+      hvpp_trace_if_enabled("exit_reason::exception_or_nmi: %s", exception_vector_to_string(vp.interrupt_info().vector()));
+      break;
+
+    case vmx::exit_reason::external_interrupt:
+      stats.expt_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
+
+      hvpp_trace_if_enabled("exit_reason::external_interrupt: %s", exception_vector_to_string(vp.interrupt_info().vector()));
       break;
 
     case vmx::exit_reason::execute_cpuid:
@@ -343,6 +341,18 @@ void vmexit_stats_handler::storage_dump(const vmexit_stats_storage_t& storage_to
       switch (static_cast<vmx::exit_reason>(exit_reason_index))
       {
         case vmx::exit_reason::exception_or_nmi:
+          for (uint32_t i = 0; i < std::size(stats.expt_vector); ++i)
+          {
+            const char* expt_vector_string = exception_vector_to_string(static_cast<exception_vector>(i));
+            (void)(expt_vector_string);
+            if (stats.expt_vector[i] > 0)
+            {
+              hvpp_info("    %s: %u", expt_vector_string, stats.expt_vector[i]);
+            }
+          }
+          break;
+
+        case vmx::exit_reason::external_interrupt:
           for (uint32_t i = 0; i < std::size(stats.expt_vector); ++i)
           {
             const char* expt_vector_string = exception_vector_to_string(static_cast<exception_vector>(i));

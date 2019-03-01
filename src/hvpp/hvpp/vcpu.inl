@@ -1,8 +1,8 @@
 namespace hvpp {
 
-auto vcpu_t::interrupt_info() const noexcept -> interrupt_info_t
+auto vcpu_t::interrupt_info() const noexcept -> interrupt_t
 {
-  interrupt_info_t result;
+  interrupt_t result;
   result.info_ = exit_interruption_info();
 
   if (result.info_.valid)
@@ -18,9 +18,9 @@ auto vcpu_t::interrupt_info() const noexcept -> interrupt_info_t
   return result;
 }
 
-auto vcpu_t::idt_vectoring_info() const noexcept -> interrupt_info_t
+auto vcpu_t::idt_vectoring_info() const noexcept -> interrupt_t
 {
-  interrupt_info_t result;
+  interrupt_t result;
   result.info_ = exit_idt_vectoring_info();
 
   if (result.info_.valid)
@@ -36,75 +36,76 @@ auto vcpu_t::idt_vectoring_info() const noexcept -> interrupt_info_t
   return result;
 }
 
-bool vcpu_t::interrupt_inject(interrupt_info_t interrupt, bool first /*= false */) noexcept
+bool vcpu_t::interrupt_inject(interrupt_t interrupt, bool first /*= false */) noexcept
 {
   //
-  // Check the interruptibility state of the guest.
-  // We have to delay the injection if the guest is
-  // not interruptible (e.g.: guest is blocked by
-  // "mov ss", or EFLAGS.IF == 0).
+  // External interrupts cannot be injected into the
+  // guest if guest isn't interruptible (e.g.: guest
+  // is blocked by "mov ss", or EFLAGS.IF == 0).
   //
-  if (auto interruptibility_state = guest_interruptibility_state();
-           interruptibility_state.flags ||
-           !exit_context_.rflags.interrupt_enable_flag)
+  if (interrupt.type() == vmx::interrupt_type::external)
   {
-    //
-    // Make sure there aren't too much pending interrupts.
-    // We don't want the queue to overflow.
-    //
-    hvpp_assert(pending_interrupt_count_ < pending_interrupt_queue_size);
+    bool interruptible = exit_context().rflags.interrupt_enable_flag &&
+                         guest_interruptibility_state().flags;
 
-    if (first)
+    if (!interruptible)
     {
       //
-      // Enqueue pending interrupt ("push_front").
+      // Make sure there aren't too much pending interrupts.
+      // We don't want the queue to overflow.
       //
-      pending_interrupt_first_ = !pending_interrupt_first_
-        ? pending_interrupt_queue_size - 1
-        : pending_interrupt_first_ - 1;
+      hvpp_assert(pending_interrupt_count_ < pending_interrupt_queue_size);
 
-      pending_interrupt_[pending_interrupt_first_] = interrupt;
-      pending_interrupt_count_ += 1;
+      if (first)
+      {
+        //
+        // Enqueue pending interrupt ("push_front").
+        //
+        pending_interrupt_first_ = !pending_interrupt_first_
+          ? pending_interrupt_queue_size - 1
+          : pending_interrupt_first_ - 1;
+
+        pending_interrupt_[pending_interrupt_first_] = interrupt;
+        pending_interrupt_count_ += 1;
+      }
+      else
+      {
+        //
+        // Enqueue pending interrupt ("push_back").
+        //
+        auto index = (pending_interrupt_first_ + pending_interrupt_count_) % pending_interrupt_queue_size;
+
+        pending_interrupt_[index] = interrupt;
+        pending_interrupt_count_ += 1;
+      }
+
+      //
+      // Enable Interrupt-window exiting.
+      //
+      auto procbased_ctls = processor_based_controls();
+      procbased_ctls.interrupt_window_exiting = true;
+      processor_based_controls(procbased_ctls);
+
+      //
+      // "false" signalizes that the interrupt hasn't been
+      // immediately injected.
+      //
+      return false;
     }
-    else
-    {
-      //
-      // Enqueue pending interrupt ("push_back").
-      //
-      auto index = (pending_interrupt_first_ + pending_interrupt_count_) % pending_interrupt_queue_size;
-
-      pending_interrupt_[index] = interrupt;
-      pending_interrupt_count_ += 1;
-    }
-
-    //
-    // Enable Interrupt-window exiting.
-    //
-    auto procbased_ctls = processor_based_controls();
-    procbased_ctls.interrupt_window_exiting = true;
-    processor_based_controls(procbased_ctls);
-
-    //
-    // "false" signalizes that the interrupt hasn't been
-    // immediately injected.
-    //
-    return false;
   }
-  else
-  {
-    //
-    // Inject interrupt immediately.
-    //
-    interrupt_inject_force(interrupt);
 
-    //
-    // Signalize immediately injected interrupt.
-    //
-    return true;
-  }
+  //
+  // Inject interrupt immediately.
+  //
+  interrupt_inject_force(interrupt);
+
+  //
+  // Signalize immediately injected interrupt.
+  //
+  return true;
 }
 
-void vcpu_t::interrupt_inject_force(interrupt_info_t interrupt) noexcept
+void vcpu_t::interrupt_inject_force(interrupt_t interrupt) noexcept
 {
   entry_interruption_info(interrupt.info_);
 

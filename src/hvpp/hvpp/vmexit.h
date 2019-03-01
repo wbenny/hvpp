@@ -3,13 +3,13 @@
 
 #include "lib/error.h"
 
+#include "vcpu.h"
+
 #include <array>
 
 namespace hvpp {
 
 using namespace ia32;
-
-class vcpu_t;
 
 template <
   typename T,
@@ -28,10 +28,11 @@ struct vmexit_storage_t
   std::array<T, 65>           vmexit;
 
   //
-  // Storage for each exception vector (ia32::exception_vector).
-  // This is subcategory of exit_reason::exception_or_nmi (0).
+  // Storage for each interrupt and exception vector (ia32::exception_vector).
+  // This is subcategory of exit_reason::exception_or_nmi (0) and
+  // exit_reason::external_interrupt (1).
   //
-  std::array<T, 20>           expt_vector;
+  std::array<T, 256>          expt_vector;
 
   //
   // Storage for each CPUID instruction:
@@ -114,6 +115,34 @@ struct vmexit_storage_t
 
 class vmexit_handler
 {
+  public:
+
+    //
+    // Predefined interrupt structures.
+    // Helpful when injecting events.
+    //
+
+    static constexpr auto interrupt_nmi                = interrupt_t {
+                                                          vmx::interrupt_type::nmi,
+                                                          exception_vector::nmi_interrupt
+                                                        };
+
+    static constexpr auto interrupt_debug              = interrupt_t {
+                                                          vmx::interrupt_type::hardware_exception,
+                                                          exception_vector::debug
+                                                        };
+
+    static constexpr auto interrupt_invalid_opcode     = interrupt_t {
+                                                          vmx::interrupt_type::hardware_exception,
+                                                          exception_vector::invalid_opcode
+                                                        };
+
+    static constexpr auto interrupt_general_protection = interrupt_t {
+                                                          vmx::interrupt_type::hardware_exception,
+                                                          exception_vector::general_protection,
+                                                          exception_error_code_t{}
+                                                        };
+
   public:
     vmexit_handler() noexcept;
     ~vmexit_handler() noexcept;

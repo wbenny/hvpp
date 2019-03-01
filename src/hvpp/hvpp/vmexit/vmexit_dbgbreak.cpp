@@ -51,6 +51,10 @@ void vmexit_dbgbreak_handler::handle(vcpu_t& vp) noexcept
       hvpp_break_if(storage_.expt_vector[static_cast<int>(vp.interrupt_info().vector())]);
       break;
 
+    case vmx::exit_reason::external_interrupt:
+      hvpp_break_if(storage_.expt_vector[static_cast<int>(vp.interrupt_info().vector())]);
+      break;
+
     case vmx::exit_reason::execute_cpuid:
       if (vp.exit_context().eax < (0x0000'0000u + vmexit_dbgbreak_storage_t::cpuid_0_max))
       {

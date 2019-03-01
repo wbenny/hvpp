@@ -387,7 +387,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
 
   if (vp.guest_cs().access.descriptor_privilege_level != 0)
   {
-    vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
+    vp.interrupt_inject(interrupt_general_protection);
     vp.suppress_rip_adjust();
     return;
   }
@@ -407,7 +407,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
   {
     if (vp.guest_cr4().debugging_extensions)
     {
-      vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::invalid_opcode));
+      vp.interrupt_inject(interrupt_invalid_opcode);
       vp.suppress_rip_adjust();
       return;
     }
@@ -438,15 +438,13 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
     auto dr6 = read<dr6_t>();
     dr6.breakpoint_condition = 0;
     dr6.debug_register_access_detected = true;
-
     write<dr6_t>(dr6);
-
-    vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::debug));
 
     auto dr7 = vp.guest_dr7();
     dr7.general_detect = false;
     vp.guest_dr7(dr7);
 
+    vp.interrupt_inject(interrupt_debug);
     vp.suppress_rip_adjust();
     return;
   }
@@ -462,7 +460,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
       exit_qualification.dr_number == 7) &&
       (gp_register >> 32) != 0)
   {
-    vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
+    vp.interrupt_inject(interrupt_general_protection);
     vp.suppress_rip_adjust();
     return;
   }
@@ -966,7 +964,7 @@ void vmexit_passthrough_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
   return;
 
 inject_general_protection:
-  vp.interrupt_inject(interrupt_info_t(vmx::interrupt_type::hardware_exception, exception_vector::general_protection, exception_error_code_t{}));
+  vp.interrupt_inject(interrupt_general_protection);
   vp.suppress_rip_adjust();
 }
 
@@ -1008,9 +1006,7 @@ void vmexit_passthrough_handler::handle_execute_vmfunc(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_vm_fallback(vcpu_t& vp) noexcept
 {
-  vp.interrupt_inject(
-    interrupt_info_t(vmx::interrupt_type::hardware_exception,
-                     exception_vector::invalid_opcode));
+  vp.interrupt_inject(interrupt_invalid_opcode);
   vp.suppress_rip_adjust();
 }
 

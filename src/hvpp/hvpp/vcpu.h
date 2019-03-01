@@ -15,38 +15,36 @@ using namespace ia32;
 
 class vmexit_handler;
 
-struct interrupt_info_t
+class interrupt_t
 {
   public:
-    interrupt_info_t(vmx::interrupt_type intr_type, exception_vector expt_vector,
-                     int rip_adjust = -1) noexcept
-      : interrupt_info_t(intr_type, expt_vector, exception_error_code_t{}, false, rip_adjust) { }
+    constexpr interrupt_t(vmx::interrupt_type interrupt_type, exception_vector exception_vector, int rip_adjust = -1) noexcept
+      : interrupt_t(interrupt_type, exception_vector, exception_error_code_t{}, false, rip_adjust) { }
 
-    interrupt_info_t(vmx::interrupt_type intr_type, exception_vector expt_vector,
-                     exception_error_code_t expt_code, int rip_adjust = -1) noexcept
-      : interrupt_info_t(intr_type, expt_vector, expt_code, true, rip_adjust) { }
+    constexpr interrupt_t(vmx::interrupt_type interrupt_type, exception_vector exception_vector, exception_error_code_t exception_code, int rip_adjust = -1) noexcept
+      : interrupt_t(interrupt_type, exception_vector, exception_code, true, rip_adjust) { }
 
-    interrupt_info_t(const interrupt_info_t& other) noexcept = default;
-    interrupt_info_t(interrupt_info_t&& other) noexcept = default;
-    interrupt_info_t& operator=(const interrupt_info_t& other) noexcept = default;
-    interrupt_info_t& operator=(interrupt_info_t&& other) noexcept = default;
+    constexpr interrupt_t(const interrupt_t& other) noexcept = default;
+    constexpr interrupt_t(interrupt_t&& other) noexcept = default;
+    constexpr interrupt_t& operator=(const interrupt_t& other) noexcept = default;
+    constexpr interrupt_t& operator=(interrupt_t&& other) noexcept = default;
 
-    auto vector() const noexcept { return static_cast<exception_vector>(info_.vector); }
-    auto type() const noexcept { return static_cast<vmx::interrupt_type>(info_.type); }
-    auto error_code() const noexcept { return error_code_; }
-    int  rip_adjust() const noexcept { return rip_adjust_; }
-
-    bool error_code_valid() const noexcept { return info_.error_code_valid; }
-    bool nmi_unblocking() const noexcept { return info_.nmi_unblocking; }
-    bool valid() const noexcept { return info_.valid; }
+    constexpr auto vector()           const noexcept { return static_cast<exception_vector>(info_.vector); }
+    constexpr auto type()             const noexcept { return static_cast<vmx::interrupt_type>(info_.type); }
+    constexpr bool error_code_valid() const noexcept { return info_.error_code_valid; }
+    constexpr bool nmi_unblocking()   const noexcept { return info_.nmi_unblocking; }
+    constexpr bool valid()            const noexcept { return info_.valid; }
+    constexpr auto error_code()       const noexcept { return error_code_; }
+    constexpr int  rip_adjust()       const noexcept { return rip_adjust_; }
 
   private:
     friend class vcpu_t;
 
-    interrupt_info_t() noexcept : info_(), error_code_(), rip_adjust_() { }
-    interrupt_info_t(vmx::interrupt_type interrupt_type, exception_vector exception_vector,
-                     exception_error_code_t exception_code, bool exception_code_valid,
-                     int rip_adjust) noexcept
+    constexpr interrupt_t() noexcept
+      : info_(), error_code_(), rip_adjust_() { }
+
+    constexpr interrupt_t(vmx::interrupt_type interrupt_type, exception_vector exception_vector, exception_error_code_t exception_code, bool exception_code_valid, int rip_adjust) noexcept
+      : error_code_(exception_code), rip_adjust_(rip_adjust)
     {
       info_.flags = 0;
 
@@ -56,17 +54,15 @@ struct interrupt_info_t
 
       //
       // Final sanitization of the following fields takes place
-      // in vcpu::inject().
+      // in vcpu::interrupt_inject_force().
       //
 
       info_.error_code_valid = exception_code_valid;
-      error_code_  = exception_code;
-      rip_adjust_  = rip_adjust;
     }
 
-    vmx::interrupt_info_t info_;
+    vmx::interrupt_info_t  info_;
     exception_error_code_t error_code_;
-    int rip_adjust_;
+    int                    rip_adjust_;
 };
 
 enum class vcpu_state
@@ -174,11 +170,11 @@ class vcpu_t
     //
     static constexpr int pending_interrupt_queue_size = 16;
 
-    auto interrupt_info() const noexcept -> interrupt_info_t;
-    auto idt_vectoring_info() const noexcept -> interrupt_info_t;
+    auto interrupt_info() const noexcept -> interrupt_t;
+    auto idt_vectoring_info() const noexcept -> interrupt_t;
 
-    bool interrupt_inject(interrupt_info_t interrupt, bool first = false) noexcept;
-    void interrupt_inject_force(interrupt_info_t interrupt) noexcept;
+    bool interrupt_inject(interrupt_t interrupt, bool first = false) noexcept;
+    void interrupt_inject_force(interrupt_t interrupt) noexcept;
     void interrupt_inject_pending() noexcept;
     bool interrupt_is_pending() const noexcept;
 
@@ -190,7 +186,7 @@ class vcpu_t
 
   public:
     //
-    // (publicly read-only fields)
+    // (public read-only fields)
     //
 
     auto vcpu_id() const noexcept -> uint16_t;
@@ -400,8 +396,8 @@ class vcpu_t
     context_t          exit_context_;
 
     //
-    // Various VMX structures.  Keep in mind they have "alignas(PAGE_SIZE)"
-    // specifier.
+    // Various VMX structures.
+    // Keep in mind they have "alignas(PAGE_SIZE)" specifier.
     //
     vmx::vmcs_t        vmxon_;
     vmx::vmcs_t        vmcs_;
@@ -423,7 +419,7 @@ class vcpu_t
     //
     // Pending interrupt queue (FIFO).
     //
-    interrupt_info_t   pending_interrupt_[pending_interrupt_queue_size];
+    interrupt_t        pending_interrupt_[pending_interrupt_queue_size];
     uint8_t            pending_interrupt_first_;
     uint8_t            pending_interrupt_count_;
 
