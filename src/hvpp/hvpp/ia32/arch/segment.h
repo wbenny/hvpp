@@ -180,7 +180,8 @@ struct idt_access_t
 
 static_assert(sizeof(segment_access_t)     == 2);
 static_assert(sizeof(segment_access_vmx_t) == 4);
-static_assert(sizeof(idt_access_t)     == 2);
+
+static_assert(sizeof(idt_access_t)         == 2);
 
 //
 // Descriptors

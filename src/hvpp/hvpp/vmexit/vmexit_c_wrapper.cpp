@@ -49,7 +49,7 @@ void vmexit_c_wrapper_handler::handle(vcpu_t& vp) noexcept
     //
 
     passthrough_context context;
-    context.passthrough_routine = (passthrough_fn_t)&vmexit_c_wrapper_handler::handle_passthrough;
+    context.passthrough_routine = passthrough_fn_t(&vmexit_c_wrapper_handler::handle_passthrough);
     context.context             = context_;
     context.handler_instance    = this;
     context.handler_method      = cpp_handler;

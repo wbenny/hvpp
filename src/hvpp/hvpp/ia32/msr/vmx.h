@@ -1,5 +1,5 @@
 #pragma once
-#include "ia32/arch.h" // cr0_t, cr4_t
+#include "../ia32/arch.h" // cr0_t, cr4_t
 
 #include <cstdint>
 

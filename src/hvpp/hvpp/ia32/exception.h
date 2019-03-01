@@ -30,6 +30,7 @@ enum class exception_vector : uint32_t
   // Windows specific.
   //
 
+  apc_interrupt               = 31,
   dpc_interrupt               = 47,
   clock_interrupt             = 209,
   pmi_interrupt               = 254,
