@@ -29,7 +29,7 @@ namespace ia32::detail
     MmFreeMappingAddress(va, HVPP_MAPPING_TAG);
   }
 
-  void check_physical_memory(memory_range* range_list, int range_list_size, int& count) noexcept
+  void check_physical_memory(physical_memory_range* range_list, int range_list_size, int& count) noexcept
   {
     auto physical_memory_ranges = MmGetPhysicalMemoryRanges();
 
@@ -45,7 +45,7 @@ namespace ia32::detail
         break;
       }
 
-      range_list[count] = memory_range(address, address + size);
+      range_list[count] = physical_memory_range(address, address + size);
     } while (++count < range_list_size);
 	
     ExFreePool(physical_memory_ranges);

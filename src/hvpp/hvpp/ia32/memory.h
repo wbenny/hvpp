@@ -3,6 +3,7 @@
 #include "paging.h"
 #include "arch.h"
 
+#include <cstddef>      // std::byte
 #include <cstdint>
 #include <numeric>
 #include <type_traits>
@@ -28,7 +29,7 @@ static constexpr auto page_mask  = page_size - 1;
 class pa_t;
 class va_t;
 class mapping_t;
-class memory_range;
+class physical_memory_range;
 class physical_memory_descriptor;
 
 namespace detail
@@ -38,7 +39,7 @@ namespace detail
   void*    va_from_pa(uint64_t pa) noexcept;
   void*    mapping_allocate(size_t size) noexcept;
   void     mapping_free(void* va) noexcept;
-  void     check_physical_memory(memory_range* range_list, int range_list_size, int& count) noexcept;
+  void     check_physical_memory(physical_memory_range* range_list, int range_list_size, int& count) noexcept;
 }
 
 //
@@ -82,10 +83,10 @@ class pa_t
     pa_t  operator& (pa_t other) const noexcept { return pa_t(value_ & other.value_);   }
     pa_t& operator&=(pa_t other)       noexcept { value_ &= other.value_; return *this; }
 
-    bool  operator> (pa_t other) const noexcept { return value_ > other.value_;         }
-    bool  operator>=(pa_t other) const noexcept { return value_ >= other.value_;        }
-    bool  operator< (pa_t other) const noexcept { return value_ < other.value_;         }
+    bool  operator< (pa_t other) const noexcept { return value_  < other.value_;        }
     bool  operator<=(pa_t other) const noexcept { return value_ <= other.value_;        }
+    bool  operator> (pa_t other) const noexcept { return value_  > other.value_;        }
+    bool  operator>=(pa_t other) const noexcept { return value_ >= other.value_;        }
     bool  operator==(pa_t other) const noexcept { return value_ == other.value_;        }
     bool  operator!=(pa_t other) const noexcept { return value_ != other.value_;        }
     bool  operator! (          ) const noexcept { return !value_;                       }
@@ -142,10 +143,10 @@ class va_t
     va_t  operator& (va_t other) const noexcept { return va_t(value_ & other.value_);   }
     va_t& operator&=(va_t other)       noexcept { value_ &= other.value_; return *this; }
 
-    bool  operator> (va_t other) const noexcept { return value_ > other.value_;         }
-    bool  operator>=(va_t other) const noexcept { return value_ >= other.value_;        }
-    bool  operator< (va_t other) const noexcept { return value_ < other.value_;         }
+    bool  operator< (va_t other) const noexcept { return value_  < other.value_;        }
     bool  operator<=(va_t other) const noexcept { return value_ <= other.value_;        }
+    bool  operator> (va_t other) const noexcept { return value_  > other.value_;        }
+    bool  operator>=(va_t other) const noexcept { return value_ >= other.value_;        }
     bool  operator==(va_t other) const noexcept { return value_ == other.value_;        }
     bool  operator!=(va_t other) const noexcept { return value_ != other.value_;        }
     bool  operator! (          ) const noexcept { return !value_;                       }
@@ -176,7 +177,6 @@ class mapping_t
 {
   public:
     mapping_t() noexcept;
-
     ~mapping_t() noexcept;
 
     mapping_t(const mapping_t& other) noexcept = delete;
@@ -207,14 +207,82 @@ class memory_range
     memory_range() noexcept = default;
     memory_range(const memory_range& other) noexcept = default;
     memory_range(memory_range&& other) noexcept = default;
+    memory_range(void* begin_va, void* end_va) noexcept
+      : begin_(reinterpret_cast<std::byte*>(begin_va))
+      , end_(reinterpret_cast<std::byte*>(end_va))
+    { }
+
+    memory_range(void* data, size_t size) noexcept
+      : begin_(reinterpret_cast<std::byte*>(data))
+      , end_(reinterpret_cast<std::byte*>(data) + size)
+    { }
+
     memory_range& operator=(const memory_range& other) noexcept = default;
     memory_range& operator=(memory_range&& other) noexcept = default;
-    memory_range(pa_t begin_pa, pa_t end_pa) noexcept
+
+    bool operator< (const memory_range& rhs) const noexcept
+    { return (begin_ < rhs.begin_ ||
+       (!(rhs.begin_ < begin_)    &&
+              end_   < rhs.end_));                            }
+
+    bool operator<=(const memory_range& rhs) const noexcept
+    { return   !(rhs < *this);                                }
+
+    bool operator> (const memory_range& rhs) const noexcept
+    { return     rhs < *this;                                 }
+
+    bool operator>=(const memory_range& rhs) const noexcept
+    { return !(*this < rhs);                                  }
+
+    bool operator==(const memory_range& rhs) const noexcept
+    { return begin_ == rhs.begin_ &&
+             end_   == rhs.end_;                              }
+
+    bool operator!=(const memory_range& rhs) const noexcept
+    { return !(*this == rhs);                                 }
+
+    void set(void* begin_va, void* end_va) noexcept
+    {
+      begin_ = reinterpret_cast<std::byte*>(begin_va);
+      end_   = reinterpret_cast<std::byte*>(end_va);
+    }
+
+    void set(void* data, size_t size) noexcept
+    {
+      begin_ = reinterpret_cast<std::byte*>(data);
+      end_   = reinterpret_cast<std::byte*>(data) + size;
+    }
+
+    bool contains(void* va) const noexcept
+    {
+      return
+        uintptr_t(va) >= uintptr_t(begin_) &&
+        uintptr_t(va)  < uintptr_t(end_);
+    }
+
+    std::byte* begin() const noexcept { return begin_;        }
+    std::byte* end()   const noexcept { return end_;          }
+    void*      data()  const noexcept { return begin_;        }
+    size_t     size()  const noexcept { return end_ - begin_; }
+
+  private:
+    std::byte* begin_;
+    std::byte* end_;
+};
+
+class physical_memory_range
+{
+  public:
+    physical_memory_range() noexcept = default;
+    physical_memory_range(const physical_memory_range& other) noexcept = default;
+    physical_memory_range(physical_memory_range&& other) noexcept = default;
+    physical_memory_range(pa_t begin_pa, pa_t end_pa) noexcept
       : begin_(begin_pa)
       , end_(end_pa)
-    {
+    { }
 
-    }
+    physical_memory_range& operator=(const physical_memory_range& other) noexcept = default;
+    physical_memory_range& operator=(physical_memory_range&& other) noexcept = default;
 
     void set(pa_t begin_pa, pa_t end_pa) noexcept
     {
@@ -252,9 +320,9 @@ class physical_memory_descriptor
     physical_memory_descriptor& operator=(const physical_memory_descriptor& other) noexcept = delete;
     physical_memory_descriptor& operator=(physical_memory_descriptor&& other) noexcept = delete;
 
-    const memory_range* begin() const noexcept { return &range_[0]; }
-    const memory_range* end()   const noexcept { return &range_[size()]; }
-    size_t              size()  const noexcept { return count_; }
+    const physical_memory_range* begin() const noexcept { return &range_[0]; }
+    const physical_memory_range* end()   const noexcept { return &range_[size()]; }
+    size_t                       size()  const noexcept { return count_; }
 
     size_t total_physical_memory_size() const noexcept
     {
@@ -281,8 +349,8 @@ class physical_memory_descriptor
     void check_physical_memory() noexcept
     { detail::check_physical_memory(range_, max_range_count, count_); }
 
-    memory_range range_[max_range_count];
-    int          count_ = 0;
+    physical_memory_range range_[max_range_count];
+    int                   count_ = 0;
 };
 
 inline constexpr const char* memory_type_to_string(memory_type type) noexcept
@@ -298,4 +366,52 @@ inline constexpr const char* memory_type_to_string(memory_type type) noexcept
   }
 };
 
+}
+
+//
+// Make pa_t, va_t and memory_range hashable.
+//
+
+namespace std
+{
+  template <>
+  struct hash<ia32::pa_t>
+  {
+    size_t operator()(const ia32::pa_t& value) const noexcept
+    {
+      return std::hash<decltype(value.value())>{}(value.value());
+    }
+  };
+
+  template <>
+  struct hash<ia32::va_t>
+  {
+    size_t operator()(const ia32::va_t& value) const noexcept
+    {
+      return std::hash<decltype(value.value())>{}(value.value());
+    }
+  };
+
+  template <>
+  struct hash<ia32::memory_range>
+  {
+    size_t operator()(const ia32::memory_range& value) const noexcept
+    {
+      //
+      // const auto a = uint32_t(value.begin());
+      // const auto a = uint32_t(value.begin());
+      //
+      // return std::hash<uint64_t>{}(a << 32 | b);
+      //
+
+      //
+      // ref:
+      // https://github.com/tensorflow/tensorflow/blob/3c2033678feb046caede91832045ac8bacb2f95a/tensorflow/core/lib/hash/hash.h#L43
+      //
+      const auto a = uint64_t(value.begin());
+      const auto b = uint64_t(value.end());
+
+      return static_cast<size_t>(a ^ (b + 0x9e3779b97f4a7800ULL + (a << 10) + (a >> 4)));
+    }
+  };
 }

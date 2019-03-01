@@ -10,8 +10,8 @@ namespace ia32 {
 
 struct mtrr_range
 {
-  memory_range range;
-  memory_type  type;
+  physical_memory_range range;
+  memory_type           type;
 };
 
 class mtrr
@@ -140,7 +140,7 @@ class mtrr
 
           for (auto type : mtrr_fixed.type)
           {
-            fixed_[i].range = memory_range(range, range + ia32_mtrr_t::mtrr_size);
+            fixed_[i].range = physical_memory_range(range, range + ia32_mtrr_t::mtrr_size);
             fixed_[i].type  = static_cast<memory_type>(type);
 
             range += ia32_mtrr_t::mtrr_size;
@@ -164,7 +164,7 @@ class mtrr
         {
           uint64_t size = 1ull << ia32_asm_bsf(mtrr_mask.page_frame_number);
 
-          variable_[i].range = memory_range(
+          variable_[i].range = physical_memory_range(
             pa_t::from_pfn(mtrr_base.page_frame_number),
             pa_t::from_pfn(mtrr_base.page_frame_number + size));
           variable_[i].type  = static_cast<memory_type>(mtrr_base.type);
