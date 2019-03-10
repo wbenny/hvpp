@@ -109,8 +109,8 @@ template <
 >
 struct ioctl_t
 {
-  static constexpr uint32_t code() noexcept { return make_ioctl_code(Id, Access, Size); }
-  static constexpr uint32_t size() noexcept { return Size; };
+  static constexpr uint32_t code = make_ioctl_code(Id, Access, Size);
+  static constexpr uint32_t size = Size;
 };
 
 template <uint32_t Id>

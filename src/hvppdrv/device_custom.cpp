@@ -18,7 +18,7 @@ error_code_t device_custom::on_ioctl(void* buffer, size_t buffer_size, uint32_t 
 {
   switch (code)
   {
-    case ioctl_enable_io_debugbreak_t::code():
+    case ioctl_enable_io_debugbreak_t::code:
       return ioctl_enable_io_debugbreak(buffer, buffer_size);
 
     default:
@@ -31,9 +31,9 @@ error_code_t device_custom::ioctl_enable_io_debugbreak(void* buffer, size_t buff
 {
   hvpp_assert(handler_);
   hvpp_assert(buffer);
-  hvpp_assert(buffer_size >= ioctl_enable_io_debugbreak_t::size());
+  hvpp_assert(buffer_size >= ioctl_enable_io_debugbreak_t::size);
 
-  if (!buffer || buffer_size < ioctl_enable_io_debugbreak_t::size())
+  if (!buffer || buffer_size < ioctl_enable_io_debugbreak_t::size)
   {
     return make_error_code_t(std::errc::invalid_argument);
   }
