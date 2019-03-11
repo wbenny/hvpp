@@ -47,6 +47,9 @@ class device
     virtual error_code_t on_ioctl(void* buffer, size_t buffer_size, uint32_t code) noexcept
     { (void)(buffer); (void)(buffer_size); (void)(code); return error_code_t{}; }
 
+    static error_code_t copy_from_user(void* buffer_to, const void* buffer_from, size_t length) noexcept;
+    static error_code_t copy_to_user(void* buffer_to, const void* buffer_from, size_t length) noexcept;
+
   private:
     void* impl_;
 };

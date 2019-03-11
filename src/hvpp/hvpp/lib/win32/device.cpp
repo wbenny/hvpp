@@ -157,3 +157,33 @@ void device::destroy() noexcept
 
   ExFreePoolWithTag(DeviceImpl, HVPP_DEVICE_TAG);
 }
+
+error_code_t device::copy_from_user(void* buffer_to, const void* buffer_from, size_t length) noexcept
+{
+  __try
+  {
+    ProbeForRead((volatile void*)buffer_from, length, sizeof(UCHAR));
+    RtlCopyMemory(buffer_to, buffer_from, length);
+  }
+  __except (EXCEPTION_EXECUTE_HANDLER)
+  {
+    return make_error_code_t(std::errc::bad_address);
+  }
+
+  return error_code_t{};
+}
+
+error_code_t device::copy_to_user(void* buffer_to, const void* buffer_from, size_t length) noexcept
+{
+  __try
+  {
+    ProbeForWrite(buffer_to, length, sizeof(UCHAR));
+    RtlCopyMemory(buffer_to, buffer_from, length);
+  }
+  __except (EXCEPTION_EXECUTE_HANDLER)
+  {
+    return make_error_code_t(std::errc::bad_address);
+  }
+
+  return error_code_t{};
+}

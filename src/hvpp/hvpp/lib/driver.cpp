@@ -15,7 +15,8 @@ namespace driver::common
   driver_initialize_fn driver_initialize_;
   driver_destroy_fn    driver_destroy_;
 
-  auto initialize(
+  auto
+  initialize(
     driver_initialize_fn driver_initialize,
     driver_destroy_fn driver_destroy
     ) noexcept -> error_code_t
@@ -107,7 +108,8 @@ namespace driver::common
       : error_code_t{};
   }
 
-  void destroy() noexcept
+  void
+  destroy() noexcept
   {
     //
     // Call driver's destroy() function, if provided.
