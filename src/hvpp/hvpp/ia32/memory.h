@@ -264,6 +264,7 @@ class memory_range
     std::byte* end()   const noexcept { return end_;          }
     void*      data()  const noexcept { return begin_;        }
     size_t     size()  const noexcept { return end_ - begin_; }
+    bool       empty() const noexcept { return size() == 0;   }
 
   private:
     std::byte* begin_;
