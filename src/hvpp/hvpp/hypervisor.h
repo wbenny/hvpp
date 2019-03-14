@@ -8,7 +8,7 @@ namespace hvpp {
 
 using namespace ia32;
 
-class hypervisor
+class hypervisor final
 {
   public:
     auto initialize() noexcept -> error_code_t;

@@ -8,7 +8,7 @@ namespace hvpp {
 
 using namespace ia32;
 
-class ept_t
+class ept_t final
 {
   public:
     auto initialize() noexcept -> error_code_t;

@@ -15,7 +15,7 @@ using namespace ia32;
 
 class vmexit_handler;
 
-class interrupt_t
+class interrupt_t final
 {
   public:
     constexpr interrupt_t(vmx::interrupt_type interrupt_type, exception_vector exception_vector, int rip_adjust = -1) noexcept
@@ -139,7 +139,7 @@ struct vcpu_stack_t
 static_assert(sizeof(vcpu_stack_t) == vcpu_stack_size);
 static_assert(sizeof(vcpu_stack_t::shadow_space_t) == 32);
 
-class vcpu_t
+class vcpu_t final
 {
   public:
     auto initialize(vmexit_handler& handler) noexcept -> error_code_t;
