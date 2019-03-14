@@ -102,8 +102,8 @@ class mtrr
         hvpp_info(
           "  %3i) %s [%016" PRIx64 " - %016" PRIx64 "] (%8u kb)", i,
           memory_type_to_string(mtrr.type),
-          mtrr.range.begin(),
-          mtrr.range.end(),
+          mtrr.range.begin().value(),
+          mtrr.range.end().value(),
           mtrr.range.size() / 1024);
       };
 

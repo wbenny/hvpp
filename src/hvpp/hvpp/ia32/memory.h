@@ -340,8 +340,8 @@ class physical_memory_descriptor
       {
         hvpp_info(
           "  %3i)    [%p - %p] (%8u kb)", i,
-          range_[i].begin(),
-          range_[i].end(),
+          range_[i].begin().value(),
+          range_[i].end().value(),
           range_[i].size() / 1024);
       }
     }

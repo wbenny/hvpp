@@ -404,7 +404,7 @@ void vmexit_stats_handler::storage_dump(const vmexit_stats_storage_t& storage_to
             }
           }
 
-          if (stats.lmsw > 0)
+          if (stats.clts > 0)
           {
             hvpp_info("    clts: %u", stats.clts);
           }
