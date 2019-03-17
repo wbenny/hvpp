@@ -67,7 +67,7 @@ class vmexit_stats_handler
     //
     // Count of terminated VCPUs.
     //
-    std::atomic_uint32_t terminated_vcpu_count_;
+    std::atomic<uint32_t> terminated_vcpu_count_;
 };
 
 }

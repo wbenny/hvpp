@@ -296,9 +296,9 @@ class physical_memory_range
       return pa >= begin_ && pa < end_;
     }
 
-    pa_t    begin() const noexcept { return begin_; }
-    pa_t    end()   const noexcept { return end_; }
-    size_t  size()  const noexcept { return end_.value() - begin_.value(); }
+    auto begin() const noexcept { return begin_; }
+    auto end()   const noexcept { return end_; }
+    auto size()  const noexcept { return static_cast<size_t>(end_.value() - begin_.value()); }
 
   private:
     pa_t begin_;
@@ -321,11 +321,11 @@ class physical_memory_descriptor
     physical_memory_descriptor& operator=(const physical_memory_descriptor& other) noexcept = delete;
     physical_memory_descriptor& operator=(physical_memory_descriptor&& other) noexcept = delete;
 
-    const physical_memory_range* begin() const noexcept { return &range_[0]; }
-    const physical_memory_range* end()   const noexcept { return &range_[size()]; }
-    size_t                       size()  const noexcept { return count_; }
+    auto begin() const noexcept { return const_cast<const physical_memory_range*>(&range_[0]); }
+    auto end()   const noexcept { return const_cast<const physical_memory_range*>(&range_[count_]); }
+    auto size()  const noexcept { return static_cast<size_t>(count_); }
 
-    size_t total_physical_memory_size() const noexcept
+    auto total_physical_memory_size() const noexcept
     {
       return std::accumulate(begin(), end(), size_t(0), [](auto sum, auto next) {
         return sum + next.size();
