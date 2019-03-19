@@ -6,9 +6,9 @@
 
 namespace ia32::detail
 {
-  uint64_t pa_from_va(void* va) noexcept
+  uint64_t pa_from_va(const void* va) noexcept
   {
-    return MmGetPhysicalAddress(va).QuadPart;
+    return MmGetPhysicalAddress((PVOID)(va)).QuadPart;
   }
 
   void* va_from_pa(uint64_t pa) noexcept
@@ -47,7 +47,7 @@ namespace ia32::detail
 
       range_list[count] = physical_memory_range(address, address + size);
     } while (++count < range_list_size);
-	
+
     ExFreePool(physical_memory_ranges);
   }
 }

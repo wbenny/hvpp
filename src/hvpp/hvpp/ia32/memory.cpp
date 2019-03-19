@@ -8,7 +8,7 @@ namespace ia32 {
 
 namespace detail
 {
-  uint64_t pa_from_va(void* va, cr3_t cr3) noexcept
+  uint64_t pa_from_va(const void* va, cr3_t cr3) noexcept
   {
     return pa_t::from_pfn(
       va_t(va).pt_entry(cr3)->page_frame_number

@@ -10,8 +10,6 @@
 
 namespace ia32 {
 
-using pfn_t = uint64_t; // Page Frame Number
-
 enum class memory_type : uint8_t
 {
   uncacheable     = 0,
@@ -34,8 +32,8 @@ class physical_memory_descriptor;
 
 namespace detail
 {
-  uint64_t pa_from_va(void* va) noexcept;
-  uint64_t pa_from_va(void* va, cr3_t cr3) noexcept;
+  uint64_t pa_from_va(const void* va) noexcept;
+  uint64_t pa_from_va(const void* va, cr3_t cr3) noexcept;
   void*    va_from_pa(uint64_t pa) noexcept;
   void*    mapping_allocate(size_t size) noexcept;
   void     mapping_free(void* va) noexcept;
@@ -53,53 +51,53 @@ class pa_t
     // Static
     //
 
-    static pa_t from_pfn(pfn_t pfn)    noexcept { return pa_t(pfn << page_shift);       }
-    static pa_t from_va(void* va)      noexcept { return pa_t(detail::pa_from_va(va));  }
-    static pa_t from_va(void* va,
-                        cr3_t cr3)     noexcept { return pa_t(detail::pa_from_va(va, cr3)); }
+    static pa_t from_pfn(uint64_t pfn)  noexcept { return pa_t(pfn << page_shift);       }
+    static pa_t from_va(const void* va) noexcept { return pa_t(detail::pa_from_va(va));  }
+    static pa_t from_va(const void* va,
+                        cr3_t cr3)      noexcept { return pa_t(detail::pa_from_va(va, cr3)); }
 
     //
     // ctor/operators
     //
 
-    pa_t()                             noexcept = default;
-    pa_t(const pa_t& other)            noexcept = default;
-    pa_t(pa_t&& other)                 noexcept = default;
-    pa_t& operator=(const pa_t& other) noexcept = default;
-    pa_t& operator=(pa_t&& other)      noexcept = default;
-    pa_t(uint64_t pa)                  noexcept : value_(pa)   {                        }
+    pa_t()                              noexcept = default;
+    pa_t(const pa_t& other)             noexcept = default;
+    pa_t(pa_t&& other)                  noexcept = default;
+    pa_t& operator=(const pa_t& other)  noexcept = default;
+    pa_t& operator=(pa_t&& other)       noexcept = default;
+    pa_t(uint64_t pa)                   noexcept : value_(pa)   {                        }
 
-    pa_t& operator= (uint64_t other)   noexcept { value_ = other; return *this;         }
+    pa_t& operator= (uint64_t other)    noexcept { value_ = other; return *this;         }
 
-    pa_t  operator+ (pa_t other) const noexcept { return pa_t(value_ + other.value_);   }
-    pa_t& operator+=(pa_t other)       noexcept { value_ += other.value_; return *this; }
+    pa_t  operator+ (pa_t other)  const noexcept { return pa_t(value_ + other.value_);   }
+    pa_t& operator+=(pa_t other)        noexcept { value_ += other.value_; return *this; }
 
-    pa_t  operator- (pa_t other) const noexcept { return pa_t(value_ - other.value_);   }
-    pa_t& operator-=(pa_t other)       noexcept { value_ -= other.value_; return *this; }
+    pa_t  operator- (pa_t other)  const noexcept { return pa_t(value_ - other.value_);   }
+    pa_t& operator-=(pa_t other)        noexcept { value_ -= other.value_; return *this; }
 
-    pa_t  operator| (pa_t other) const noexcept { return pa_t(value_ | other.value_);   }
-    pa_t& operator|=(pa_t other)       noexcept { value_ |= other.value_; return *this; }
+    pa_t  operator| (pa_t other)  const noexcept { return pa_t(value_ | other.value_);   }
+    pa_t& operator|=(pa_t other)        noexcept { value_ |= other.value_; return *this; }
 
-    pa_t  operator& (pa_t other) const noexcept { return pa_t(value_ & other.value_);   }
-    pa_t& operator&=(pa_t other)       noexcept { value_ &= other.value_; return *this; }
+    pa_t  operator& (pa_t other)  const noexcept { return pa_t(value_ & other.value_);   }
+    pa_t& operator&=(pa_t other)        noexcept { value_ &= other.value_; return *this; }
 
-    bool  operator< (pa_t other) const noexcept { return value_  < other.value_;        }
-    bool  operator<=(pa_t other) const noexcept { return value_ <= other.value_;        }
-    bool  operator> (pa_t other) const noexcept { return value_  > other.value_;        }
-    bool  operator>=(pa_t other) const noexcept { return value_ >= other.value_;        }
-    bool  operator==(pa_t other) const noexcept { return value_ == other.value_;        }
-    bool  operator!=(pa_t other) const noexcept { return value_ != other.value_;        }
-    bool  operator! (          ) const noexcept { return !value_;                       }
+    bool  operator< (pa_t other)  const noexcept { return value_  < other.value_;        }
+    bool  operator<=(pa_t other)  const noexcept { return value_ <= other.value_;        }
+    bool  operator> (pa_t other)  const noexcept { return value_  > other.value_;        }
+    bool  operator>=(pa_t other)  const noexcept { return value_ >= other.value_;        }
+    bool  operator==(pa_t other)  const noexcept { return value_ == other.value_;        }
+    bool  operator!=(pa_t other)  const noexcept { return value_ != other.value_;        }
+    bool  operator! (          )  const noexcept { return !value_;                       }
 
-    explicit operator bool()     const noexcept { return value_ != 0;                   }
+    explicit operator bool()      const noexcept { return value_ != 0;                   }
 
     //
     // Getters
     //
 
-    uint64_t value()             const noexcept { return value_;                        }
-    pfn_t    pfn()               const noexcept { return value_ >> page_shift;          }
-    void*    va()                const noexcept { return detail::va_from_pa(value_);    }
+    auto value()                  const noexcept { return value_;                        }
+    auto pfn()                    const noexcept { return value_ >> page_shift;          }
+    auto va()                     const noexcept { return detail::va_from_pa(value_);    }
 
     int index(pml level) const noexcept
     {
@@ -126,8 +124,8 @@ class va_t
     va_t(va_t&& other)                 noexcept = default;
     va_t& operator=(const va_t& other) noexcept = default;
     va_t& operator=(va_t&& other)      noexcept = default;
-    va_t(void* va)                     noexcept : value_(uint64_t(va))   {              }
-    va_t(uint64_t va)                  noexcept : value_(va)   {                        }
+    va_t(const void* va)               noexcept : value_(uint64_t(va)) {                }
+    va_t(uint64_t va)                  noexcept : value_(va) {                          }
 
     va_t& operator= (uint64_t other)   noexcept { value_ = other; return *this;         }
 
@@ -151,8 +149,8 @@ class va_t
     bool  operator!=(va_t other) const noexcept { return value_ != other.value_;        }
     bool  operator! (          ) const noexcept { return !value_;                       }
 
-    uint64_t value()             const noexcept { return value_;                        }
-    void*    ptr()               const noexcept { return (void*)(value_);               }
+    auto  value()                const noexcept { return value_;                        }
+    auto  ptr()                  const noexcept { return (const void*)(value_);         }
 
     int index(pml level) const noexcept
     {
@@ -207,14 +205,14 @@ class memory_range
     memory_range() noexcept = default;
     memory_range(const memory_range& other) noexcept = default;
     memory_range(memory_range&& other) noexcept = default;
-    memory_range(void* begin_va, void* end_va) noexcept
-      : begin_(reinterpret_cast<std::byte*>(begin_va))
-      , end_(reinterpret_cast<std::byte*>(end_va))
+    memory_range(const void* begin_va, const void* end_va) noexcept
+      : begin_(reinterpret_cast<const std::byte*>(begin_va))
+      , end_(reinterpret_cast<const std::byte*>(end_va))
     { }
 
-    memory_range(void* data, size_t size) noexcept
-      : begin_(reinterpret_cast<std::byte*>(data))
-      , end_(reinterpret_cast<std::byte*>(data) + size)
+    memory_range(const void* data, size_t size) noexcept
+      : begin_(reinterpret_cast<const std::byte*>(data))
+      , end_(reinterpret_cast<const std::byte*>(data) + size)
     { }
 
     memory_range& operator=(const memory_range& other) noexcept = default;
@@ -241,34 +239,34 @@ class memory_range
     bool operator!=(const memory_range& rhs) const noexcept
     { return !(*this == rhs);                                 }
 
-    void set(void* begin_va, void* end_va) noexcept
+    void set(const void* begin_va, const void* end_va) noexcept
     {
-      begin_ = reinterpret_cast<std::byte*>(begin_va);
-      end_   = reinterpret_cast<std::byte*>(end_va);
+      begin_ = reinterpret_cast<const std::byte*>(begin_va);
+      end_   = reinterpret_cast<const std::byte*>(end_va);
     }
 
-    void set(void* data, size_t size) noexcept
+    void set(const void* data, size_t size) noexcept
     {
-      begin_ = reinterpret_cast<std::byte*>(data);
-      end_   = reinterpret_cast<std::byte*>(data) + size;
+      begin_ = reinterpret_cast<const std::byte*>(data);
+      end_   = reinterpret_cast<const std::byte*>(data) + size;
     }
 
-    bool contains(void* va) const noexcept
+    bool contains(const void* va) const noexcept
     {
       return
         uintptr_t(va) >= uintptr_t(begin_) &&
         uintptr_t(va)  < uintptr_t(end_);
     }
 
-    std::byte* begin() const noexcept { return begin_;        }
-    std::byte* end()   const noexcept { return end_;          }
-    void*      data()  const noexcept { return begin_;        }
-    size_t     size()  const noexcept { return end_ - begin_; }
-    bool       empty() const noexcept { return size() == 0;   }
+    auto begin() const noexcept { return begin_;                           }
+    auto end()   const noexcept { return end_;                             }
+    auto data()  const noexcept { return static_cast<const void*>(begin_); }
+    auto size()  const noexcept { return end_ - begin_;                    }
+    bool empty() const noexcept { return size() == 0;                      }
 
   private:
-    std::byte* begin_;
-    std::byte* end_;
+    const std::byte* begin_;
+    const std::byte* end_;
 };
 
 class physical_memory_range
