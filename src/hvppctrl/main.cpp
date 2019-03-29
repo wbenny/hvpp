@@ -246,7 +246,7 @@ void TestIoControl()
   UINT16 IoPort = 0x64;
   DWORD BytesReturned;
   DeviceIoControl(DeviceHandle,
-                  ioctl_enable_io_debugbreak_t::code(),
+                  ioctl_enable_io_debugbreak_t::code,
                   &IoPort,
                   sizeof(IoPort),
                   &IoPort,

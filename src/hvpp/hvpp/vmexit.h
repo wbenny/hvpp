@@ -116,56 +116,40 @@ struct vmexit_storage_t
 class vmexit_handler
 {
   public:
-
     //
-    // Predefined interrupt structures.
-    // Helpful when injecting events.
+    // Constructor & destructor.
     //
-
-    static constexpr auto interrupt_nmi                = interrupt_t {
-                                                          vmx::interrupt_type::nmi,
-                                                          exception_vector::nmi_interrupt
-                                                        };
-
-    static constexpr auto interrupt_debug              = interrupt_t {
-                                                          vmx::interrupt_type::hardware_exception,
-                                                          exception_vector::debug
-                                                        };
-
-    static constexpr auto interrupt_invalid_opcode     = interrupt_t {
-                                                          vmx::interrupt_type::hardware_exception,
-                                                          exception_vector::invalid_opcode
-                                                        };
-
-    static constexpr auto interrupt_general_protection = interrupt_t {
-                                                          vmx::interrupt_type::hardware_exception,
-                                                          exception_vector::general_protection,
-                                                          exception_error_code_t{}
-                                                        };
-
-  public:
-    vmexit_handler() noexcept;
-    ~vmexit_handler() noexcept;
-
+    // Note:
+    //   Constructor & destructor is guaranteed to NOT be called
+    //   in VMX-root mode.
+    //   Therefore, avoid execution of any VMX instructions there.
     //
-    // Avoid execution of any VMX instructions here, because
-    // this method is not guaranteed to be called in the VMX-root
-    // mode.
-    //
-    virtual auto initialize() noexcept -> error_code_t;
-
-    //
-    // Avoid execution of any VMX instructions here, because
-    // this method is not guaranteed to be called in the VMX-root
-    // mode.
-    //
-    virtual void destroy() noexcept;
+             vmexit_handler() noexcept;
+    virtual ~vmexit_handler() noexcept;
 
     //
     // This method allows you to set up VCPU state before VMLAUNCH.
     // Use this method for setting up VMCS.
     //
+    // Note:
+    //   This method is guaranteed to be called in VMX-root mode.
+    //
     virtual void setup(vcpu_t& vp) noexcept;
+
+    //
+    // This method is called from vcpu_t::stop() method.
+    // It should be responsible for initiating VM tear-down
+    // and disabling the VMX mode.
+    //
+    // Note:
+    //   This method is guaranteed to NOT be called in VMX-root mode.
+    //   Therefore, avoid execution of any VMX instructions there
+    //   (including VMXOFF).
+    //
+    //   If you wish to execute code in VMX-root mode when this method
+    //   is called, use "vmcall".
+    //
+    virtual void teardown(vcpu_t& vp) noexcept;
 
     //
     // This method is called on every VM-exit.
@@ -173,20 +157,11 @@ class vmexit_handler
     // to related VM-exit method (i.e.: for "execute CPUID VM-exit"
     // it calls handle_execute_cpuid() method).
     //
-    // Keep in mind that this method is not called for VM-exits
-    // that are not enabled in the VMCS.
+    // Note:
+    //   Keep in mind that this method is not called for VM-exits
+    //   that are not enabled in the VMCS.
     //
     virtual void handle(vcpu_t& vp) noexcept;
-
-    //
-    // This method is called from vcpu_t::destroy() method.
-    // It should be responsible for initiating VM tear-down
-    // and disabling the VMX mode.
-    //
-    // Note that this method is not called in VMX-root mode,
-    // therefore you should avoid usage of VMXOFF instruction.
-    //
-    virtual void invoke_termination(vcpu_t& vp) noexcept;
 
   protected:
     //
@@ -271,7 +246,7 @@ class vmexit_handler
 
   protected:
     using handler_fn_t = void (vmexit_handler::*)(vcpu_t&);
-    std::array<handler_fn_t, 65> handlers_;
+    const std::array<handler_fn_t, 65> handlers_;
 };
 
 }

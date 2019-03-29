@@ -37,8 +37,4 @@ namespace mp
   template <typename T>
   inline void ipi_call(T function) noexcept
   { ipi_call([](void* context) noexcept { ((T*)context)->operator()(); }, &function); }
-
-  template <typename T>
-  inline void ipi_call(T* instance, void (T::*member_function)()) noexcept
-  { ipi_call([=]() { (instance->*member_function)(); }); }
 }

@@ -48,9 +48,11 @@ void vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept
   vp.guest_dr7(read<dr7_t>());
   vp.guest_rflags(read<rflags_t>());
 
-  auto gdtr = read<gdtr_t>();
+  const auto gdtr = read<gdtr_t>();
+  const auto idtr = read<idtr_t>();
+
   vp.guest_gdtr(gdtr);
-  vp.guest_idtr(read<idtr_t>());
+  vp.guest_idtr(idtr);
   vp.guest_cs(segment_t{ gdtr, read<cs_t>() });
   vp.guest_ds(segment_t{ gdtr, read<ds_t>() });
   vp.guest_es(segment_t{ gdtr, read<es_t>() });
@@ -61,7 +63,7 @@ void vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept
   vp.guest_ldtr(segment_t{ gdtr, read<ldtr_t>() });
 }
 
-void vmexit_passthrough_handler::invoke_termination(vcpu_t& vp) noexcept
+void vmexit_passthrough_handler::teardown(vcpu_t& vp) noexcept
 {
   (void)(vp);
 
@@ -207,7 +209,7 @@ void vmexit_passthrough_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
   if (vp.exit_context().rcx == vmcall_terminate_id &&
       vp.guest_cs().selector.request_privilege_level == 0)
   {
-    vp.terminate();
+    vp.vmx_leave();
   }
   else if (vp.exit_context().rcx == vmcall_breakpoint_id)
   {
@@ -227,136 +229,151 @@ void vmexit_passthrough_handler::handle_mov_cr(vcpu_t& vp) noexcept
   switch (exit_qualification.access_type)
   {
     case vmx::exit_qualification_mov_cr_t::access_to_cr:
+    {
       switch (exit_qualification.cr_number)
       {
         case 0:
+        {
           vp.guest_cr0(cr0_t{ gp_register });
           vp.cr0_shadow(cr0_t{ gp_register });
+
           break;
+        }
 
         case 3:
+        {
+          //
+          // If CR4.PCIDE = 1, bit 63 of the source operand to MOV
+          // to CR3 determines whether the instruction invalidates
+          // entries in the TLBs and the paging-structure caches.
+          // The instruction does not modify bit 63 of CR3, which
+          // is reserved and always 0.
+          // (ref: Vol2B(MOV-Move to/from Control Registers)
+          // (see: Vol3A[4.10.4.1(Operations that Invalidate TLBs and Paging-Structure Caches)]
+          //
+          auto cr3 = cr3_t{ gp_register };
+          if (vp.guest_cr4().pcid_enable)
           {
             //
-            // If CR4.PCIDE = 1, bit 63 of the source operand to MOV
-            // to CR3 determines whether the instruction invalidates
-            // entries in the TLBs and the paging-structure caches.
-            // The instruction does not modify bit 63 of CR3, which
-            // is reserved and always 0.
-            // (ref: Vol2B(MOV-Move to/from Control Registers)
-            // (see: Vol3A[4.10.4.1(Operations that Invalidate TLBs and Paging-Structure Caches)]
+            // Equivalent to:
+            //   gp_register &= ~(1ull << 63);
             //
-            auto cr3 = cr3_t{ gp_register };
-            if (vp.guest_cr4().pcid_enable)
-            {
-              //
-              // Equivalent to:
-              //   gp_register &= ~(1ull << 63);
-              //
-              cr3.pcid_invalidate = false;
-            }
-            vp.guest_cr3(cr3);
-
-            //
-            // Some instructions invalidate all entries in the TLBs
-            // and paging-structure caches-except for global translations.
-            // An example is the MOV to CR3 instruction.
-            // Emulation of such an instruction may require execution of
-            // the INVVPID instruction as follows:
-            //   - The INVVPID type is single-context-retaining-globals (3).
-            //   - The VPID in the INVVPID descriptor is the one assigned to
-            //     the virtual processor whose execution is being emulated.
-            // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
-            //
-            vmx::invvpid_single_context_retaining_globals(vp.vcpu_id());
+            cr3.pcid_invalidate = false;
           }
+          vp.guest_cr3(cr3);
+
+          //
+          // Some instructions invalidate all entries in the TLBs
+          // and paging-structure caches-except for global translations.
+          // An example is the MOV to CR3 instruction.
+          // Emulation of such an instruction may require execution of
+          // the INVVPID instruction as follows:
+          //   - The INVVPID type is single-context-retaining-globals (3).
+          //   - The VPID in the INVVPID descriptor is the one assigned to
+          //     the virtual processor whose execution is being emulated.
+          // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
+          //
+          vmx::invvpid_single_context_retaining_globals(vp.vcpu_id());
+
           break;
+        }
 
         case 4:
+        {
+          //
+          // Some instructions invalidate all entries in the TLBs and
+          // paging-structure caches-including for global translations.
+          // An example is the MOV to CR4 instruction if the value of
+          // value of bit 4 (page global enable-PGE) is changing.
+          // Emulation of such an instruction may require execution of
+          // the INVVPID instruction as follows:
+          //   - The INVVPID type is single-context (1).
+          //   - The VPID in the INVVPID descriptor is the one assigned to
+          //     the virtual processor whose execution is being emulated.
+          // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
+          //
+          cr4_t new_cr4 = cr4_t{ gp_register };
+          bool pge_changed = new_cr4.page_global_enable != vp.guest_cr4().page_global_enable;
+
+          if (pge_changed)
           {
-            //
-            // Some instructions invalidate all entries in the TLBs and
-            // paging-structure caches-including for global translations.
-            // An example is the MOV to CR4 instruction if the value of
-            // value of bit 4 (page global enable-PGE) is changing.
-            // Emulation of such an instruction may require execution of
-            // the INVVPID instruction as follows:
-            //   - The INVVPID type is single-context (1).
-            //   - The VPID in the INVVPID descriptor is the one assigned to
-            //     the virtual processor whose execution is being emulated.
-            // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
-            //
-            cr4_t new_cr4 = cr4_t{ gp_register };
-            bool pge_changed = new_cr4.page_global_enable != vp.guest_cr4().page_global_enable;
-
-            if (pge_changed)
-            {
-              vmx::invvpid_single_context(vp.vcpu_id());
-            }
-
-            vp.guest_cr4(new_cr4);
-            vp.cr4_shadow(new_cr4);
+            vmx::invvpid_single_context(vp.vcpu_id());
           }
+
+          vp.guest_cr4(new_cr4);
+          vp.cr4_shadow(new_cr4);
+
           break;
+        }
 
         case 8:
+        {
           /* unimplemented */
           break;
+        }
       }
+
       break;
+    }
 
     case vmx::exit_qualification_mov_cr_t::access_from_cr:
+    {
       switch (exit_qualification.cr_number)
       {
         case 3: gp_register = vp.guest_cr3().flags; break;
         case 8: /* unimplemented */ break;
       }
+
       break;
+    }
 
     case vmx::exit_qualification_mov_cr_t::access_clts:
-      {
-        auto cr0 = vp.guest_cr0();
-        cr0.task_switched = false;
-        vp.guest_cr0(cr0);
-        vp.cr0_shadow(cr0);
-      }
+    {
+      auto cr0 = vp.guest_cr0();
+      cr0.task_switched = false;
+      vp.guest_cr0(cr0);
+      vp.cr0_shadow(cr0);
+
       break;
+    }
 
     case vmx::exit_qualification_mov_cr_t::access_lmsw:
-      {
-        auto msw = static_cast<uint16_t>(exit_qualification.lmsw_source_data);
-        auto cr0 = vp.guest_cr0();
+    {
+      auto msw = static_cast<uint16_t>(exit_qualification.lmsw_source_data);
+      auto cr0 = vp.guest_cr0();
 
-        //
-        // Loads the source operand into the machine status word,
-        // bits 0 through 15 of register CR0. The source operand
-        // can be a 16-bit general-purpose register or a memory
-        // location.  Only the low-order 4 bits of the source
-        // operand (which contains the PE, MP, EM, and TS flags)
-        // are loaded into CR0.  The PG, CD, NW, AM, WP, NE, and
-        // ET flags of CR0 are not affected.  The operand-size
-        // attribute has no effect on this instruction.  If the
-        // PE flag of the source operand (bit 0) is set to 1, the
-        // instruction causes the processor to switch to protected
-        // mode.  While in protected mode, the LMSW instruction
-        // cannot be used to clear the PE flag and force a switch
-        // back to real-address mode.
-        // (ref: Vol2A[(LMSW-Load Machine Status Word)])
-        //
-        // TL;DR:
-        //   CR0[0:3] <- SRC[0:3];
-        //
-        //   ...except if CR0.PE (bit 0) is already 1 - then do not
-        //   change that bit (lmsw can't be used to switch back to
-        //   real mode from the protected mode.
-        //
+      //
+      // Loads the source operand into the machine status word,
+      // bits 0 through 15 of register CR0. The source operand
+      // can be a 16-bit general-purpose register or a memory
+      // location.  Only the low-order 4 bits of the source
+      // operand (which contains the PE, MP, EM, and TS flags)
+      // are loaded into CR0.  The PG, CD, NW, AM, WP, NE, and
+      // ET flags of CR0 are not affected.  The operand-size
+      // attribute has no effect on this instruction.  If the
+      // PE flag of the source operand (bit 0) is set to 1, the
+      // instruction causes the processor to switch to protected
+      // mode.  While in protected mode, the LMSW instruction
+      // cannot be used to clear the PE flag and force a switch
+      // back to real-address mode.
+      // (ref: Vol2A[(LMSW-Load Machine Status Word)])
+      //
+      // TL;DR:
+      //   CR0[0:3] <- SRC[0:3];
+      //
+      //   ...except if CR0.PE (bit 0) is already 1 - then do not
+      //   change that bit (lmsw can't be used to switch back to
+      //   real mode from the protected mode.
+      //
 
-        cr0.flags &=      ~0b1110;
-        cr0.flags |= msw & 0b1111;
+      cr0.flags &=      ~0b1110;
+      cr0.flags |= msw & 0b1111;
 
-        vp.guest_cr0(cr0);
-        vp.cr0_shadow(cr0);
-      }
+      vp.guest_cr0(cr0);
+      vp.cr0_shadow(cr0);
+
       break;
+    }
   }
 }
 
@@ -387,7 +404,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
 
   if (vp.guest_cs().access.descriptor_privilege_level != 0)
   {
-    vp.interrupt_inject(interrupt_general_protection);
+    vp.interrupt_inject(interrupt::general_protection);
     vp.suppress_rip_adjust();
     return;
   }
@@ -407,7 +424,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
   {
     if (vp.guest_cr4().debugging_extensions)
     {
-      vp.interrupt_inject(interrupt_invalid_opcode);
+      vp.interrupt_inject(interrupt::invalid_opcode);
       vp.suppress_rip_adjust();
       return;
     }
@@ -444,7 +461,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
     dr7.general_detect = false;
     vp.guest_dr7(dr7);
 
-    vp.interrupt_inject(interrupt_debug);
+    vp.interrupt_inject(interrupt::debug);
     vp.suppress_rip_adjust();
     return;
   }
@@ -460,7 +477,7 @@ void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
       exit_qualification.dr_number == 7) &&
       (gp_register >> 32) != 0)
   {
-    vp.interrupt_inject(interrupt_general_protection);
+    vp.interrupt_inject(interrupt::general_protection);
     vp.suppress_rip_adjust();
     return;
   }
@@ -752,9 +769,9 @@ void vmexit_passthrough_handler::handle_gdtr_idtr_access(vcpu_t& vp) noexcept
   //   (6 bytes) than on x64 (10 bytes).
   //   The size of written bytes must be correctly emulated.
   //
-  auto guest_in_long_mode = [&vp]() noexcept -> bool {
-    auto   selector = vp.guest_segment_selector(context_t::seg_cs);
-    auto&  descriptor_entry = vp.guest_gdtr()[selector];
+  const auto guest_in_long_mode = [&vp]() noexcept -> bool {
+    const auto   selector = vp.guest_segment_selector(context_t::seg_cs);
+    const auto&  descriptor_entry = vp.guest_gdtr()[selector];
 
     return descriptor_entry.access.long_mode;
   };
@@ -964,7 +981,7 @@ void vmexit_passthrough_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
   return;
 
 inject_general_protection:
-  vp.interrupt_inject(interrupt_general_protection);
+  vp.interrupt_inject(interrupt::general_protection);
   vp.suppress_rip_adjust();
 }
 
@@ -1006,7 +1023,7 @@ void vmexit_passthrough_handler::handle_execute_vmfunc(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_vm_fallback(vcpu_t& vp) noexcept
 {
-  vp.interrupt_inject(interrupt_invalid_opcode);
+  vp.interrupt_inject(interrupt::invalid_opcode);
   vp.suppress_rip_adjust();
 }
 
@@ -1016,7 +1033,7 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
   // Common code for handling all exceptions and interrupts.
   //
 
-  auto interrupt = vp.interrupt_info();
+  const auto interrupt = vp.interrupt_info();
 
   switch (interrupt.type())
   {
@@ -1024,49 +1041,52 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
       switch (interrupt.vector())
       {
         case exception_vector::invalid_opcode:
-          {
-            cr3_guard _(vp.guest_cr3());
+        {
+          cr3_guard _(vp.guest_cr3());
 
-            if (detail::is_syscall_instruction(vp.exit_context().rip_as_pointer))
-            {
-              handle_emulate_syscall(vp);
-              vp.suppress_rip_adjust();
-              return;
-            }
-            else if (detail::is_sysret_instruction(vp.exit_context().rip_as_pointer))
-            {
-              handle_emulate_sysret(vp);
-              vp.suppress_rip_adjust();
-              return;
-            }
+          if (detail::is_syscall_instruction(vp.exit_context().rip_as_pointer))
+          {
+            handle_emulate_syscall(vp);
+            vp.suppress_rip_adjust();
+            return;
           }
+          else if (detail::is_sysret_instruction(vp.exit_context().rip_as_pointer))
+          {
+            handle_emulate_sysret(vp);
+            vp.suppress_rip_adjust();
+            return;
+          }
+
           break;
+        }
 
         case exception_vector::general_protection:
+        {
 
 #ifdef HVPP_ENABLE_VMWARE_WORKAROUND
 
-          {
-            //
-            // VMWare I/O backdoor (port 0x5658/0x5659) workaround.
-            //
-            cr3_guard _(vp.guest_cr3());
+          //
+          // VMWare I/O backdoor (port 0x5658/0x5659) workaround.
+          //
+          cr3_guard _(vp.guest_cr3());
 
-            vmx::exit_qualification_io_instruction_t exit_qualification;
-            if (try_decode_io_instruction(vp.exit_context(), exit_qualification))
-            {
-              ia32_asm_io_with_context(exit_qualification, vp.exit_context());
-              return;
-            }
+          vmx::exit_qualification_io_instruction_t exit_qualification;
+          if (try_decode_io_instruction(vp.exit_context(), exit_qualification))
+          {
+            ia32_asm_io_with_context(exit_qualification, vp.exit_context());
+            return;
           }
 
 #endif
 
           break;
+        }
 
         case exception_vector::page_fault:
+        {
           write<cr2_t>(cr2_t{ vp.exit_qualification().linear_address });
           break;
+        }
 
         default:
           break;
@@ -1114,14 +1134,14 @@ void vmexit_passthrough_handler::handle_emulate_syscall(vcpu_t& vp) noexcept
   // Save the address of the instruction following SYSCALL
   // into RCX and then load RIP from MSR_LSTAR.
   //
-  auto lstar = msr::read<msr::lstar_t>();
+  const auto lstar = msr::read<msr::lstar_t>();
   vp.exit_context().rcx = vp.exit_context().rip + vp.exit_instruction_length();
   vp.exit_context().rip = lstar;
 
   //
   // Save RFLAGS into R11 and then mask RFLAGS using MSR_FMASK.
   //
-  auto fmask = msr::read<msr::fmask_t>();
+  const auto fmask = msr::read<msr::fmask_t>();
   vp.exit_context().r11 = vp.exit_context().rflags.flags;
   vp.exit_context().rflags.flags &= ~fmask.flags;
 
@@ -1129,7 +1149,7 @@ void vmexit_passthrough_handler::handle_emulate_syscall(vcpu_t& vp) noexcept
   // Load the CS and SS selectors with values derived from
   // bits 47:32 of MSR_STAR.
   //
-  auto star = msr::read<msr::star_t>();
+  const auto star = msr::read<msr::star_t>();
 
   //
   // Verbose version of:
@@ -1194,7 +1214,7 @@ void vmexit_passthrough_handler::handle_emulate_sysret(vcpu_t& vp) noexcept
   // SYSRET loads the CS and SS selectors with values
   // derived from bits 63:48 of MSR_STAR.
   //
-  auto star = msr::read<msr::star_t>();
+  const auto star = msr::read<msr::star_t>();
 
   //
   // Verbose version of:

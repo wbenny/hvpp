@@ -302,6 +302,9 @@
     <ClInclude Include="hvpp\vmexit\vmexit_c_wrapper.h">
       <Filter>Header Files\hvpp\vmexit</Filter>
     </ClInclude>
+    <ClInclude Include="hvpp\interrupt.h">
+      <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="hvpp\ia32\context.asm">

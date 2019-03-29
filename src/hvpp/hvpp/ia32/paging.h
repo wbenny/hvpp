@@ -30,29 +30,29 @@ enum class pml : uint8_t
   pml4 = 3,
 };
 
-inline constexpr pml& operator++(pml& ptl) noexcept
-{ reinterpret_cast<uint8_t&>(ptl)++; return ptl; }
+constexpr inline pml& operator++(pml& ptl) noexcept
+{ ((uint8_t&)(ptl))++; return ptl; }
 
-inline constexpr pml& operator--(pml& ptl) noexcept
-{ reinterpret_cast<uint8_t&>(ptl)--; return ptl; }
+constexpr inline pml& operator--(pml& ptl) noexcept
+{ ((uint8_t&)(ptl))--; return ptl; }
 
-inline constexpr pml operator++(pml& ptl, int) noexcept
-{ auto result = ptl; reinterpret_cast<uint8_t&>(ptl)++; return result; }
+constexpr inline pml operator++(pml& ptl, int) noexcept
+{ auto result = ptl; ((uint8_t&)(ptl))++; return result; }
 
-inline constexpr pml operator--(pml& ptl, int) noexcept
-{ auto result = ptl; reinterpret_cast<uint8_t&>(ptl)--; return result; }
+constexpr inline pml operator--(pml& ptl, int) noexcept
+{ auto result = ptl; ((uint8_t&)(ptl))--; return result; }
 
-inline constexpr pml operator+(pml ptl, uint8_t value) noexcept
+constexpr inline pml operator+(pml ptl, uint8_t value) noexcept
 { return static_cast<pml>(static_cast<uint8_t>(ptl) + value); }
 
-inline constexpr pml operator-(pml ptl, uint8_t value) noexcept
+constexpr inline pml operator-(pml ptl, uint8_t value) noexcept
 { return static_cast<pml>(static_cast<uint8_t>(ptl) - value); }
 
-inline constexpr pml& operator+=(pml& ptl, uint8_t value) noexcept
-{ reinterpret_cast<uint8_t&>(ptl) += value; return ptl; }
+constexpr inline pml& operator+=(pml& ptl, uint8_t value) noexcept
+{ ((uint8_t&)(ptl)) += value; return ptl; }
 
-inline constexpr pml& operator-=(pml& ptl, uint8_t value) noexcept
-{ reinterpret_cast<uint8_t&>(ptl) -= value; return ptl; }
+constexpr inline pml& operator-=(pml& ptl, uint8_t value) noexcept
+{ ((uint8_t&)(ptl)) -= value; return ptl; }
 
 //
 // Page Table Entry
@@ -346,7 +346,7 @@ template <
     )
   >
 >
-inline constexpr T page_align(T va, PAGE_DESCRIPTOR) noexcept
+constexpr inline T page_align(T va, PAGE_DESCRIPTOR) noexcept
 { return (T)(uintptr_t(va) & PAGE_DESCRIPTOR::mask); }
 
 //
@@ -362,7 +362,7 @@ template <
     )
   >
 >
-inline constexpr T page_align_up(T va, PAGE_DESCRIPTOR) noexcept
+constexpr inline T page_align_up(T va, PAGE_DESCRIPTOR) noexcept
 { return (T)((uintptr_t(va) + PAGE_DESCRIPTOR::size - 1) & PAGE_DESCRIPTOR::mask); }
 
 //
@@ -378,7 +378,7 @@ template <
     )
   >
 >
-inline constexpr uint32_t byte_offset(T va, PAGE_DESCRIPTOR) noexcept
+constexpr inline uint32_t byte_offset(T va, PAGE_DESCRIPTOR) noexcept
 { return (uint32_t)(uintptr_t(va) & ~PAGE_DESCRIPTOR::mask); }
 
 //
@@ -392,7 +392,7 @@ template <
     std::is_integral_v<T>
   >
 >
-inline constexpr uint64_t bytes_to_pages(T size, PAGE_DESCRIPTOR) noexcept
+constexpr inline uint64_t bytes_to_pages(T size, PAGE_DESCRIPTOR) noexcept
 { return (size >> PAGE_DESCRIPTOR::shift) + ((size & ~PAGE_DESCRIPTOR::mask) != 0); }
 
 //
@@ -406,7 +406,7 @@ template <
     std::is_integral_v<T>
   >
 >
-inline constexpr uint64_t round_to_pages(T size, PAGE_DESCRIPTOR) noexcept
+constexpr inline uint64_t round_to_pages(T size, PAGE_DESCRIPTOR) noexcept
 { return uint64_t(page_align_up(size, PAGE_DESCRIPTOR{})); }
 
 //
@@ -414,23 +414,23 @@ inline constexpr uint64_t round_to_pages(T size, PAGE_DESCRIPTOR) noexcept
 //
 
 template <typename T>
-inline constexpr T page_align(T va) noexcept
+constexpr inline T page_align(T va) noexcept
 { return page_align(va, pt_t{}); }
 
 template <typename T>
-inline constexpr T page_align_up(T va) noexcept
+constexpr inline T page_align_up(T va) noexcept
 { return page_align_up(va, pt_t{}); }
 
 template <typename T>
-inline constexpr uint32_t byte_offset(T va) noexcept
+constexpr inline uint32_t byte_offset(T va) noexcept
 { return byte_offset(va, pt_t{}); }
 
 template <typename T>
-inline constexpr uint64_t bytes_to_pages(T size) noexcept
+constexpr inline uint64_t bytes_to_pages(T size) noexcept
 { return bytes_to_pages(size, pt_t{}); }
 
 template <typename T>
-inline constexpr uint64_t round_to_pages(T size) noexcept
+constexpr inline uint64_t round_to_pages(T size) noexcept
 { return round_to_pages(size, pt_t{}); }
 
 }

@@ -132,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hvpp\hvpp.h" />
+    <ClInclude Include="hvpp\interrupt.h" />
     <ClInclude Include="hvpp\lib\debugger.h" />
     <ClInclude Include="hvpp\lib\device.h" />
     <ClInclude Include="hvpp\lib\ioctl.h" />

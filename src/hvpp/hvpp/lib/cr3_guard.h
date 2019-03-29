@@ -28,7 +28,7 @@ class cr3_guard
 {
   public:
     cr3_guard(ia32::cr3_t new_cr3) noexcept
-      : previous_cr3_(ia32::read<ia32::cr3_t>())
+      : previous_cr3_{ ia32::read<ia32::cr3_t>() }
     { ia32::write<ia32::cr3_t>(::detail::kernel_cr3(new_cr3)); }
 
     ~cr3_guard() noexcept

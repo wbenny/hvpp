@@ -7,54 +7,35 @@
 
 namespace hvpp {
 
-auto ept_t::initialize() noexcept -> error_code_t
+ept_t::ept_t() noexcept
+  : epml4_{}
+  , eptptr_{}
 {
   //
-  // Initialize EPT's PML4.  Each PML4 maps 512GB of memory. We would be fine
+  // Initialize EPT's PML4.  Each PML4 maps 512GB of memory.  We would be fine
   // with just one PML4 in most scenarios, but we have to waste single page
   // on it anyway.  Single page can handle 512 PML4s (their size is 8 bytes)
   // so just fill the whole page with 512 PML4s.
   //
   static_assert(sizeof(epte_t) * 512 == page_size);
 
-  epml4_ = new epte_t[512];
-  hvpp_assert(epml4_ != nullptr);
-
-  if (!epml4_)
-  {
-    return make_error_code_t(std::errc::not_enough_memory);
-  }
-
-  memset(epml4_, 0, sizeof(epte_t) * 512);
-
   //
   // Get physical address of EPT's PML4.
   //
-  pa_t empl4_pa = pa_t::from_va(epml4_);
+  const pa_t empl4_pa = pa_t::from_va(epml4_);
 
   //
   // Initialize EPT pointer.
   // It's not really JUST pointer, but Intel Manual calls it this way.
   //
-  eptptr_.flags = 0;
-  eptptr_.memory_type = static_cast<uint64_t>(memory_manager::mtrr().type(empl4_pa));
+  eptptr_.memory_type = static_cast<uint64_t>(mm::mtrr().type(empl4_pa));
   eptptr_.page_walk_length = ept_ptr_t::page_walk_length_4;
   eptptr_.page_frame_number = empl4_pa.pfn();
-
-  return error_code_t{};
 }
 
-void ept_t::destroy() noexcept
+ept_t::~ept_t() noexcept
 {
-  eptptr_.flags = 0;
-
-  if (epml4_)
-  {
-    unmap_table(epml4_);
-    delete[] epml4_;
-
-    epml4_ = nullptr;
-  }
+  unmap_table(epml4_);
 }
 
 void ept_t::map_identity(epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
@@ -185,8 +166,8 @@ epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
   // Start at PML4 and traverse down the paging hierarchy.
   // Returns nullptr for unmapped (non-present) physical addresses.
   //
-  auto pml4e = &epml4_[guest_pa.index(pml::pml4)];
-  auto pdpte = pml4e->present()
+  const auto pml4e = &epml4_[guest_pa.index(pml::pml4)];
+  const auto pdpte = pml4e->present()
     ? &pml4e->subtable()[guest_pa.index(pml::pdpt)]
     : nullptr;
 
@@ -195,7 +176,7 @@ epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
     return pdpte;
   }
 
-  auto pde = pdpte->present()
+  const auto pde = pdpte->present()
     ? &pdpte->subtable()[guest_pa.index(pml::pd)]
     : nullptr;
 
@@ -204,7 +185,7 @@ epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
     return pde;
   }
 
-  auto pte = pde->present()
+  const auto pte = pde->present()
     ? &pde->subtable()[guest_pa.index(pml::pt)]
     : nullptr;
 
@@ -260,7 +241,7 @@ void ept_t::split(pa_t guest_pa, pa_t host_pa, epte_t::access_type access) noexc
   // The returned EPT entry is fetched at the "ept_table_from_t::level",
   // this means that if we're splitting from PD to PTs, we've fetched PD entry.
   //
-  auto entry = ept_entry(guest_pa, ept_table_from_t::level);
+  const auto entry = ept_entry(guest_pa, ept_table_from_t::level);
 
   //
   // Make sure that the fetched entry is indeed large.
@@ -388,7 +369,7 @@ epte_t* ept_t::map_subtable(epte_t* table) noexcept
     return table->subtable();
   }
 
-  auto subtable = new epte_t[512];
+  const auto subtable = new epte_t[512];
   hvpp_assert(subtable != nullptr);
   memset(subtable, 0, sizeof(epte_t) * 512);
   static_assert(sizeof(epte_t) * 512 == page_size);
@@ -400,8 +381,8 @@ epte_t* ept_t::map_subtable(epte_t* table) noexcept
 epte_t* ept_t::map_pml4(pa_t guest_pa, pa_t host_pa, epte_t* pml4,
                         epte_t::access_type access, pml large) noexcept
 {
-  auto pml4e = &pml4[guest_pa.index(pml::pml4)];
-  auto pdpt = map_subtable(pml4e);
+  const auto pml4e = &pml4[guest_pa.index(pml::pml4)];
+  const auto pdpt = map_subtable(pml4e);
 
   return map_pdpt(guest_pa, host_pa, pdpt, access, large);
 }
@@ -409,42 +390,42 @@ epte_t* ept_t::map_pml4(pa_t guest_pa, pa_t host_pa, epte_t* pml4,
 epte_t* ept_t::map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt,
                         epte_t::access_type access, pml large) noexcept
 {
-  auto pdpte = &pdpt[guest_pa.index(pml::pdpt)];
+  const auto pdpte = &pdpt[guest_pa.index(pml::pdpt)];
 
   if (large == pml::pdpt)
   {
-    pdpte->update(host_pa, memory_manager::mtrr().type(guest_pa), true, access);
+    pdpte->update(host_pa, mm::mtrr().type(guest_pa), true, access);
     return pdpte;
   }
 
-  auto pd = map_subtable(pdpte);
+  const auto pd = map_subtable(pdpte);
   return map_pd(guest_pa, host_pa, pd, access, large);
 }
 
 epte_t* ept_t::map_pd(pa_t guest_pa, pa_t host_pa, epte_t* pd,
                       epte_t::access_type access, pml large) noexcept
 {
-  auto pde = &pd[guest_pa.index(pml::pd)];
+  const auto pde = &pd[guest_pa.index(pml::pd)];
 
   if (large == pml::pd)
   {
-    pde->update(host_pa, memory_manager::mtrr().type(guest_pa), true, access);
+    pde->update(host_pa, mm::mtrr().type(guest_pa), true, access);
     return pde;
   }
 
-  auto pt = map_subtable(pde);
+  const auto pt = map_subtable(pde);
   return map_pt(guest_pa, host_pa, pt, access, large);
 }
 
 epte_t* ept_t::map_pt(pa_t guest_pa, pa_t host_pa, epte_t* pt,
                       epte_t::access_type access, pml large) noexcept
 {
-  auto pte = &pt[guest_pa.index(pml::pt)];
+  const auto pte = &pt[guest_pa.index(pml::pt)];
 
   (void)(large);
   hvpp_assert(large == pml::pt);
   {
-    pte->update(host_pa, memory_manager::mtrr().type(guest_pa), access);
+    pte->update(host_pa, mm::mtrr().type(guest_pa), access);
     return pte;
   }
 }
@@ -461,7 +442,7 @@ void ept_t::unmap_table(epte_t* table, pml level /* = pml::pml4 */) noexcept
   //
   for (int i = 0; i < 512; ++i)
   {
-    auto entry = &table[i];
+    const auto entry = &table[i];
     unmap_entry(entry, level);
   }
 }
@@ -492,7 +473,7 @@ void ept_t::unmap_entry(epte_t* entry, pml level) noexcept
     //
     // Fetch subtable. Only non-large pages have subtables.
     //
-    auto subtable = entry->subtable();
+    const auto subtable = entry->subtable();
 
     //
     // Unmap and/or deallocate the subtable based on current page map level.

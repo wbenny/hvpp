@@ -15,7 +15,7 @@ class vmexit_passthrough_handler
 {
   public:
     void setup(vcpu_t& vp) noexcept override;
-    void invoke_termination(vcpu_t& vp) noexcept override;
+    void teardown(vcpu_t& vp) noexcept override;
 
   protected:
     void handle_exception_or_nmi(vcpu_t& vp) noexcept override;

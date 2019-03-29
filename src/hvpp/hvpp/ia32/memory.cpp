@@ -22,7 +22,7 @@ namespace detail
 
 pe_t* va_t::pt_entry(cr3_t cr3 /*= read<cr3_t>()*/, pml level /*= pml::pt*/) const noexcept
 {
-  auto pml4e = &reinterpret_cast<pe_t*>(
+  const auto pml4e = &reinterpret_cast<pe_t*>(
     pa_t::from_pfn(cr3.page_frame_number).va()
     )[index(pml::pml4)];
 
@@ -31,7 +31,7 @@ pe_t* va_t::pt_entry(cr3_t cr3 /*= read<cr3_t>()*/, pml level /*= pml::pt*/) con
     return pml4e;
   }
 
-  auto pdpte = &reinterpret_cast<pe_t*>(
+  const auto pdpte = &reinterpret_cast<pe_t*>(
     pa_t::from_pfn(pml4e->page_frame_number).va()
     )[index(pml::pdpt)];
 
@@ -40,7 +40,7 @@ pe_t* va_t::pt_entry(cr3_t cr3 /*= read<cr3_t>()*/, pml level /*= pml::pt*/) con
     return pdpte;
   }
 
-  auto pde = &reinterpret_cast<pe_t*>(
+  const auto pde = &reinterpret_cast<pe_t*>(
     pa_t::from_pfn(pdpte->page_frame_number).va()
     )[index(pml::pd)];
 
@@ -49,7 +49,7 @@ pe_t* va_t::pt_entry(cr3_t cr3 /*= read<cr3_t>()*/, pml level /*= pml::pt*/) con
     return pde;
   }
 
-  auto pt = &reinterpret_cast<pe_t*>(
+  const auto pt = &reinterpret_cast<pe_t*>(
     pa_t::from_pfn(pde->page_frame_number).va()
     )[index(pml::pt)];
 

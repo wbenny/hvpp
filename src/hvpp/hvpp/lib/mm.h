@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace memory_manager
+namespace mm
 {
   namespace detail
   {

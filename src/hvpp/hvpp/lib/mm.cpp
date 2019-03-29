@@ -43,7 +43,7 @@
 //       4096 bytes.
 //
 
-namespace memory_manager
+namespace mm
 {
   using pgbmp_t = object_t<bitmap>;
   using pgmap_t = uint16_t;
@@ -196,7 +196,7 @@ namespace memory_manager
     //
     if (ia32::byte_offset(address) != 0)
     {
-      uint32_t lost_bytes = ia32::byte_offset(address);
+      const auto lost_bytes = ia32::byte_offset(address);
 
       address = reinterpret_cast<uint8_t*>(ia32::page_align(address)) + ia32::page_size;
 
@@ -285,7 +285,7 @@ namespace memory_manager
     // This should help with debugging uninitialized variables
     // and class members.
     //
-    int reserved_bytes = static_cast<int>(global.page_bitmap_buffer_size + global.page_allocation_map_size);
+    const auto reserved_bytes = static_cast<int>(global.page_bitmap_buffer_size + global.page_allocation_map_size);
     memset(global.base_address + reserved_bytes, 0xcc, size - reserved_bytes);
 
     //
@@ -370,7 +370,7 @@ namespace memory_manager
     //
     hvpp_assert(ia32::byte_offset(address) == 0);
 
-    int offset = static_cast<int>(ia32::bytes_to_pages(reinterpret_cast<uint8_t*>(address) - global.base_address));
+    const auto offset = static_cast<int>(ia32::bytes_to_pages(reinterpret_cast<uint8_t*>(address) - global.base_address));
 
     if (address == nullptr)
     {
@@ -404,7 +404,7 @@ namespace memory_manager
     //
     // Clear number of allocated pages.
     //
-    int page_count = global.page_allocation_map[offset];
+    const auto page_count = static_cast<int>(global.page_allocation_map[offset]);
     global.page_allocation_map[offset] = 0;
 
     //
@@ -461,17 +461,17 @@ namespace detail
 {
   void generic_free(void* address) noexcept
   {
-    reinterpret_cast<uint8_t*>(address) >= memory_manager::global.base_address &&
-    reinterpret_cast<uint8_t*>(address) < memory_manager::global.base_address + memory_manager::global.available_size
-      ? memory_manager::free       (address)
-      : memory_manager::system_free(address);
+    reinterpret_cast<uint8_t*>(address) >= mm::global.base_address &&
+    reinterpret_cast<uint8_t*>(address)  < mm::global.base_address + mm::global.available_size
+      ? mm::free       (address)
+      : mm::system_free(address);
   }
 }
 
-void* operator new  (size_t size)                                    { return memory_manager::global.allocator[mp::cpu_index()].allocate(size); }
-void* operator new[](size_t size)                                    { return memory_manager::global.allocator[mp::cpu_index()].allocate(size); }
-void* operator new  (size_t size, std::align_val_t)                  { return memory_manager::global.allocator[mp::cpu_index()].allocate(size); }
-void* operator new[](size_t size, std::align_val_t)                  { return memory_manager::global.allocator[mp::cpu_index()].allocate(size); }
+void* operator new  (size_t size)                                    { return mm::global.allocator[mp::cpu_index()].allocate(size); }
+void* operator new[](size_t size)                                    { return mm::global.allocator[mp::cpu_index()].allocate(size); }
+void* operator new  (size_t size, std::align_val_t)                  { return mm::global.allocator[mp::cpu_index()].allocate(size); }
+void* operator new[](size_t size, std::align_val_t)                  { return mm::global.allocator[mp::cpu_index()].allocate(size); }
 
 void operator delete  (void* address)                                { detail::generic_free(address); }
 void operator delete[](void* address)                                { detail::generic_free(address); }

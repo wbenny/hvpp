@@ -84,7 +84,7 @@ ia32::cr3_t kernel_cr3(ia32::cr3_t cr3) noexcept
   hvpp_assert(cr3.pcid == PCID_USER);
 #endif
 
-  auto kprocess = reinterpret_cast<NT_KPROCESS*>(PsGetCurrentProcess());
+  const auto kprocess = reinterpret_cast<NT_KPROCESS*>(PsGetCurrentProcess());
   return ia32::cr3_t{ kprocess->DirectoryTableBase };
 }
 

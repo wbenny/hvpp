@@ -53,7 +53,7 @@ template <
 >
 void for_each_element(std::tuple<ARGS...>& t, F&& f, std::index_sequence<INDEX...>)
 {
-  int unused[] = { 0, (f(std::get<INDEX>(t), INDEX), void(), 0)... };
+  const int unused[] = { 0, (f(std::get<INDEX>(t), INDEX), void(), 0)... };
   (void)(unused);
 }
 
@@ -73,7 +73,7 @@ template <
 >
 void for_each_element(const std::tuple<ARGS...>& t, F&& f, std::index_sequence<INDEX...>)
 {
-  int unused[] = { 0, (f(std::get<INDEX>(t), INDEX), void(), 0)... };
+  const int unused[] = { 0, (f(std::get<INDEX>(t), INDEX), void(), 0)... };
   (void)(unused);
 }
 

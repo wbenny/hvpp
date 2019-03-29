@@ -2,6 +2,7 @@
 
 #include "hvpp/vcpu.h"
 
+#include "hvpp/lib/assert.h"
 #include "hvpp/lib/log.h"
 #include "hvpp/lib/mp.h" // mp::cpu_index()
 
@@ -18,7 +19,9 @@
 
 namespace hvpp {
 
-auto vmexit_stats_handler::initialize() noexcept -> error_code_t
+vmexit_stats_handler::vmexit_stats_handler() noexcept
+  : storage_merged_{}
+  , vmexit_trace_bitmap_{}
 {
   terminated_vcpu_count_ = 0;
 
@@ -26,11 +29,7 @@ auto vmexit_stats_handler::initialize() noexcept -> error_code_t
   // Allocate memory for statistics (per VCPU).
   //
   storage_ = new vmexit_stats_storage_t[mp::cpu_count()];
-
-  if (!storage_)
-  {
-    return make_error_code_t(std::errc::not_enough_memory);
-  }
+  hvpp_assert(storage_ != nullptr);
 
   memset(storage_, 0, sizeof(*storage_) * mp::cpu_count());
 
@@ -46,25 +45,20 @@ auto vmexit_stats_handler::initialize() noexcept -> error_code_t
   //
   // vmexit_trace_bitmap_.clear(int(vmx::exit_reason::exception_or_nmi));
   //
-
-  return error_code_t{};
 }
 
-void vmexit_stats_handler::destroy() noexcept
+vmexit_stats_handler::~vmexit_stats_handler() noexcept
 {
-  if (storage_)
-  {
-    //
-    // Free the memory.
-    //
-    delete[] storage_;
-  }
+  //
+  // Free the memory.
+  //
+  delete[] storage_;
 }
 
 void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
 {
-  auto  exit_reason = vp.exit_reason();
-  auto& stats       = storage_[mp::cpu_index()];
+  const auto  exit_reason = vp.exit_reason();
+        auto& stats       = storage_[mp::cpu_index()];
 
   stats.vmexit[static_cast<int>(exit_reason)] += 1;
 
@@ -327,7 +321,7 @@ void vmexit_stats_handler::storage_merge(vmexit_stats_storage_t& lhs, const vmex
 
 void vmexit_stats_handler::storage_dump(const vmexit_stats_storage_t& storage_to_dump) const noexcept
 {
-  auto& stats = storage_to_dump;
+  const auto& stats = storage_to_dump;
 
   hvpp_info("VMEXIT statistics");
   for (uint32_t exit_reason_index = 0; exit_reason_index < std::size(stats.vmexit); ++exit_reason_index)

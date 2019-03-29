@@ -10,8 +10,6 @@
 //
 //////////////////////////////////////////////////////////////////////////
 
-PHVPP Hypervisor;
-
 VOID
 NTAPI
 DriverUnload(
@@ -20,7 +18,7 @@ DriverUnload(
 {
   UNREFERENCED_PARAMETER(DriverObject);
 
-  HvppDestroy(Hypervisor);
+  HvppDestroy();
 }
 
 NTSTATUS
@@ -36,7 +34,7 @@ DriverEntry(
 
   DriverObject->DriverUnload = &DriverUnload;
 
-  Status = HvppInitialize(&Hypervisor);
+  Status = HvppInitialize();
 
   if (!NT_SUCCESS(Status))
   {
@@ -49,11 +47,11 @@ DriverEntry(
     [VMEXIT_REASON_EPT_VIOLATION]  = &HvppHandleEptViolation,
   } };
 
-  Status = HvppStart(Hypervisor, &VmExitHandler);
+  Status = HvppStart(&VmExitHandler);
 
   if (!NT_SUCCESS(Status))
   {
-    HvppDestroy(Hypervisor);
+    HvppDestroy();
     return Status;
   }
 

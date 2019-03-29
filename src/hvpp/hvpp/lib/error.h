@@ -17,41 +17,44 @@
 class error_code_t
 {
   public:
-    error_code_t() noexcept
-      : value_(0) { }
+    constexpr error_code_t() noexcept
+      : value_{ 0 }
+    { }
 
-    error_code_t(int value) noexcept
-      : value_(value) { }
-
-    template<
-      class EnumT,
-      std::enable_if_t<std::is_error_code_enum_v<EnumT>, int> = 0
-    >
-    error_code_t(EnumT value) noexcept
-      : value_((int)value) { }
+    constexpr error_code_t(int value) noexcept
+      : value_{ value }
+    { }
 
     template<
       class EnumT,
       std::enable_if_t<std::is_error_code_enum_v<EnumT>, int> = 0
     >
-    error_code_t& operator=(EnumT value) noexcept
+    constexpr error_code_t(EnumT value) noexcept
+      : value_{ (int)value }
+    { }
+
+    template<
+      class EnumT,
+      std::enable_if_t<std::is_error_code_enum_v<EnumT>, int> = 0
+    >
+    constexpr error_code_t& operator=(EnumT value) noexcept
     { value_ = (int)value; return *this; }
 
-    void assign(int value) noexcept
+    constexpr void assign(int value) noexcept
     { value_ = value; }
 
-    void clear() noexcept
+    constexpr void clear() noexcept
     { value_ = 0; }
 
-    int value() const noexcept
+    constexpr int value() const noexcept
     { return value_; }
 
-    explicit operator bool() const noexcept
+    constexpr explicit operator bool() const noexcept
     { return value() != 0; }
 
   private:
     int value_;
 };
 
-inline error_code_t make_error_code_t(std::errc value) noexcept
+constexpr inline error_code_t make_error_code_t(std::errc value) noexcept
 { return error_code_t((int)value); }

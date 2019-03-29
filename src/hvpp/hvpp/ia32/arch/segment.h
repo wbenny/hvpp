@@ -148,7 +148,8 @@ struct segment_access_t
 // Segment access (as represented in VMX)
 //
 
-struct segment_access_vmx_t : segment_access_t
+struct segment_access_vmx_t
+  : segment_access_t
 {
   struct
   {
@@ -209,7 +210,7 @@ struct gdt_entry_t
 
     if (!access.descriptor_type)
     {
-      result |= static_cast<uint64_t>(base_address_upper) << 32;
+      result |= uint64_t(base_address_upper) << 32;
     }
 
     return reinterpret_cast<void*>(result);
@@ -226,6 +227,13 @@ struct gdt_entry_t
   // Used for LDT.
   //
 
+  const gdt_entry_t& at(segment_selector_t selector) const noexcept
+  {
+    return *reinterpret_cast<gdt_entry_t*>(
+      uint64_t(base_address()) + selector.index * 8
+      );
+  }
+
   gdt_entry_t& at(segment_selector_t selector) noexcept
   {
     return *reinterpret_cast<gdt_entry_t*>(
@@ -233,10 +241,11 @@ struct gdt_entry_t
       );
   }
 
+  const gdt_entry_t& operator[](segment_selector_t selector) const noexcept
+  { return at(selector); }
+
   gdt_entry_t& operator[](segment_selector_t selector) noexcept
-  {
-    return at(selector);
-  }
+  { return at(selector); }
 };
 
 struct idt_entry_t
@@ -270,6 +279,16 @@ struct descriptor_table32_t
   // GDT entries are accessed by segment selector.
   //
 
+  const gdt_entry_t& at(segment_selector_t selector) const noexcept
+  {
+    //
+    // See explanation of (selector.index * 8) in vcpu.inl.
+    //
+    return *reinterpret_cast<gdt_entry_t*>(
+      uint64_t(base_address) + selector.index * 8
+      );
+  }
+
   gdt_entry_t& at(segment_selector_t selector) noexcept
   {
     //
@@ -284,6 +303,13 @@ struct descriptor_table32_t
   // IDT entries are accessed by numeric index.
   //
 
+  const idt_entry_t& at(int index) const noexcept
+  {
+    return reinterpret_cast<idt_entry_t*>(
+      base_address
+      )[index];
+  }
+
   idt_entry_t& at(int index) noexcept
   {
     return reinterpret_cast<idt_entry_t*>(
@@ -291,21 +317,33 @@ struct descriptor_table32_t
       )[index];
   }
 
+  const gdt_entry_t& operator[](segment_selector_t selector) const noexcept
+  { return at(selector); }
+
   gdt_entry_t& operator[](segment_selector_t selector) noexcept
-  {
-    return at(selector);
-  }
+  { return at(selector); }
+
+  const idt_entry_t& operator[](int index) const noexcept
+  { return at(index); }
 
   idt_entry_t& operator[](int index) noexcept
-  {
-    return at(index);
-  }
+  { return at(index); }
 };
 
 struct descriptor_table64_t
 {
   uint16_t limit;
   uint64_t base_address;
+
+  const gdt_entry_t& at(segment_selector_t selector) const noexcept
+  {
+    //
+    // See explanation of (selector.index * 8) in vcpu.inl.
+    //
+    return *reinterpret_cast<gdt_entry_t*>(
+      uint64_t(base_address) + selector.index * 8
+      );
+  }
 
   gdt_entry_t& at(segment_selector_t selector) noexcept
   {
@@ -317,6 +355,13 @@ struct descriptor_table64_t
       );
   }
 
+  const idt_entry_t& at(int index) const noexcept
+  {
+    return reinterpret_cast<idt_entry_t*>(
+      base_address
+      )[index];
+  }
+
   idt_entry_t& at(int index) noexcept
   {
     return reinterpret_cast<idt_entry_t*>(
@@ -324,15 +369,17 @@ struct descriptor_table64_t
       )[index];
   }
 
+  const gdt_entry_t& operator[](segment_selector_t selector) const noexcept
+  { return at(selector); }
+
   gdt_entry_t& operator[](segment_selector_t selector) noexcept
-  {
-    return at(selector);
-  }
+  { return at(selector); }
+
+  const idt_entry_t& operator[](int index) const noexcept
+  { return at(index); }
 
   idt_entry_t& operator[](int index) noexcept
-  {
-    return at(index);
-  }
+  { return at(index); }
 };
 #pragma pack(pop)
 
@@ -377,42 +424,34 @@ struct segment_t
   T         selector;
 
   segment_t() noexcept
-    : base_address()
-    , limit()
-    , access()
-    , selector()
-  {
-
-  }
+    : base_address{}
+    , limit{}
+    , access{}
+    , selector{}
+  { }
 
   segment_t(T selector) noexcept
-    : base_address()
-    , limit()
-    , access()
-    , selector(selector)
-  {
-
-  }
+    : base_address{}
+    , limit{}
+    , access{}
+    , selector{ selector }
+  { }
 
   segment_t(T selector, void* base_address) noexcept
-    : base_address(base_address)
-    , limit()
-    , access()
-    , selector(selector)
-  {
-
-  }
+    : base_address{ base_address }
+    , limit{}
+    , access{}
+    , selector{ selector }
+  { }
 
   segment_t(void* base_address, uint32_t limit, segment_access_vmx_t access, T selector) noexcept
-    : base_address(base_address)
-    , limit(limit)
-    , access(access)
-    , selector(selector)
-  {
+    : base_address{ base_address }
+    , limit{ limit }
+    , access{ access }
+    , selector{ selector }
+  { }
 
-  }
-
-  segment_t(descriptor_table64_t& descriptor_table, const T& segment_selector) noexcept
+  segment_t(descriptor_table64_t descriptor_table, T segment_selector) noexcept
   {
     static_assert(sizeof(segment_t) == 24);
 
@@ -449,7 +488,7 @@ struct segment_t
         //
         if (selector.table == segment_selector_t::table_ldt) ia32_asm_int3();
 
-        auto& table_entry = selector.table
+        const auto& table_entry = selector.table
           ? descriptor_table[read<ldtr_t>()][selector]
           : descriptor_table[                selector];
 

@@ -4,8 +4,6 @@
 
 #include "../mp.h"
 
-#include <algorithm> // std::size
-
 #include <ntddk.h>
 
 EXTERN_C
@@ -28,7 +26,7 @@ namespace logger::detail
       level == level_t::error ? "ERR\t" :
                                 "###\t";
 
-    strcpy_s(buffer, SIZE, level_string);
+    strcpy_s(buffer, level_string);
   }
 
   template <size_t SIZE>
@@ -49,7 +47,7 @@ namespace logger::detail
     TIME_FIELDS time_fields;
     RtlTimeToTimeFields(&local_time, &time_fields);
 
-    sprintf_s(buffer, SIZE, "%02hd:%02hd:%02hd.%03hd\t",
+    sprintf_s(buffer, "%02hd:%02hd:%02hd.%03hd\t",
               time_fields.Hour, time_fields.Minute,
               time_fields.Second, time_fields.Milliseconds);
   }
@@ -63,7 +61,7 @@ namespace logger::detail
       return;
     }
 
-    sprintf_s(buffer, SIZE, "#%u\t", mp::cpu_index());
+    sprintf_s(buffer, "#%u\t", mp::cpu_index());
   }
 
   template <size_t SIZE>
@@ -75,13 +73,13 @@ namespace logger::detail
       return;
     }
 
-    sprintf_s(buffer, SIZE, "%-40s\t", function);
+    sprintf_s(buffer, "%-40s\t", function);
   }
 
   template <size_t SIZE>
   void make_log_message(char(&buffer)[SIZE], const char* format, va_list args) noexcept
   {
-    vsprintf_s(buffer, SIZE, format, args);
+    vsprintf_s(buffer, format, args);
   }
 
   void do_print(const char* message) noexcept
@@ -114,7 +112,7 @@ namespace logger::detail
       auto thread_id = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(PsGetCurrentThreadId()));
       auto process_name = PsGetProcessImageFileName(PsGetCurrentProcess());
 
-      sprintf_s(buffer, std::size(buffer), "%s%s%s%5u\t%5u\t%-15s\t%s%s\r\n",
+      sprintf_s(buffer, "%s%s%s%5u\t%5u\t%-15s\t%s%s\r\n",
         time, level_string, processor_number,
         process_id, thread_id, process_name,
         function_name, log_message);

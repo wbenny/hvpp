@@ -20,9 +20,11 @@
 //
 #define ACCESS_FROM_CTL_CODE(ctrlCode)  (((ULONG)(ctrlCode & 0x0000c000)) >> 14)
 
-EXTERN_C DRIVER_INITIALIZE DriverEntry;
-
-PDRIVER_OBJECT GlobalDriverObject = nullptr;
+extern "C"
+{
+  DRIVER_INITIALIZE DriverEntry;
+  PDRIVER_OBJECT GlobalDriverObject = nullptr;
+}
 
 namespace driver
 {

@@ -12,12 +12,13 @@
 class device
 {
   public:
-    virtual ~device() noexcept {}
+             device() noexcept {}
+    virtual ~device() noexcept { destroy(); }
 
-    virtual auto initialize() noexcept -> error_code_t;
-    virtual void destroy() noexcept;
+    virtual const char*  name() const noexcept = 0;
 
-    virtual const char* name() const noexcept = 0;
+    auto create() noexcept -> error_code_t;
+    void destroy() noexcept;
 
     //
     // Dispatch methods.

@@ -41,7 +41,7 @@ namespace driver::common
       return err;
     }
 
-    if (auto err = memory_manager::initialize())
+    if (auto err = mm::initialize())
     {
       return err;
     }
@@ -49,8 +49,8 @@ namespace driver::common
     //
     // Print memory information to the debugger.
     //
-    memory_manager::mtrr().dump();
-    memory_manager::physical_memory_descriptor().dump();
+    mm::mtrr().dump();
+    mm::physical_memory_descriptor().dump();
 
     //
     // Estimate required memory size.
@@ -59,7 +59,7 @@ namespace driver::common
     //
     // Default required memory size is 34MB per CPU.
     //
-    auto required_memory_size = (
+    const auto required_memory_size = (
       //
       // Estimated EPT size:
       // Make space for 2MB EPT entries for 512 GB of the physical
@@ -88,7 +88,7 @@ namespace driver::common
     //
     // Allocate memory.
     //
-    system_memory_ = memory_manager::system_allocate(required_memory_size);
+    system_memory_ = mm::system_allocate(required_memory_size);
 
     if (!system_memory_)
     {
@@ -98,7 +98,7 @@ namespace driver::common
     //
     // Assign allocated memory to the memory manager.
     //
-    if (auto err = memory_manager::assign(system_memory_, system_memory_size_))
+    if (auto err = mm::assign(system_memory_, system_memory_size_))
     {
       return err;
     }
@@ -122,7 +122,7 @@ namespace driver::common
     //
     // Destroy memory manager and logger.
     //
-    memory_manager::destroy();
+    mm::destroy();
     logger::destroy();
 
     //
@@ -130,7 +130,7 @@ namespace driver::common
     //
     if (system_memory_)
     {
-      memory_manager::system_free(system_memory_);
+      mm::system_free(system_memory_);
     }
   }
 }

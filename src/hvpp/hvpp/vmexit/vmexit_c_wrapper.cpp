@@ -4,7 +4,7 @@
 
 namespace hvpp {
 
-auto vmexit_c_wrapper_handler::initialize(const c_handler_array_t& c_handlers, void* context) noexcept -> error_code_t
+vmexit_c_wrapper_handler::vmexit_c_wrapper_handler(const c_handler_array_t& c_handlers, void* context) noexcept
 {
   //
   // Make local copy of the C-handlers.
@@ -12,11 +12,9 @@ auto vmexit_c_wrapper_handler::initialize(const c_handler_array_t& c_handlers, v
 
   c_handlers_ = c_handlers;
   context_ = context;
-
-  return error_code_t{};
 }
 
-void vmexit_c_wrapper_handler::destroy() noexcept
+vmexit_c_wrapper_handler::~vmexit_c_wrapper_handler() noexcept
 {
 
 }
@@ -36,11 +34,11 @@ void vmexit_c_wrapper_handler::setup(vcpu_t& vp) noexcept
 
 void vmexit_c_wrapper_handler::handle(vcpu_t& vp) noexcept
 {
-  auto exit_reason = vp.exit_reason();
-  auto exit_reason_index = static_cast<int>(exit_reason);
+  const auto exit_reason = vp.exit_reason();
+  const auto exit_reason_index = static_cast<int>(exit_reason);
 
-  auto cpp_handler = handlers_[exit_reason_index];
-  auto c_handler = c_handlers_[exit_reason_index];
+  const auto cpp_handler = handlers_[exit_reason_index];
+  const auto c_handler = c_handlers_[exit_reason_index];
 
   if (c_handler)
   {
@@ -74,9 +72,9 @@ void vmexit_c_wrapper_handler::handle_passthrough(passthrough_context* context) 
   // from the pass-trough context and call that method.
   //
 
-  auto  handler_instance =  context->handler_instance;
-  auto  handler_method   =  context->handler_method;
-  auto& vp               = *context->vcpu;
+  const auto  handler_instance =  context->handler_instance;
+  const auto  handler_method   =  context->handler_method;
+        auto& vp               = *context->vcpu;
 
   (handler_instance->*handler_method)(vp);
 }

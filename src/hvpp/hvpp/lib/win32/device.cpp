@@ -5,7 +5,7 @@
 //
 // Definition is located in win32/driver.cpp.
 //
-extern PDRIVER_OBJECT GlobalDriverObject;
+EXTERN_C PDRIVER_OBJECT GlobalDriverObject;
 
 #define HVPP_DEVICE_TAG     'vdvh'
 #define MAX_BUFFER_SIZE     64
@@ -21,7 +21,7 @@ typedef struct _DEVICE_IMPL
   WCHAR DeviceLinkBuffer[MAX_BUFFER_SIZE + sizeof(L"\\DosDevices\\") - 1];
 } DEVICE_IMPL, *PDEVICE_IMPL;
 
-auto device::initialize() noexcept -> error_code_t
+auto device::create() noexcept -> error_code_t
 {
   error_code_t err;
 
@@ -153,9 +153,11 @@ void device::destroy() noexcept
   {
     IoDeleteSymbolicLink(&DeviceImpl->DeviceLink);
     IoDeleteDevice(DeviceImpl->DeviceObject);
-  }
 
-  ExFreePoolWithTag(DeviceImpl, HVPP_DEVICE_TAG);
+    ExFreePoolWithTag(DeviceImpl, HVPP_DEVICE_TAG);
+
+    impl_ = nullptr;
+  }
 }
 
 error_code_t device::copy_from_user(void* buffer_to, const void* buffer_from, size_t length) noexcept

@@ -820,7 +820,6 @@ typedef enum _VMCS_FIELD
 // Opaque type definitions.
 //////////////////////////////////////////////////////////////////////////
 
-typedef PVOID PHVPP;
 typedef PVOID PVCPU;
 typedef PVOID PEPT;
 
@@ -1216,32 +1215,31 @@ HvppEptGetEptPointer(
 NTSTATUS
 NTAPI
 HvppInitialize(
-  _Out_ PHVPP* Hvpp
+  VOID
   );
 
 VOID
 NTAPI
 HvppDestroy(
-  _In_ PHVPP Hvpp
+  VOID
   );
 
 NTSTATUS
 NTAPI
 HvppStart(
-  _In_ PHVPP Hvpp,
   _In_ PVMEXIT_HANDLER VmExitHandler
   );
 
 VOID
 NTAPI
 HvppStop(
-  _In_ PHVPP Hvpp
+  VOID
   );
 
 BOOLEAN
 NTAPI
-HvppIsStarted(
-  _In_ PHVPP Hvpp
+HvppIsRunning(
+  VOID
   );
 
 #pragma endregion

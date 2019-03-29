@@ -103,7 +103,7 @@ try_decode_io_instruction(
   int size_of_access;
   bool rep_prefixed;
 
-  const uint8_t* rip = reinterpret_cast<const uint8_t*>(ctx.rip);
+  const auto rip = reinterpret_cast<const uint8_t*>(ctx.rip);
   if (!try_decode_io_instruction(rip, access_type, size_of_access, rep_prefixed))
   {
     return false;

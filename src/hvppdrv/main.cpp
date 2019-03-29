@@ -28,7 +28,6 @@ namespace driver
 
   static_assert(std::is_base_of_v<vmexit_handler, vmexit_handler_t>);
 
-  hypervisor*       hypervisor_      = nullptr;
   vmexit_handler_t* vmexit_handler_  = nullptr;
   device_custom*    device_          = nullptr;
 
@@ -48,27 +47,7 @@ namespace driver
     //
     // Initialize device instance.
     //
-    if (auto err = device_->initialize())
-    {
-      destroy();
-      return err;
-    }
-
-    //
-    // Create hypervisor instance.
-    //
-    hypervisor_ = new hypervisor();
-
-    if (!hypervisor_)
-    {
-      destroy();
-      return make_error_code_t(std::errc::not_enough_memory);
-    }
-
-    //
-    // Initialize hypervisor.
-    //
-    if (auto err = hypervisor_->initialize())
+    if (auto err = device_->create())
     {
       destroy();
       return err;
@@ -86,15 +65,6 @@ namespace driver
     }
 
     //
-    // Initialize VM-exit handler.
-    //
-    if (auto err = vmexit_handler_->initialize())
-    {
-      destroy();
-      return err;
-    }
-
-    //
     // Assign the vmexit_dbgbreak_handler instance to the device.
     //
     device_->handler(std::get<vmexit_dbgbreak_handler>(vmexit_handler_->handlers));
@@ -108,13 +78,17 @@ namespace driver
     //
     // Start the hypervisor.
     //
-    hypervisor_->start(*vmexit_handler_);
+    if (auto err = hvpp::hypervisor::start(*vmexit_handler_))
+    {
+      destroy();
+      return err;
+    }
 
     //
     // Tell debugger we're started.
     //
     hvpp_info("Hypervisor started, current free memory: %" PRIu64 " MB",
-               memory_manager::free_bytes() / 1024 / 1024);
+               mm::free_bytes() / 1024 / 1024);
 
     return error_code_t{};
   }
@@ -122,22 +96,9 @@ namespace driver
   void destroy() noexcept
   {
     //
-    // Stop and destroy hypervisor.
+    // Stop the hypervisor.
     //
-    if (hypervisor_)
-    {
-      //
-      // Stopping the hypervisor is not strictly needed here -
-      // the destroy() method stops the hypervisor if necessary.
-      //
-      if (hypervisor_->is_started())
-      {
-        hypervisor_->stop();
-      }
-
-      hypervisor_->destroy();
-      delete hypervisor_;
-    }
+    hvpp::hypervisor::stop();
 
     //
     // Destroy VM-exit handler.
@@ -149,7 +110,6 @@ namespace driver
       //
       std::get<vmexit_stats_handler>(vmexit_handler_->handlers).dump();
 
-      vmexit_handler_->destroy();
       delete vmexit_handler_;
     }
 
@@ -158,7 +118,6 @@ namespace driver
     //
     if (device_)
     {
-      device_->destroy();
       delete device_;
     }
 

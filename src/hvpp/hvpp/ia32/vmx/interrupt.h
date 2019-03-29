@@ -52,7 +52,7 @@ struct interruptibility_state_t
   };
 };
 
-inline constexpr const char* interrupt_type_to_string(interrupt_type value) noexcept
+constexpr inline const char* interrupt_type_to_string(interrupt_type value) noexcept
 {
   switch (value)
   {

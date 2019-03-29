@@ -82,30 +82,20 @@ vmexit_handler::~vmexit_handler() noexcept
 
 }
 
-auto vmexit_handler::initialize() noexcept -> error_code_t
-{
-  return error_code_t{};
-}
-
-void vmexit_handler::destroy() noexcept
-{
-
-}
-
 void vmexit_handler::setup(vcpu_t& vp) noexcept
+{
+  (void)(vp);
+}
+
+void vmexit_handler::teardown(vcpu_t& vp) noexcept
 {
   (void)(vp);
 }
 
 void vmexit_handler::handle(vcpu_t& vp) noexcept
 {
-  auto handler_index = static_cast<int>(vp.exit_reason());
+  const auto handler_index = static_cast<int>(vp.exit_reason());
   (this->*handlers_[handler_index])(vp);
-}
-
-void vmexit_handler::invoke_termination(vcpu_t& vp) noexcept
-{
-  (void)(vp);
 }
 
 //

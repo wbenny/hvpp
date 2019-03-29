@@ -3,6 +3,7 @@
 
 #include "hypervisor.h"
 #include "vcpu.h"
+#include "lib/assert.h"
 #include "lib/cr3_guard.h"
 #include "lib/driver.h"
 #include "lib/mm.h"
@@ -13,7 +14,6 @@
 using namespace ia32;
 using namespace hvpp;
 
-#define hvpp_                                                 ((hypervisor*)Hvpp)
 #define vcpu_                                                 ((vcpu_t*)Vcpu)
 #define ept_                                                  ((ept_t*)Ept)
 
@@ -200,55 +200,33 @@ HvppEptGetEptPointer(
 
 #pragma region hypervisor.h
 
+vmexit_c_wrapper_handler* c_exit_handler = nullptr;
+
 NTSTATUS
 NTAPI
 HvppInitialize(
-  _Out_ PHVPP* Hvpp
+  VOID
   )
 {
   //
   // Initialize the memory manager and logger.
   //
 
-  driver::common::initialize();
-
-  //
-  // Allocate memory for the hypervisor instance.
-  //
-
-  *Hvpp = (PHVPP)new hypervisor();
-
-  if (!*Hvpp)
+  if (auto err = driver::common::initialize())
   {
-    //
-    // Allocation failed - exit.
-    //
-
     driver::common::destroy();
     return STATUS_INSUFFICIENT_RESOURCES;
   }
 
-  //
-  // Initialize the hypervisor.
-  //
-
-  return ErrorCodeToNtStatus(((hypervisor*)(*Hvpp))->initialize());
+  return STATUS_SUCCESS;
 }
 
 VOID
 NTAPI
 HvppDestroy(
-  _In_ PHVPP Hvpp
+  VOID
   )
 {
-  //
-  // Destroy the hypervisor.
-  //
-
-  hvpp_->destroy();
-  delete &hvpp_->exit_handler();
-  delete  hvpp_;
-
   //
   // Destroy the memory manager and logger.
   //
@@ -259,16 +237,9 @@ HvppDestroy(
 NTSTATUS
 NTAPI
 HvppStart(
-  _In_ PHVPP Hvpp,
   _In_ PVMEXIT_HANDLER VmExitHandler
   )
 {
-  //
-  // Create the VM-exit handler instance.
-  //
-
-  auto exit_handler = new vmexit_c_wrapper_handler();
-
   //
   // Initialize the C-handlers array.
   //
@@ -277,34 +248,39 @@ HvppStart(
   memcpy(c_handlers.data(), VmExitHandler->HandlerRoutine, sizeof(VmExitHandler->HandlerRoutine));
 
   //
-  // Initialize the VM-exit handler.
+  // Create the VM-exit handler instance.
   //
 
-  exit_handler->initialize(c_handlers);
+  hvpp_assert(c_exit_handler == nullptr);
+  c_exit_handler = new vmexit_c_wrapper_handler(c_handlers);
 
   //
   // Start the hypervisor.
   //
 
-  return ErrorCodeToNtStatus(hvpp_->start(*exit_handler));
+  return ErrorCodeToNtStatus(hypervisor::start(*c_exit_handler));
 }
 
 VOID
 NTAPI
 HvppStop(
-  _In_ PHVPP Hvpp
+  VOID
   )
 {
-  hvpp_->stop();
+  hvpp_assert(c_exit_handler != nullptr);
+
+  hypervisor::stop();
+
+  delete c_exit_handler;
 }
 
 BOOLEAN
 NTAPI
-HvppIsStarted(
-  _In_ PHVPP Hvpp
+HvppIsRunning(
+  VOID
   )
 {
-  return hvpp_->is_started();
+  return hypervisor::is_running();
 }
 
 #pragma endregion

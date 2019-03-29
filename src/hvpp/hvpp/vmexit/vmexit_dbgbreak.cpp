@@ -19,10 +19,9 @@
 
 namespace hvpp {
 
-auto vmexit_dbgbreak_handler::initialize() noexcept -> error_code_t
+vmexit_dbgbreak_handler::vmexit_dbgbreak_handler() noexcept
+  : storage_{}
 {
-  memset(&storage_, 0, sizeof(storage_));
-
   //
   // Uncomment this to break on IN 0x64 instruction.
   // Breakpoints on specific VM-exit reasons can be enabled/disabled
@@ -30,18 +29,16 @@ auto vmexit_dbgbreak_handler::initialize() noexcept -> error_code_t
   //
   // storage_.io_in[0x64] = true;
   //
-
-  return error_code_t{};
 }
 
-void vmexit_dbgbreak_handler::destroy() noexcept
+vmexit_dbgbreak_handler::~vmexit_dbgbreak_handler() noexcept
 {
 
 }
 
 void vmexit_dbgbreak_handler::handle(vcpu_t& vp) noexcept
 {
-  auto exit_reason = vp.exit_reason();
+  const auto exit_reason = vp.exit_reason();
 
   hvpp_break_if(storage_.vmexit[static_cast<int>(exit_reason)]);
 

@@ -18,11 +18,10 @@ class vmexit_c_wrapper_handler
 
     using c_handler_array_t = std::array<c_handler_fn_t, 65>;
 
-    auto initialize(const c_handler_array_t& c_handlers, void* context = nullptr) noexcept -> error_code_t;
-    void destroy() noexcept;
+    vmexit_c_wrapper_handler(const c_handler_array_t& c_handlers, void* context = nullptr) noexcept;
+    ~vmexit_c_wrapper_handler() noexcept override;
 
     void setup(vcpu_t& vp) noexcept override;
-
     void handle(vcpu_t& vp) noexcept override;
 
   private:

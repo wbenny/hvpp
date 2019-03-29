@@ -84,21 +84,20 @@ read and navigate through 5000 pages with browser's built-in PDF reader.
   - preallocate enough memory and initialize the **hvpp** memory manager
   - initialize the logger
 - Bootstrap of the hypervisor (hvppdrv, [main.cpp](src/hvppdrv/main.cpp))
-  - create **hvpp** instance
   - create **vmexit_handler** instance
-- Start the hypervisor with provided VM-exit handler (`hypervisor::start(vmexit_handler* handler)`)
-  - initialize each virtual cpu (VCPU) on each logical processor via IPI (inter-processor interrupt) - this also includes
-    initialization of EPT
+- Start the hypervisor with provided VM-exit handler: `hypervisor::start(vmexit_handler& handler)`
+  - initialize virtual cpu (VCPU) for each logical processor
   - assign provided `vmexit_handler` instance to each VCPU
-  - launch all VCPUs - for each VCPU `vmexit_handler::setup()` is called within `vcpu_t::launch()` method, which
-    allows anyone to initialize the VM-exit handler and/or modify the VMCS before the launch (see `custom_vmexit_handler::setup()`
-    in hvppdrv, [custom_vmexit.cpp](src/hvppdrv/custom_vmexit.cpp))
+  - launch all VCPUs via IPI (inter-processor interrupt): `vcpu_t::start()`
+    - setup VMXON region and VMCS: `vcpu_t::vmx_enter()`
+    - `vmexit_handler::setup()` is called, which allows anyone to initialize the VM-exit handler and/or modify the VMCS
+      before the launch (see `vmexit_custom_handler::setup()` in hvppdrv, [vmexit_custom.cpp](src/hvppdrv/vmexit_custom.cpp))
 - Hypervisor is now running and handling VM-exits via provided VM-exit handler
-- Terminate the hypervisor (`hypervisor::destroy()`)
-  - destroy each VCPU via IPI - for each VCPU `vmexit_handler::invoke_termination()` is called within `vcpu_t::destroy()`
-    method, which should be responsible for switching into VMX mode and then call `vcpu_t::terminate()`
-  - this is by default handled via `VMCALL` instruction
-  - `vcpu_t::terminate()` leaves VMX mode with `VMXOFF` instruction (which is available only in VMX mode),
+- Stop the hypervisor: `hypervisor::stop()`
+  - destroy each VCPU via IPI: `vcpu_t::stop()`
+    - `vmexit_handler::teardown()` is called and switches into VMX mode (`vmexit_passthrough_handler::teardown()` does
+      it by `VMCALL` instruction)
+    - in VMX mode, `vcpu_t::vmx_leave()` is called - it leaves VMX mode with `VMXOFF` instruction
 
 ### Compilation
 
@@ -154,7 +153,7 @@ Run **hvppctrl**:
 
 
 - **hvppctrl** performs `CPUID` instruction with `EAX = 0x70707668 ('hvpp')` which **hvpp** should intercept and return
-  string `hello from hvpp` in EAX, EBX, ECX and EDX registers (see [custom_vmexit.cpp](src/hvppdrv/custom_vmexit.cpp)).
+  string `hello from hvpp` in EAX, EBX, ECX and EDX registers (see [vmexit_custom.cpp](src/hvppdrv/vmexit_custom.cpp)).
   **hvppctrl** should print this string.
 
 - **hvppctrl** tries to "stealthily" hook `ntdll!ZwClose` function using EPT. The exact process is described

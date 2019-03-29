@@ -27,13 +27,13 @@ enum class exception_vector : uint32_t
   virtualization_exception    = 20,
 
   //
-  // Windows specific.
+  // NT (Windows) specific exception vectors.
   //
 
-  apc_interrupt               = 31,
-  dpc_interrupt               = 47,
-  clock_interrupt             = 209,
-  pmi_interrupt               = 254,
+  nt_apc_interrupt            = 31,
+  nt_dpc_interrupt            = 47,
+  nt_clock_interrupt          = 209,
+  nt_pmi_interrupt            = 254,
 };
 
 struct pagefault_error_code_t
@@ -76,7 +76,7 @@ struct exception_error_code_t
   };
 };
 
-inline constexpr const char* exception_vector_to_string(exception_vector value) noexcept
+constexpr inline const char* exception_vector_to_string(exception_vector value) noexcept
 {
   switch (value)
   {
@@ -100,6 +100,10 @@ inline constexpr const char* exception_vector_to_string(exception_vector value) 
     case exception_vector::machine_check: return "machine_check";
     case exception_vector::simd_floating_point_error: return "simd_floating_point_error";
     case exception_vector::virtualization_exception: return "virtualization_exception";
+    case exception_vector::nt_apc_interrupt: return "nt_apc_interrupt";
+    case exception_vector::nt_dpc_interrupt: return "nt_dpc_interrupt";
+    case exception_vector::nt_clock_interrupt: return "nt_clock_interrupt";
+    case exception_vector::nt_pmi_interrupt: return "nt_pmi_interrupt";
     default: return "";
   }
 }

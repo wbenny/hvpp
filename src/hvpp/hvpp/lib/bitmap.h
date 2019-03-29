@@ -18,20 +18,20 @@
 class bitmap
 {
   public:
-    bitmap() noexcept : buffer_(nullptr), size_in_bits_(0) { };
+    bitmap() noexcept : buffer_{ nullptr }, size_in_bits_{ 0 } { };
     bitmap(const bitmap& other) noexcept = delete;
     bitmap(bitmap&& other) noexcept = default;
     bitmap& operator=(const bitmap& other) = delete;
     bitmap& operator=(bitmap&& other) = default;
 
     bitmap(void* buffer, int size_in_bits) noexcept
-      : buffer_(reinterpret_cast<word_t*>(buffer))
-      , size_in_bits_(size_in_bits) { }
+      : buffer_{ reinterpret_cast<word_t*>(buffer) }
+      , size_in_bits_{ size_in_bits } { }
 
     template <typename T, int SIZE>
     bitmap(T(&buffer)[SIZE], int size_in_bits = SIZE * sizeof(T)) noexcept
-      : buffer_(reinterpret_cast<word_t*>(buffer))
-      , size_in_bits_(size_in_bits) { }
+      : buffer_{ reinterpret_cast<word_t*>(buffer) }
+      , size_in_bits_{ size_in_bits } { }
 
     ~bitmap() noexcept = default;
 
@@ -90,7 +90,7 @@ class bitmap_local
   : public bitmap
 {
   public:
-    bitmap_local() : bitmap(buffer_, SIZE_IN_BITS) { }
+    bitmap_local() : bitmap{ buffer_, SIZE_IN_BITS } { }
     bitmap_local(const bitmap_local& other) noexcept = delete;
     bitmap_local(bitmap_local&& other) noexcept = default;
     bitmap_local& operator=(const bitmap_local& other) noexcept = delete;

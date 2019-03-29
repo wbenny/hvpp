@@ -1,9 +1,8 @@
 #pragma once
 #include "ept.h"
+#include "interrupt.h"
 
 #include "ia32/arch.h"
-#include "ia32/exception.h"
-#include "ia32/vmx.h"
 
 #include "lib/error.h"
 
@@ -15,138 +14,17 @@ using namespace ia32;
 
 class vmexit_handler;
 
-class interrupt_t final
-{
-  public:
-    constexpr interrupt_t(vmx::interrupt_type interrupt_type, exception_vector exception_vector, int rip_adjust = -1) noexcept
-      : interrupt_t(interrupt_type, exception_vector, exception_error_code_t{}, false, rip_adjust) { }
-
-    constexpr interrupt_t(vmx::interrupt_type interrupt_type, exception_vector exception_vector, exception_error_code_t exception_code, int rip_adjust = -1) noexcept
-      : interrupt_t(interrupt_type, exception_vector, exception_code, true, rip_adjust) { }
-
-    constexpr interrupt_t(const interrupt_t& other) noexcept = default;
-    constexpr interrupt_t(interrupt_t&& other) noexcept = default;
-    constexpr interrupt_t& operator=(const interrupt_t& other) noexcept = default;
-    constexpr interrupt_t& operator=(interrupt_t&& other) noexcept = default;
-
-    constexpr auto vector()           const noexcept { return static_cast<exception_vector>(info_.vector); }
-    constexpr auto type()             const noexcept { return static_cast<vmx::interrupt_type>(info_.type); }
-    constexpr bool error_code_valid() const noexcept { return info_.error_code_valid; }
-    constexpr bool nmi_unblocking()   const noexcept { return info_.nmi_unblocking; }
-    constexpr bool valid()            const noexcept { return info_.valid; }
-    constexpr auto error_code()       const noexcept { return error_code_; }
-    constexpr int  rip_adjust()       const noexcept { return rip_adjust_; }
-
-  private:
-    friend class vcpu_t;
-
-    constexpr interrupt_t() noexcept
-      : info_(), error_code_(), rip_adjust_() { }
-
-    constexpr interrupt_t(vmx::interrupt_type interrupt_type, exception_vector exception_vector, exception_error_code_t exception_code, bool exception_code_valid, int rip_adjust) noexcept
-      : error_code_(exception_code), rip_adjust_(rip_adjust)
-    {
-      info_.flags = 0;
-
-      info_.vector = static_cast<uint32_t>(exception_vector);
-      info_.type   = static_cast<uint32_t>(interrupt_type);
-      info_.valid  = true;
-
-      //
-      // Final sanitization of the following fields takes place
-      // in vcpu::interrupt_inject_force().
-      //
-
-      info_.error_code_valid = exception_code_valid;
-    }
-
-    vmx::interrupt_info_t  info_;
-    exception_error_code_t error_code_;
-    int                    rip_adjust_;
-};
-
-enum class vcpu_state
-{
-  //
-  // VCPU is unitialized.
-  //
-  off,
-
-  //
-  // VCPU is in VMX-root mode; host & guest VMCS is being initialized.
-  //
-  initializing,
-
-  //
-  // VCPU successfully performed its initial VMENTRY.
-  //
-  launching,
-
-  //
-  // VCPU is running.
-  //
-  running,
-
-  //
-  // VCPU is terminating; vcpu::destroy has been called.
-  //
-  terminating,
-
-  //
-  // VCPU is terminated, VMX-root mode has been left.
-  //
-  terminated,
-};
-
-//
-// Definition of the stack structure.
-// See vcpu.asm for more details.
-//
-
-static constexpr int vcpu_stack_size = 0x8000;
-
-struct vcpu_stack_t
-{
-  struct machine_frame_t
-  {
-    uint64_t rip;
-    uint64_t cs;
-    uint64_t eflags;
-    uint64_t rsp;
-    uint64_t ss;
-  };
-
-  struct shadow_space_t
-  {
-    uint64_t dummy[4];
-  };
-
-  union
-  {
-    uint8_t data[vcpu_stack_size];
-
-    struct
-    {
-      uint8_t         dummy[vcpu_stack_size
-                            - sizeof(shadow_space_t)
-                            - sizeof(machine_frame_t)];
-      shadow_space_t  shadow_space;
-      machine_frame_t machine_frame;
-    };
-  };
-};
-
-static_assert(sizeof(vcpu_stack_t) == vcpu_stack_size);
-static_assert(sizeof(vcpu_stack_t::shadow_space_t) == 32);
-
 class vcpu_t final
 {
   public:
-    auto initialize(vmexit_handler& handler) noexcept -> error_code_t;
-    void destroy() noexcept;
+    vcpu_t(vmexit_handler& handler) noexcept;
+    ~vcpu_t() noexcept;
 
-    void launch() noexcept;
-    void terminate() noexcept;
+    auto start() noexcept -> error_code_t;
+    void stop() noexcept;
+
+    auto vmx_enter() noexcept -> error_code_t;
+    void vmx_leave() noexcept;
 
     void ept_enable(uint16_t count = 1) noexcept;
     void ept_disable() noexcept;
@@ -168,7 +46,7 @@ class vcpu_t final
     // Make storage for up-to 16 pending interrupts.
     // In practice I haven't seen more than 2 pending interrupts.
     //
-    static constexpr int pending_interrupt_queue_size = 16;
+    static constexpr auto pending_interrupt_queue_size = 16;
 
     auto interrupt_info() const noexcept -> interrupt_t;
     auto idt_vectoring_info() const noexcept -> interrupt_t;
@@ -372,14 +250,15 @@ class vcpu_t final
     //
 
   private:
-    void error() noexcept;
-    void setup() noexcept;
+    auto handle_common_error(error_code_t err) noexcept -> error_code_t;
+    auto handle_vmx_enter_error(error_code_t err) noexcept -> error_code_t;
+    auto handle_vmx_launch_error() noexcept -> error_code_t;
 
-    void load_vmxon() noexcept;
-    void load_vmcs() noexcept;
+    auto load_vmxon() noexcept -> error_code_t;
+    auto load_vmcs() noexcept -> error_code_t;
 
-    void setup_host() noexcept;
-    void setup_guest() noexcept;
+    auto setup_host() noexcept -> error_code_t;
+    auto setup_guest() noexcept -> error_code_t;
 
     void entry_host() noexcept;
     void entry_guest() noexcept;
@@ -387,11 +266,85 @@ class vcpu_t final
     static void entry_host_() noexcept;
     static void entry_guest_() noexcept;
 
+    enum class state
+    {
+      //
+      // VCPU is unitialized.
+      //
+      off,
+
+      //
+      // VCPU is in VMX-root mode; host & guest VMCS is being initialized.
+      //
+      initializing,
+
+      //
+      // VCPU successfully performed its initial VMENTRY.
+      //
+      launching,
+
+      //
+      // VCPU is running.
+      //
+      running,
+
+      //
+      // VCPU is terminating; vcpu::destroy has been called.
+      //
+      terminating,
+
+      //
+      // VCPU is terminated, VMX-root mode has been left.
+      //
+      terminated,
+    };
+
+    //
+    // Definition of the stack structure.
+    // See vcpu.asm for more details.
+    //
+
+    struct stack_t
+    {
+      static constexpr auto size = 0x8000;
+
+      struct machine_frame_t
+      {
+        uint64_t rip;
+        uint64_t cs;
+        uint64_t eflags;
+        uint64_t rsp;
+        uint64_t ss;
+      };
+
+      struct shadow_space_t
+      {
+        uint64_t dummy[4];
+      };
+
+      union
+      {
+        uint8_t data[size];
+
+        struct
+        {
+          uint8_t         dummy[size
+                                - sizeof(shadow_space_t)
+                                - sizeof(machine_frame_t)];
+          shadow_space_t  shadow_space;
+          machine_frame_t machine_frame;
+        };
+      };
+    };
+
+    static_assert(sizeof(stack_t) == stack_t::size);
+    static_assert(sizeof(stack_t::shadow_space_t) == 32);
+
     //
     // If you reorder following three members (stack, guest context and exit
     // context), you have to edit offsets in vcpu.asm.
     //
-    vcpu_stack_t       stack_;
+    stack_t            stack_;
     context_t          guest_context_;
     context_t          exit_context_;
 
@@ -409,8 +362,8 @@ class vcpu_t final
     //
     fxsave_area_t      fxsave_area_;
 
-    vmexit_handler*    handler_;
-    vcpu_state         state_;
+    vmexit_handler&    handler_;
+    state              state_;
 
     ept_t*             ept_;
     uint16_t           ept_count_;

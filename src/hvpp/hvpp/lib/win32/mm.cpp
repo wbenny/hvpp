@@ -4,7 +4,7 @@
 
 #define HVPP_MEMORY_TAG 'ppvh'
 
-namespace memory_manager::detail
+namespace mm::detail
 {
   auto system_allocate(size_t size) noexcept -> void*
   {

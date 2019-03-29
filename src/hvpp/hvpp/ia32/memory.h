@@ -65,7 +65,7 @@ class pa_t
     pa_t(pa_t&& other)                  noexcept = default;
     pa_t& operator=(const pa_t& other)  noexcept = default;
     pa_t& operator=(pa_t&& other)       noexcept = default;
-    pa_t(uint64_t pa)                   noexcept : value_(pa)   {                        }
+    pa_t(uint64_t pa)                   noexcept : value_{ pa } {                        }
 
     pa_t& operator= (uint64_t other)    noexcept { value_ = other; return *this;         }
 
@@ -124,8 +124,8 @@ class va_t
     va_t(va_t&& other)                 noexcept = default;
     va_t& operator=(const va_t& other) noexcept = default;
     va_t& operator=(va_t&& other)      noexcept = default;
-    va_t(const void* va)               noexcept : value_(uint64_t(va)) {                }
-    va_t(uint64_t va)                  noexcept : value_(va) {                          }
+    va_t(const void* va)               noexcept : value_{ uint64_t(va) } {              }
+    va_t(uint64_t va)                  noexcept : value_{ va } {                        }
 
     va_t& operator= (uint64_t other)   noexcept { value_ = other; return *this;         }
 
@@ -206,13 +206,13 @@ class memory_range
     memory_range(const memory_range& other) noexcept = default;
     memory_range(memory_range&& other) noexcept = default;
     memory_range(const void* begin_va, const void* end_va) noexcept
-      : begin_(reinterpret_cast<const std::byte*>(begin_va))
-      , end_(reinterpret_cast<const std::byte*>(end_va))
+      : begin_{ reinterpret_cast<const std::byte*>(begin_va) }
+      , end_{ reinterpret_cast<const std::byte*>(end_va) }
     { }
 
     memory_range(const void* data, size_t size) noexcept
-      : begin_(reinterpret_cast<const std::byte*>(data))
-      , end_(reinterpret_cast<const std::byte*>(data) + size)
+      : begin_{ reinterpret_cast<const std::byte*>(data) }
+      , end_{ reinterpret_cast<const std::byte*>(data) + size }
     { }
 
     memory_range& operator=(const memory_range& other) noexcept = default;
@@ -276,8 +276,8 @@ class physical_memory_range
     physical_memory_range(const physical_memory_range& other) noexcept = default;
     physical_memory_range(physical_memory_range&& other) noexcept = default;
     physical_memory_range(pa_t begin_pa, pa_t end_pa) noexcept
-      : begin_(begin_pa)
-      , end_(end_pa)
+      : begin_{ begin_pa }
+      , end_{ end_pa }
     { }
 
     physical_memory_range& operator=(const physical_memory_range& other) noexcept = default;
@@ -352,7 +352,7 @@ class physical_memory_descriptor
     int                   count_ = 0;
 };
 
-inline constexpr const char* memory_type_to_string(memory_type type) noexcept
+constexpr inline const char* memory_type_to_string(memory_type type) noexcept
 {
   switch (type)
   {

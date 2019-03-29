@@ -10,7 +10,7 @@ enum class ioctl_access : uint32_t
   read_write = read | write
 };
 
-inline constexpr auto
+constexpr inline auto
 make_ioctl_code_windows(
   uint32_t id,
   ioctl_access access,
@@ -61,7 +61,7 @@ make_ioctl_code_windows(
                        uint32_t(access));
 }
 
-inline constexpr auto
+constexpr inline auto
 make_ioctl_code_linux(
   uint32_t id,
   ioctl_access access,
@@ -86,7 +86,7 @@ make_ioctl_code_linux(
   return ctl_code_impl(uint32_t(access), 'H', id, size);
 }
 
-inline constexpr auto
+constexpr inline auto
 make_ioctl_code(
   uint32_t id,
   ioctl_access access,
