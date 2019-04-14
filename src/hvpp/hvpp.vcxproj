@@ -145,7 +145,6 @@
     <ClInclude Include="hvpp\vmexit\vmexit_dbgbreak.h" />
     <ClInclude Include="hvpp\vmexit\vmexit_passthrough.h" />
     <ClInclude Include="hvpp\vmexit\vmexit_stats.h" />
-    <ClInclude Include="hvpp\vmexit_compositor.h" />
     <ClInclude Include="hvpp\ia32\arch.h" />
     <ClInclude Include="hvpp\ia32\arch\cr.h" />
     <ClInclude Include="hvpp\ia32\arch\dr.h" />

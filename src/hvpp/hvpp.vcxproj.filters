@@ -284,9 +284,6 @@
     <ClInclude Include="hvpp\vmexit\vmexit_stats.h">
       <Filter>Header Files\hvpp\vmexit</Filter>
     </ClInclude>
-    <ClInclude Include="hvpp\vmexit_compositor.h">
-      <Filter>Header Files\hvpp</Filter>
-    </ClInclude>
     <ClInclude Include="hvpp\lib\debugger.h">
       <Filter>Header Files\hvpp\lib</Filter>
     </ClInclude>

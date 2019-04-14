@@ -1,5 +1,4 @@
 #include <hvpp/hypervisor.h>
-#include <hvpp/vmexit_compositor.h>
 
 #include <hvpp/lib/driver.h>
 #include <hvpp/lib/assert.h>
