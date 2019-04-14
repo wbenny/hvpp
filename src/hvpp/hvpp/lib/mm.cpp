@@ -76,7 +76,6 @@ namespace mm
   const allocator_t system_allocator = { &system_allocate, &system_free };
   const allocator_t custom_allocator = { &allocate,        &free        };
 
-#pragma optimize("", on)
   allocator_guard::allocator_guard() noexcept
     : allocator_guard(custom_allocator)
   {
@@ -93,7 +92,6 @@ namespace mm
   {
     allocator(previous_allocator_);
   }
-#pragma optimize("", off)
 
   auto initialize() noexcept -> error_code_t
   {
