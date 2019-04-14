@@ -687,7 +687,8 @@ auto vcpu_t::setup_guest() noexcept -> error_code_t
 
 void vcpu_t::entry_host() noexcept
 {
-  hvpp_assert(state_ == state::running);
+  hvpp_assert(state_ == state::running ||
+              state_ == state::terminating);
 
   //
   // Reset RIP-adjust flag.
