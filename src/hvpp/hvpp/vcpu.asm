@@ -188,6 +188,10 @@ INCLUDE ia32/common.inc
 ;
 ; Create shadow space.
 ;
+; The "+ 8" part is just to align RSP to 16 bytes, otherwise
+; XMM operations might fail - especially in optimized builds,
+; where they are used most.
+;
 ; The .allocstack directive will tell the compiler to emit
 ; UWOP_ALLOC_SMALL opcode into the unwind information of the
 ; executable file.  This will help WinDbg to recognize that
@@ -200,8 +204,8 @@ INCLUDE ia32/common.inc
 ; to look for return addresses or stack pointers (RIP/RSP).
 ;
 
-        sub     rsp, SHADOW_SPACE
-        .allocstack  SHADOW_SPACE
+        sub     rsp, SHADOW_SPACE + 8
+        .allocstack  SHADOW_SPACE + 8
 
 ;
 ; Finally, issue the .endprolog directive.
