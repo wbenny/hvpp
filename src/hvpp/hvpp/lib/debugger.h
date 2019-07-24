@@ -13,4 +13,7 @@ namespace debugger
 
   inline bool is_enabled() noexcept
   { return detail::is_enabled(); }
+
+  inline void breakpoint_if_enabled() noexcept
+  { if (is_enabled()) breakpoint(); }
 }
