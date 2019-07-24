@@ -22,6 +22,7 @@ class vmexit_passthrough_handler
     void handle_external_interrupt(vcpu_t& vp) noexcept override;
     void handle_triple_fault(vcpu_t& vp) noexcept override;
     void handle_interrupt_window(vcpu_t& vp) noexcept override;
+    void handle_nmi_window(vcpu_t& vp) noexcept override;
     void handle_execute_cpuid(vcpu_t& vp) noexcept override;
     void handle_execute_invd(vcpu_t& vp) noexcept override;
     void handle_execute_invlpg(vcpu_t& vp) noexcept override;

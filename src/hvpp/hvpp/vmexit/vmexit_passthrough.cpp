@@ -121,6 +121,33 @@ void vmexit_passthrough_handler::handle_interrupt_window(vcpu_t& vp) noexcept
   vp.suppress_rip_adjust();
 }
 
+void vmexit_passthrough_handler::handle_nmi_window(vcpu_t& vp) noexcept
+{
+  //
+  // Make sure there is a NMI pending.
+  //
+  hvpp_assert(vp.interrupt_is_pending(vcpu_t::interrupt_queue_nmi));
+
+  //
+  // Guest is in the interruptible state.
+  // Dequeue one pending NMI from the queue
+  // and inject it.
+  //
+  vp.interrupt_inject_pending(vcpu_t::interrupt_queue_nmi);
+
+  //
+  // If queue is empty, disable NMI-window exiting.
+  //
+  if (!vp.interrupt_is_pending(vcpu_t::interrupt_queue_nmi))
+  {
+    auto procbased_ctls = vp.processor_based_controls();
+    procbased_ctls.nmi_window_exiting = false;
+    vp.processor_based_controls(procbased_ctls);
+  }
+
+  vp.suppress_rip_adjust();
+}
+
 void vmexit_passthrough_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
 {
   uint32_t cpu_info[4];
@@ -1037,6 +1064,17 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
 
   switch (interrupt.type())
   {
+    case vmx::interrupt_type::nmi:
+      switch (interrupt.vector())
+      {
+        case exception_vector::nmi_interrupt:
+          break;
+
+        default:
+          hvpp_assert(0);
+          break;
+      }
+
     case vmx::interrupt_type::hardware_exception:
       switch (interrupt.vector())
       {
