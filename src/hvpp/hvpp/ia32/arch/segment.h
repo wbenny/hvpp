@@ -216,11 +216,25 @@ struct gdt_entry_t
     return reinterpret_cast<void*>(result);
   }
 
+  void base_address(void* value) noexcept
+  {
+    base_address_low    = uint16_t(uint64_t(value) >>  0);
+    base_address_middle =  uint8_t(uint64_t(value) >> 16);
+    base_address_high   =  uint8_t(uint64_t(value) >> 24);
+    base_address_upper  = uint32_t(uint64_t(value) >> 32);
+  }
+
   uint32_t limit() const noexcept
   {
     return
       (uint32_t(       limit_low)) |
       (uint32_t(access.limit_high) << 16);
+  }
+
+  void limit(uint32_t value) noexcept
+  {
+            limit_low = uint16_t(uint64_t(value) >>  0);
+    access.limit_high = uint16_t(uint64_t(value) >> 16);
   }
 
   //
@@ -267,6 +281,13 @@ struct idt_entry_t
       );
 
     return reinterpret_cast<void*>(result);
+  }
+
+  void base_address(void* value) noexcept
+  {
+    base_address_low    = uint16_t(uint64_t(value) >>  0);
+    base_address_middle = uint16_t(uint64_t(value) >> 16);
+    base_address_high   = uint32_t(uint64_t(value) >> 32);
   }
 };
 
