@@ -2,6 +2,7 @@
 #include "memory.h"
 #include "msr.h"
 #include "msr/mtrr.h"
+#include "../lib/typelist.h"
 
 #include <cstdint>
 #include <cinttypes>
@@ -131,7 +132,15 @@ class mtrr
 
       if (mtrr_capabilities.fixed_range_supported && mtrr_default.fixed_range_mtrr_enable)
       {
-        for_each_type(msr::mtrr_fix_list_t{}, [this](auto mtrr_fixed, int i) {
+        using mtrr_fix_64k_list_t  = type_list<msr::mtrr_fix_64k_00000_t>;
+        using mtrr_fix_16k_list_t  = type_list<msr::mtrr_fix_16k_80000_t, msr::mtrr_fix_16k_a0000_t>;
+        using mtrr_fix_4k_list_t   = type_list<msr::mtrr_fix_4k_c0000_t,  msr::mtrr_fix_4k_c8000_t,
+                                                msr::mtrr_fix_4k_d0000_t,  msr::mtrr_fix_4k_d8000_t,
+                                                msr::mtrr_fix_4k_e0000_t,  msr::mtrr_fix_4k_e8000_t,
+                                                msr::mtrr_fix_4k_f0000_t,  msr::mtrr_fix_4k_f8000_t>;
+        using mtrr_fix_list_t      = type_list<mtrr_fix_64k_list_t, mtrr_fix_16k_list_t, mtrr_fix_4k_list_t>;
+
+        for_each_type(mtrr_fix_list_t{}, [this](auto mtrr_fixed, int i) {
           using ia32_mtrr_t = decltype(mtrr_fixed);
           mtrr_fixed = msr::read<ia32_mtrr_t>();
 

@@ -22,7 +22,7 @@ ept_t::ept_t() noexcept
   //
   // Get physical address of EPT's PML4.
   //
-  const pa_t empl4_pa = pa_t::from_va(epml4_);
+  const auto empl4_pa = pa_t::from_va(epml4_);
 
   //
   // Initialize EPT pointer.
@@ -69,9 +69,15 @@ void ept_t::map_identity(epte_t::access_type access /* = epte_t::access_type::re
   //     loss.
   //
 
-  static constexpr uint64_t _512gb = 512ull * 1024
-                                            * 1024
-                                            * 1024;
+  //
+  // TODO:
+  //   - Map only valid physical memory ranges?
+  //   - Map up to max valid physical memory address? (incl. "holes")
+  //
+
+  static constexpr auto _512gb = 512ull * 1024
+                                        * 1024
+                                        * 1024;
 
   for (pa_t pa = 0; pa < _512gb; pa += ept_pd_t::size)
   {
@@ -81,16 +87,16 @@ void ept_t::map_identity(epte_t::access_type access /* = epte_t::access_type::re
 
 epte_t* ept_t::map(pa_t guest_pa, pa_t host_pa,
                    epte_t::access_type access /* = epte_t::access_type::read_write_execute */,
-                   pml large /* = pml::pt */) noexcept
+                   pml level /* = pml::pt */) noexcept
 {
   //
   // Map provided guest physical address to provided host physical address.
   // Set provided access to the guest physical address.
-  // The map is created using paging structure specified in "large" parameter.
+  // The map is created using paging structure specified in "level" parameter.
   // The range of mapped memory is derived from the size of the paging
   // structure.
   //
-  return map_pml4(guest_pa, host_pa, epml4_, access, large);
+  return map_pml4(guest_pa, host_pa, epml4_, access, level);
 }
 
 epte_t* ept_t::map_4kb(pa_t guest_pa, pa_t host_pa,
@@ -116,9 +122,9 @@ void ept_t::split_1gb_to_2mb(pa_t guest_pa, pa_t host_pa,
 {
   //
   // Split
-  //    PDPT entry (1, large, 1GB)
+  //    PDPT entry (1, level, 1GB)
   //          into
-  //    PD entries (512, large, 2MB).
+  //    PD entries (512, level, 2MB).
   //
   split<ept_pdpt_t, ept_pd_t>(guest_pa, host_pa, access);
 }
@@ -128,7 +134,7 @@ void ept_t::split_2mb_to_4kb(pa_t guest_pa, pa_t host_pa,
 {
   //
   // Split
-  //    PD entry (1, large, 2MB)
+  //    PD entry (1, level, 2MB)
   //          into
   //    PT entries (512, 4kb).
   //
@@ -140,9 +146,9 @@ void ept_t::join_2mb_to_1gb(pa_t guest_pa, pa_t host_pa,
 {
   //
   // Join (merge)
-  //    PD entries (512, large, 2MB)
+  //    PD entries (512, level, 2MB)
   //          into
-  //    PDPT entry (1, large, 1GB).
+  //    PDPT entry (1, level, 1GB).
   //
   join<ept_pd_t, ept_pdpt_t>(guest_pa, host_pa, access);
 }
@@ -154,7 +160,7 @@ void ept_t::join_4kb_to_2mb(pa_t guest_pa, pa_t host_pa,
   // Join (merge)
   //    PT entries (512, 4kb)
   //          into
-  //    PD entry (1, large, 2MB).
+  //    PD entry (1, level, 2MB).
   //
   join<ept_pt_t, ept_pd_t>(guest_pa, host_pa, access);
 }
@@ -222,7 +228,7 @@ void ept_t::split(pa_t guest_pa, pa_t host_pa, epte_t::access_type access) noexc
 
   //
   // Splitting pages (breaking large page into smaller ones) is possible
-  // only down accross one level (i.e. PDPT -> PD, PD -> PT).  If you
+  // only down across one level (i.e. PDPT -> PD, PD -> PT).  If you
   // desire to split PDPT into PTs (2 levels apart), you have to split
   // the PDPT first and then split resulting PDs again into PTs.
   //
@@ -303,7 +309,7 @@ void ept_t::join(pa_t guest_pa, pa_t host_pa, epte_t::access_type access) noexce
 
   //
   // Joining pages (merging pages into one large page) is possible
-  // only up accross one level (i.e. PD -> PDPT, PT -> PD).  If you
+  // only up across one level (i.e. PD -> PDPT, PT -> PD).  If you
   // desire to join PTs into PDPT (2 levels apart), you have to join
   // each PT into PDs first and then join resulting PDs again into PDPT.
   //
@@ -372,58 +378,57 @@ epte_t* ept_t::map_subtable(epte_t* table) noexcept
   const auto subtable = new epte_t[512];
   hvpp_assert(subtable != nullptr);
   memset(subtable, 0, sizeof(epte_t) * 512);
-  static_assert(sizeof(epte_t) * 512 == page_size);
 
   table->update(pa_t::from_va(subtable));
   return subtable;
 }
 
 epte_t* ept_t::map_pml4(pa_t guest_pa, pa_t host_pa, epte_t* pml4,
-                        epte_t::access_type access, pml large) noexcept
+                        epte_t::access_type access, pml level) noexcept
 {
   const auto pml4e = &pml4[guest_pa.index(pml::pml4)];
   const auto pdpt = map_subtable(pml4e);
 
-  return map_pdpt(guest_pa, host_pa, pdpt, access, large);
+  return map_pdpt(guest_pa, host_pa, pdpt, access, level);
 }
 
 epte_t* ept_t::map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt,
-                        epte_t::access_type access, pml large) noexcept
+                        epte_t::access_type access, pml level) noexcept
 {
   const auto pdpte = &pdpt[guest_pa.index(pml::pdpt)];
 
-  if (large == pml::pdpt)
+  if (level == pml::pdpt)
   {
     pdpte->update(host_pa, mm::mtrr().type(guest_pa), true, access);
     return pdpte;
   }
 
   const auto pd = map_subtable(pdpte);
-  return map_pd(guest_pa, host_pa, pd, access, large);
+  return map_pd(guest_pa, host_pa, pd, access, level);
 }
 
 epte_t* ept_t::map_pd(pa_t guest_pa, pa_t host_pa, epte_t* pd,
-                      epte_t::access_type access, pml large) noexcept
+                      epte_t::access_type access, pml level) noexcept
 {
   const auto pde = &pd[guest_pa.index(pml::pd)];
 
-  if (large == pml::pd)
+  if (level == pml::pd)
   {
     pde->update(host_pa, mm::mtrr().type(guest_pa), true, access);
     return pde;
   }
 
   const auto pt = map_subtable(pde);
-  return map_pt(guest_pa, host_pa, pt, access, large);
+  return map_pt(guest_pa, host_pa, pt, access, level);
 }
 
 epte_t* ept_t::map_pt(pa_t guest_pa, pa_t host_pa, epte_t* pt,
-                      epte_t::access_type access, pml large) noexcept
+                      epte_t::access_type access, pml level) noexcept
 {
   const auto pte = &pt[guest_pa.index(pml::pt)];
 
-  (void)(large);
-  hvpp_assert(large == pml::pt);
+  (void)(level);
+  hvpp_assert(level == pml::pt);
   {
     pte->update(host_pa, mm::mtrr().type(guest_pa), access);
     return pte;

@@ -51,10 +51,10 @@ HvppEptMap(
 {
   return (PEPTE)
     ept_->map(
-    pa_t{ (uint64_t)GuestPhysicalAddress.QuadPart },
-    pa_t{ (uint64_t)HostPhysicalAddress.QuadPart },
-    (epte_t::access_type)Access
-    );
+      pa_t{ (uint64_t)(GuestPhysicalAddress.QuadPart) },
+      pa_t{ (uint64_t)(HostPhysicalAddress.QuadPart) },
+      (epte_t::access_type)(Access)
+      );
 }
 
 PEPTE
@@ -64,16 +64,16 @@ HvppEptMapEx(
   _In_ PHYSICAL_ADDRESS GuestPhysicalAddress,
   _In_ PHYSICAL_ADDRESS HostPhysicalAddress,
   _In_ ULONG Access,
-  _In_ ULONG Large
+  _In_ ULONG Level
   )
 {
   return (PEPTE)
     ept_->map(
-    pa_t{ (uint64_t)GuestPhysicalAddress.QuadPart },
-    pa_t{ (uint64_t)HostPhysicalAddress.QuadPart },
-    (epte_t::access_type)Access,
-    (pml)Large
-    );
+      pa_t{ (uint64_t)(GuestPhysicalAddress.QuadPart) },
+      pa_t{ (uint64_t)(HostPhysicalAddress.QuadPart) },
+      (epte_t::access_type)(Access),
+      (pml)(Level)
+      );
 }
 
 PEPTE
@@ -87,10 +87,10 @@ HvppEptMap4Kb(
 {
   return (PEPTE)
     ept_->map_4kb(
-    pa_t{ (uint64_t)GuestPhysicalAddress.QuadPart },
-    pa_t{ (uint64_t)HostPhysicalAddress.QuadPart },
-    (epte_t::access_type)Access
-    );
+      pa_t{ (uint64_t)(GuestPhysicalAddress.QuadPart) },
+      pa_t{ (uint64_t)(HostPhysicalAddress.QuadPart) },
+      (epte_t::access_type)(Access)
+      );
 }
 
 PEPTE
@@ -104,10 +104,10 @@ HvppEptMap2Mb(
 {
   return (PEPTE)
     ept_->map_2mb(
-    pa_t{ (uint64_t)GuestPhysicalAddress.QuadPart },
-    pa_t{ (uint64_t)HostPhysicalAddress.QuadPart },
-    (epte_t::access_type)Access
-    );
+      pa_t{ (uint64_t)(GuestPhysicalAddress.QuadPart) },
+      pa_t{ (uint64_t)(HostPhysicalAddress.QuadPart) },
+      (epte_t::access_type)(Access)
+      );
 }
 
 PEPTE
@@ -121,10 +121,10 @@ HvppEptMap1Gb(
 {
   return (PEPTE)
     ept_->map_1gb(
-    pa_t{ (uint64_t)GuestPhysicalAddress.QuadPart },
-    pa_t{ (uint64_t)HostPhysicalAddress.QuadPart },
-    (epte_t::access_type)Access
-    );
+      pa_t{ (uint64_t)(GuestPhysicalAddress.QuadPart) },
+      pa_t{ (uint64_t)(HostPhysicalAddress.QuadPart) },
+      (epte_t::access_type)(Access)
+      );
 }
 
 VOID
@@ -136,8 +136,8 @@ HvppEptSplit1GbTo2Mb(
   )
 {
   ept_->split_1gb_to_2mb(
-    pa_t{ (uint64_t)GuestPhysicalAddress.QuadPart },
-    pa_t{ (uint64_t)HostPhysicalAddress.QuadPart }
+    pa_t{ (uint64_t)(GuestPhysicalAddress.QuadPart) },
+    pa_t{ (uint64_t)(HostPhysicalAddress.QuadPart) }
     );
 }
 
@@ -150,8 +150,8 @@ HvppEptSplit2MbTo4Kb(
   )
 {
   ept_->split_2mb_to_4kb(
-    pa_t{ (uint64_t)GuestPhysicalAddress.QuadPart },
-    pa_t{ (uint64_t)HostPhysicalAddress.QuadPart }
+    pa_t{ (uint64_t)(GuestPhysicalAddress.QuadPart) },
+    pa_t{ (uint64_t)(HostPhysicalAddress.QuadPart) }
     );
 }
 
@@ -164,8 +164,8 @@ HvppEptJoin2MbTo1Gb(
   )
 {
   ept_->join_2mb_to_1gb(
-    pa_t{ (uint64_t)GuestPhysicalAddress.QuadPart },
-    pa_t{ (uint64_t)HostPhysicalAddress.QuadPart }
+    pa_t{ (uint64_t)(GuestPhysicalAddress.QuadPart) },
+    pa_t{ (uint64_t)(HostPhysicalAddress.QuadPart) }
     );
 }
 
@@ -178,8 +178,8 @@ HvppEptJoin4KbTo2Mb(
   )
 {
   ept_->join_4kb_to_2mb(
-    pa_t{ (uint64_t)GuestPhysicalAddress.QuadPart },
-    pa_t{ (uint64_t)HostPhysicalAddress.QuadPart }
+    pa_t{ (uint64_t)(GuestPhysicalAddress.QuadPart) },
+    pa_t{ (uint64_t)(HostPhysicalAddress.QuadPart) }
     );
 }
 
@@ -200,7 +200,7 @@ HvppEptGetEptPointer(
 
 #pragma region hypervisor.h
 
-vmexit_c_wrapper_handler* c_exit_handler = nullptr;
+static vmexit_c_wrapper_handler* c_exit_handler = nullptr;
 
 NTSTATUS
 NTAPI
@@ -389,7 +389,7 @@ HvppFree(
   PVOID Address
   )
 {
-  delete[] (uint8_t*)Address;
+  delete[] (uint8_t*)(Address);
 }
 
 ULONG64
@@ -399,7 +399,7 @@ HvppVmRead(
   )
 {
   ULONG64 Result = 0;
-  vmx::vmread((vmx::vmcs_t::field)VmcsField, Result);
+  vmx::vmread((vmx::vmcs_t::field)(VmcsField), Result);
   return Result;
 }
 
@@ -410,7 +410,7 @@ HvppVmWrite(
   _In_ ULONG64 VmcsValue
   )
 {
-  vmx::vmwrite((vmx::vmcs_t::field)VmcsField, VmcsValue);
+  vmx::vmwrite((vmx::vmcs_t::field)(VmcsField), VmcsValue);
 }
 
 ULONG_PTR

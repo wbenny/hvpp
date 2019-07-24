@@ -18,7 +18,7 @@
 class bitmap
 {
   public:
-    bitmap() noexcept : buffer_{ nullptr }, size_in_bits_{ 0 } { };
+    bitmap() noexcept : buffer_{}, size_in_bits_{} { };
     bitmap(const bitmap& other) noexcept = delete;
     bitmap(bitmap&& other) noexcept = default;
     bitmap& operator=(const bitmap& other) = delete;

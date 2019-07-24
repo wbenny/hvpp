@@ -103,7 +103,7 @@ namespace driver::common
       return err;
     }
 
-    return  driver_initialize_
+    return driver_initialize_
       ? driver_initialize_()
       : error_code_t{};
   }

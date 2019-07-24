@@ -46,12 +46,13 @@ void vmexit_c_wrapper_handler::handle(vcpu_t& vp) noexcept
     // C-handler has been defined - call that routine.
     //
 
-    passthrough_context context;
-    context.passthrough_routine = passthrough_fn_t(&vmexit_c_wrapper_handler::handle_passthrough);
-    context.context             = context_;
-    context.handler_instance    = this;
-    context.handler_method      = cpp_handler;
-    context.vcpu                = &vp;
+    auto context = passthrough_context {
+      .passthrough_routine = passthrough_fn_t(&vmexit_c_wrapper_handler::handle_passthrough),
+      .context             = context_,
+      .handler_instance    = this,
+      .handler_method      = cpp_handler,
+      .vcpu                = &vp,
+    };
 
     c_handler(&vp, &context);
   }

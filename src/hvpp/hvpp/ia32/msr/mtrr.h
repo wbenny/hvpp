@@ -1,6 +1,4 @@
 #pragma once
-#include "../../lib/typelist.h"
-
 #include <cstdint>
 
 namespace ia32::msr {
@@ -85,7 +83,11 @@ struct mtrr_physmask_t
   };
 };
 
-template <uint32_t MSR_ID, uint64_t MTRR_BASE, uint64_t MTRR_SIZE>
+template <
+  uint32_t MSR_ID,
+  uint64_t MTRR_BASE,
+  uint64_t MTRR_SIZE
+>
 struct mtrr_fix_t
 {
   static constexpr uint32_t msr_id    = MSR_ID;
@@ -115,12 +117,5 @@ using mtrr_fix_4k_e0000_t  = mtrr_fix_t<0x026c, 0xe0000,  0x1000>;
 using mtrr_fix_4k_e8000_t  = mtrr_fix_t<0x026d, 0xe8000,  0x1000>;
 using mtrr_fix_4k_f0000_t  = mtrr_fix_t<0x026e, 0xf0000,  0x1000>;
 using mtrr_fix_4k_f8000_t  = mtrr_fix_t<0x026f, 0xf8000,  0x1000>;
-
-using mtrr_fix_64k_list_t  = type_list<mtrr_fix_64k_00000_t>;
-using mtrr_fix_16k_list_t  = type_list<mtrr_fix_16k_80000_t, mtrr_fix_16k_a0000_t>;
-using mtrr_fix_4k_list_t   = type_list<mtrr_fix_4k_c0000_t, mtrr_fix_4k_c8000_t, mtrr_fix_4k_d0000_t,
-                                       mtrr_fix_4k_d8000_t, mtrr_fix_4k_e0000_t, mtrr_fix_4k_e8000_t,
-                                       mtrr_fix_4k_f0000_t, mtrr_fix_4k_f8000_t>;
-using mtrr_fix_list_t      = type_list<mtrr_fix_64k_list_t, mtrr_fix_16k_list_t, mtrr_fix_4k_list_t>;
 
 }

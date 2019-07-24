@@ -12,10 +12,10 @@
 class device
 {
   public:
-             device() noexcept {}
+             device() noexcept = default;
     virtual ~device() noexcept { destroy(); }
 
-    virtual const char*  name() const noexcept = 0;
+    virtual const char* name() const noexcept = 0;
 
     auto create() noexcept -> error_code_t;
     void destroy() noexcept;

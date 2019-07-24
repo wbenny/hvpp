@@ -32,9 +32,9 @@ namespace mp
   { detail::ipi_call(callback, context); }
 
   inline void ipi_call(void(*callback)()) noexcept
-  { detail::ipi_call([](void* context) { ((void(*)())context)(); }, callback); }
+  { detail::ipi_call([](void* context) { ((void(*)())(context))(); }, callback); }
 
   template <typename T>
   inline void ipi_call(T function) noexcept
-  { ipi_call([](void* context) noexcept { ((T*)context)->operator()(); }, &function); }
+  { ipi_call([](void* context) noexcept { ((T*)(context))->operator()(); }, &function); }
 }

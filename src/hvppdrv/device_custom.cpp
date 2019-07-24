@@ -52,7 +52,7 @@ error_code_t device_custom::ioctl_enable_io_debugbreak(void* buffer, size_t buff
     // Set value of the output buffer (example).
     //
     io_port = 0xCAFE;
-    return error_code_t{};
+    return {};
   }
 
   handler_->storage().io_in[io_port] = true;
@@ -65,5 +65,5 @@ error_code_t device_custom::ioctl_enable_io_debugbreak(void* buffer, size_t buff
   //
   io_port = 0x1337;
 
-  return error_code_t{};
+  return {};
 }

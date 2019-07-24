@@ -172,10 +172,10 @@ inline error_code vmwrite(vmcs_t::field vmcs_field, T value) noexcept
 
 template <
   typename TResult = uint64_t,
-  typename TArg1 = uint64_t,
-  typename TArg2 = uint64_t,
-  typename TArg3 = uint64_t,
-  typename TArg4 = uint64_t
+  typename TArg1   = uint64_t,
+  typename TArg2   = uint64_t,
+  typename TArg3   = uint64_t,
+  typename TArg4   = uint64_t
 >
 inline TResult vmcall(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3(), TArg4 r9 = TArg4()) noexcept
 {

@@ -223,8 +223,8 @@ void vmexit_passthrough_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_mov_cr(vcpu_t& vp) noexcept
 {
-  auto exit_qualification = vp.exit_qualification().mov_cr;
-  uint64_t& gp_register = vp.exit_context().gp_register[exit_qualification.gp_register];
+  auto  exit_qualification = vp.exit_qualification().mov_cr;
+  auto& gp_register = vp.exit_context().gp_register[exit_qualification.gp_register];
 
   switch (exit_qualification.access_type)
   {
@@ -234,8 +234,8 @@ void vmexit_passthrough_handler::handle_mov_cr(vcpu_t& vp) noexcept
       {
         case 0:
         {
-          vp.guest_cr0(cr0_t{ gp_register });
-          vp.cr0_shadow(cr0_t{ gp_register });
+          vp.guest_cr0({ gp_register });
+          vp.cr0_shadow({ gp_register });
 
           break;
         }
@@ -292,7 +292,7 @@ void vmexit_passthrough_handler::handle_mov_cr(vcpu_t& vp) noexcept
           //     the virtual processor whose execution is being emulated.
           // (ref: Vol3C[28.3.3.3(Guidelines for Use of the INVVPID Instruction)])
           //
-          cr4_t new_cr4 = cr4_t{ gp_register };
+          auto new_cr4 = cr4_t{ gp_register };
           bool pge_changed = new_cr4.page_global_enable != vp.guest_cr4().page_global_enable;
 
           if (pge_changed)
@@ -379,8 +379,8 @@ void vmexit_passthrough_handler::handle_mov_cr(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
 {
-  auto exit_qualification = vp.exit_qualification().mov_dr;
-  uint64_t& gp_register = vp.exit_context().gp_register[exit_qualification.gp_register];
+  auto  exit_qualification = vp.exit_qualification().mov_dr;
+  auto& gp_register = vp.exit_context().gp_register[exit_qualification.gp_register];
 
   //
   // The MOV DR instruction causes a VM exit if the "MOV-DR exiting"
@@ -563,18 +563,18 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
   //
   // Resolve port as a nice 16bit number.
   //
-  uint16_t port = static_cast<uint16_t>(exit_qualification.port_number);
+  auto port = static_cast<uint16_t>(exit_qualification.port_number);
 
   //
   // Resolve number of bytes to send/receive.
   // REP prefixed instructions always take their count
   // from *CX register.
   //
-  uint32_t count = exit_qualification.rep_prefixed
+  auto count = exit_qualification.rep_prefixed
     ? vp.exit_context().ecx
     : 1;
 
-  uint32_t size = static_cast<uint32_t>(exit_qualification.size_of_access) + 1;
+  auto size = static_cast<uint32_t>(exit_qualification.size_of_access) + 1;
 
 #ifdef HVPP_ENABLE_VMWARE_WORKAROUND
 
@@ -651,7 +651,7 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
     //
     // For in the register is RDI, for out it's RSI.
     //
-    uintptr_t& gp_register =
+    auto& gp_register =
       exit_qualification.access_type == vmx::exit_qualification_io_instruction_t::access_in
         ? vp.exit_context().rdi
         : vp.exit_context().rsi;
@@ -736,7 +736,7 @@ void vmexit_passthrough_handler::handle_execute_wrmsr(vcpu_t& vp) noexcept
 void vmexit_passthrough_handler::handle_gdtr_idtr_access(vcpu_t& vp) noexcept
 {
   auto instruction_info = vp.exit_instruction_info().gdtr_idtr_access;
-  void* guest_va = vp.exit_instruction_info_guest_va();
+  auto guest_va = vp.exit_instruction_info_guest_va();
 
   union
   {
@@ -747,7 +747,7 @@ void vmexit_passthrough_handler::handle_gdtr_idtr_access(vcpu_t& vp) noexcept
     idtr64_t idtr64;
   };
 
-  cr3_guard _(vp.guest_cr3());
+  cr3_guard _{ vp.guest_cr3() };
 
   //
   // In legacy or compatibility mode, the destination operand
@@ -813,9 +813,9 @@ void vmexit_passthrough_handler::handle_ldtr_tr_access(vcpu_t& vp) noexcept
 {
   auto instruction_info = vp.exit_instruction_info().ldtr_tr_access;
 
-  cr3_guard _(vp.guest_cr3());
+  cr3_guard _{ vp.guest_cr3() };
 
-  uint16_t& low_word =
+  auto& low_word =
     instruction_info.access_type == vmx::instruction_info_t::access_memory
       ? *reinterpret_cast<uint16_t*>(vp.exit_instruction_info_guest_va())
       // instruction_info.access_type == vmx::instruction_info::access_register
@@ -893,7 +893,7 @@ void vmexit_passthrough_handler::handle_execute_xsetbv(vcpu_t& vp) noexcept
 void vmexit_passthrough_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
 {
   auto instruction_info = vp.exit_instruction_info().invalidate;
-  void* guest_va = vp.exit_instruction_info_guest_va();
+  auto guest_va = vp.exit_instruction_info_guest_va();
 
   invpcid_t type = static_cast<invpcid_t>(vp.exit_context().gp_register[instruction_info.register_2]);
   invpcid_desc_t descriptor;
@@ -1042,7 +1042,7 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
       {
         case exception_vector::invalid_opcode:
         {
-          cr3_guard _(vp.guest_cr3());
+          cr3_guard _{ vp.guest_cr3() };
 
           if (detail::is_syscall_instruction(vp.exit_context().rip_as_pointer))
           {
@@ -1068,7 +1068,7 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
           //
           // VMWare I/O backdoor (port 0x5658/0x5659) workaround.
           //
-          cr3_guard _(vp.guest_cr3());
+          cr3_guard _{ vp.guest_cr3() };
 
           vmx::exit_qualification_io_instruction_t exit_qualification;
           if (try_decode_io_instruction(vp.exit_context(), exit_qualification))
@@ -1084,7 +1084,7 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
 
         case exception_vector::page_fault:
         {
-          write<cr2_t>(cr2_t{ vp.exit_qualification().linear_address });
+          write<cr2_t>({ vp.exit_qualification().linear_address });
           break;
         }
 

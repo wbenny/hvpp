@@ -42,21 +42,21 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
   // Let EPT be uninitialized.
   // VM-exit handler is responsible for EPT setup.
   //
-  , ept_{ nullptr }
-  , ept_count_{ 0 }
-  , ept_index_{ 0 }
+  , ept_{}
+  , ept_count_{}
+  , ept_index_{}
 
   //
   // Initialize pending-interrupt FIFO queue.
   //
-  , pending_interrupt_first_{ 0 }
-  , pending_interrupt_count_{ 0 }
+  , pending_interrupt_first_{}
+  , pending_interrupt_count_{}
 
   //
   // Well, this is also not necessary.
   // This member is reset to "false" on each VM-exit in entry_host() method.
   //
-  , suppress_rip_adjust_{ false }
+  //, suppress_rip_adjust_{}
 {
   //
   // Fill out initial stack with garbage.
@@ -635,7 +635,7 @@ auto vcpu_t::setup_guest() noexcept -> error_code_t
   // "use_msr_bitmaps" wouldn't be set, we would get VM-exit for each
   // MSR access (both read & write).  This is not always desirable.
   //
-  msr::vmx_procbased_ctls_t procbased_ctls{};
+  auto procbased_ctls = msr::vmx_procbased_ctls_t{};
   procbased_ctls.activate_secondary_controls = true;
   procbased_ctls.use_msr_bitmaps = true;
   processor_based_controls(procbased_ctls);
@@ -645,7 +645,7 @@ auto vcpu_t::setup_guest() noexcept -> error_code_t
   // Also, enable RDTSCP, XSAVES and INVPCID instructions to be run by
   // guest (otherwise they would cause #UD).
   //
-  msr::vmx_procbased_ctls2_t procbased_ctls2{};
+  auto procbased_ctls2 = msr::vmx_procbased_ctls2_t{};
   procbased_ctls2.enable_vpid = true;
   procbased_ctls2.enable_rdtscp = true;
   procbased_ctls2.enable_xsaves = true;
@@ -655,11 +655,11 @@ auto vcpu_t::setup_guest() noexcept -> error_code_t
   //
   // By default we want each VM-entry and VM-exit in 64bit mode.
   //
-  msr::vmx_entry_ctls_t entry_ctls{};
+  auto entry_ctls = msr::vmx_entry_ctls_t{};
   entry_ctls.ia32e_mode_guest = true;
   vm_entry_controls(entry_ctls);
 
-  msr::vmx_exit_ctls_t exit_ctls{};
+  auto exit_ctls = msr::vmx_exit_ctls_t{};
   exit_ctls.ia32e_mode_host = true;
   vm_exit_controls(exit_ctls);
 

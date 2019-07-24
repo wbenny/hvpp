@@ -236,18 +236,18 @@ auto vcpu_t::exit_instruction_info_guest_va() const noexcept -> void*
   auto instruction_info = exit_instruction_info().common;
   auto displacement = exit_qualification().displacement;
 
-  uint64_t base = !instruction_info.base_register_invalid
+  auto base = !instruction_info.base_register_invalid
     ? exit_context_.gp_register[instruction_info.base_register]
     : 0;
 
-  uint64_t index = !instruction_info.index_register_invalid
+  auto index = !instruction_info.index_register_invalid
     ? exit_context_.gp_register[instruction_info.index_register]
     : 0;
 
-  uint64_t segment_base = reinterpret_cast<uint64_t>(
+  auto segment_base = reinterpret_cast<uint64_t>(
     guest_segment_base_address(instruction_info.segment_register));
 
-  uint64_t result = segment_base;
+  auto result = segment_base;
   result += base;
   result += index;
   result += displacement;

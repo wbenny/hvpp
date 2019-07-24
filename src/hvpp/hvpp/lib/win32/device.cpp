@@ -1,5 +1,7 @@
 #include "../device.h"
 
+#include "../assert.h"
+
 #include <ntddk.h>
 
 //
@@ -23,6 +25,8 @@ typedef struct _DEVICE_IMPL
 
 auto device::create() noexcept -> error_code_t
 {
+  hvpp_assert(impl_ == nullptr);
+
   error_code_t err;
 
   size_t name_length = strlen(name());
@@ -147,17 +151,19 @@ Error:
 
 void device::destroy() noexcept
 {
-  PDEVICE_IMPL DeviceImpl = (PDEVICE_IMPL)impl_;
+  PDEVICE_IMPL DeviceImpl = (PDEVICE_IMPL)(impl_);
 
-  if (DeviceImpl)
+  if (!DeviceImpl)
   {
-    IoDeleteSymbolicLink(&DeviceImpl->DeviceLink);
-    IoDeleteDevice(DeviceImpl->DeviceObject);
-
-    ExFreePoolWithTag(DeviceImpl, HVPP_DEVICE_TAG);
-
-    impl_ = nullptr;
+    return;
   }
+
+  IoDeleteSymbolicLink(&DeviceImpl->DeviceLink);
+  IoDeleteDevice(DeviceImpl->DeviceObject);
+
+  ExFreePoolWithTag(DeviceImpl, HVPP_DEVICE_TAG);
+
+  impl_ = nullptr;
 }
 
 error_code_t device::copy_from_user(void* buffer_to, const void* buffer_from, size_t length) noexcept

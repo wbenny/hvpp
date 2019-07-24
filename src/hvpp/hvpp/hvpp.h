@@ -1136,7 +1136,7 @@ HvppEptMapEx(
   _In_ PHYSICAL_ADDRESS GuestPhysicalAddress,
   _In_ PHYSICAL_ADDRESS HostPhysicalAddress,
   _In_ ULONG Access,
-  _In_ ULONG Large
+  _In_ ULONG Level
   );
 
 PEPTE

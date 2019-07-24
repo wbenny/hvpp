@@ -4,9 +4,9 @@
 
 #include "hvpp/lib/assert.h"
 #include "hvpp/lib/log.h"
-#include "hvpp/lib/mp.h" // mp::cpu_index()
+#include "hvpp/lib/mp.h"  // mp::cpu_index()
 
-#include <iterator> // std::size()
+#include <iterator>       // std::size()
 
 #define hvpp_trace_if_enabled(format, ...)                        \
   do                                                              \
@@ -65,15 +65,23 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
   switch (exit_reason)
   {
     case vmx::exit_reason::exception_or_nmi:
-      stats.expt_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
+      stats.exception_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
 
       hvpp_trace_if_enabled("exit_reason::exception_or_nmi: %s", exception_vector_to_string(vp.interrupt_info().vector()));
       break;
 
     case vmx::exit_reason::external_interrupt:
-      stats.expt_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
+      stats.exception_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
 
       hvpp_trace_if_enabled("exit_reason::external_interrupt: %s", exception_vector_to_string(vp.interrupt_info().vector()));
+      break;
+
+    case vmx::exit_reason::interrupt_window:
+      hvpp_trace_if_enabled("exit_reason::interrupt_window");
+      break;
+
+    case vmx::exit_reason::nmi_window:
+      hvpp_trace_if_enabled("exit_reason::nmi_window");
       break;
 
     case vmx::exit_reason::execute_cpuid:
@@ -295,7 +303,7 @@ void vmexit_stats_handler::storage_merge(vmexit_stats_storage_t& lhs, const vmex
   }
 
   STORAGE_MERGE_IMPL(vmexit);
-  STORAGE_MERGE_IMPL(expt_vector);
+  STORAGE_MERGE_IMPL(exception_vector);
   STORAGE_MERGE_IMPL(cpuid_0);
   STORAGE_MERGE_IMPL(cpuid_8);
   lhs.cpuid_other += rhs.cpuid_other;
@@ -335,25 +343,25 @@ void vmexit_stats_handler::storage_dump(const vmexit_stats_storage_t& storage_to
       switch (static_cast<vmx::exit_reason>(exit_reason_index))
       {
         case vmx::exit_reason::exception_or_nmi:
-          for (uint32_t i = 0; i < std::size(stats.expt_vector); ++i)
+          for (uint32_t i = 0; i < std::size(stats.exception_vector); ++i)
           {
-            const char* expt_vector_string = exception_vector_to_string(static_cast<exception_vector>(i));
-            (void)(expt_vector_string);
-            if (stats.expt_vector[i] > 0)
+            const char* exception_vector_string = exception_vector_to_string(static_cast<exception_vector>(i));
+            (void)(exception_vector_string);
+            if (stats.exception_vector[i] > 0)
             {
-              hvpp_info("    %s: %u", expt_vector_string, stats.expt_vector[i]);
+              hvpp_info("    %s: %u", exception_vector_string, stats.exception_vector[i]);
             }
           }
           break;
 
         case vmx::exit_reason::external_interrupt:
-          for (uint32_t i = 0; i < std::size(stats.expt_vector); ++i)
+          for (uint32_t i = 0; i < std::size(stats.exception_vector); ++i)
           {
-            const char* expt_vector_string = exception_vector_to_string(static_cast<exception_vector>(i));
-            (void)(expt_vector_string);
-            if (stats.expt_vector[i] > 0)
+            const char* exception_vector_string = exception_vector_to_string(static_cast<exception_vector>(i));
+            (void)(exception_vector_string);
+            if (stats.exception_vector[i] > 0)
             {
-              hvpp_info("    %s: %u", expt_vector_string, stats.expt_vector[i]);
+              hvpp_info("    %s: %u", exception_vector_string, stats.exception_vector[i]);
             }
           }
           break;

@@ -18,7 +18,7 @@ class ept_t final
 
     epte_t* map    (pa_t guest_pa, pa_t host_pa,
                     epte_t::access_type access = epte_t::access_type::read_write_execute,
-                    pml large = pml::pt) noexcept;
+                    pml level = pml::pt) noexcept;
 
     epte_t* map_4kb(pa_t guest_pa, pa_t host_pa,
                     epte_t::access_type access = epte_t::access_type::read_write_execute) noexcept;
@@ -58,13 +58,13 @@ class ept_t final
     epte_t* map_subtable(epte_t* table) noexcept;
 
     epte_t* map_pml4(pa_t guest_pa, pa_t host_pa, epte_t* pml4,
-                     epte_t::access_type access, pml large) noexcept;
+                     epte_t::access_type access, pml level) noexcept;
     epte_t* map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt,
-                     epte_t::access_type access, pml large) noexcept;
+                     epte_t::access_type access, pml level) noexcept;
     epte_t* map_pd  (pa_t guest_pa, pa_t host_pa, epte_t* pd,
-                     epte_t::access_type access, pml large) noexcept;
+                     epte_t::access_type access, pml level) noexcept;
     epte_t* map_pt  (pa_t guest_pa, pa_t host_pa, epte_t* pt,
-                     epte_t::access_type access, pml large) noexcept;
+                     epte_t::access_type access, pml level) noexcept;
 
     void unmap_table(epte_t* table, pml level = pml::pml4) noexcept;
     void unmap_entry(epte_t* entry, pml level) noexcept;

@@ -171,7 +171,6 @@ DriverEntry(
 
   GlobalDriverObject = DriverObject;
 
-  DriverObject->DriverUnload                         = &DriverUnload;
   DriverObject->MajorFunction[IRP_MJ_CREATE]         = &DriverDispatch;
   DriverObject->MajorFunction[IRP_MJ_CLOSE]          = &DriverDispatch;
   DriverObject->MajorFunction[IRP_MJ_READ]           = &DriverDispatch;
@@ -183,6 +182,11 @@ DriverEntry(
 
   auto err = driver::common::initialize(&driver::initialize,
                                         &driver::destroy);
+
+  //
+  // #TODO: Make setting of `DriverUnload' optional.
+  //
+  DriverObject->DriverUnload = &DriverUnload;
 
   return ErrorCodeToNtStatus(err);
 }

@@ -323,7 +323,7 @@ namespace mm
     int previous_page_offset;
 
     {
-      std::lock_guard _(*global.lock);
+      std::lock_guard _{ *global.lock };
 
       global.last_page_offset = global.page_bitmap->find_first_clear(global.last_page_offset, page_count);
 
@@ -388,7 +388,7 @@ namespace mm
       return;
     }
 
-    std::lock_guard _(*global.lock);
+    std::lock_guard _{ *global.lock };
 
     if (global.page_allocation_map[offset] == 0)
     {
@@ -457,6 +457,11 @@ namespace mm
 
 namespace detail
 {
+  void* generic_allocate(size_t size) noexcept
+  {
+    return mm::global.allocator[mp::cpu_index()].allocate(size);
+  }
+
   void generic_free(void* address) noexcept
   {
     reinterpret_cast<uint8_t*>(address) >= mm::global.base_address &&
@@ -466,10 +471,10 @@ namespace detail
   }
 }
 
-void* operator new  (size_t size)                                    { return mm::global.allocator[mp::cpu_index()].allocate(size); }
-void* operator new[](size_t size)                                    { return mm::global.allocator[mp::cpu_index()].allocate(size); }
-void* operator new  (size_t size, std::align_val_t)                  { return mm::global.allocator[mp::cpu_index()].allocate(size); }
-void* operator new[](size_t size, std::align_val_t)                  { return mm::global.allocator[mp::cpu_index()].allocate(size); }
+void* operator new  (size_t size)                                    { return detail::generic_allocate(size); }
+void* operator new[](size_t size)                                    { return detail::generic_allocate(size); }
+void* operator new  (size_t size, std::align_val_t)                  { return detail::generic_allocate(size); }
+void* operator new[](size_t size, std::align_val_t)                  { return detail::generic_allocate(size); }
 
 void operator delete  (void* address)                                { detail::generic_free(address); }
 void operator delete[](void* address)                                { detail::generic_free(address); }

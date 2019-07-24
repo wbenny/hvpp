@@ -3,7 +3,6 @@
 //
 // Maximum number of CPUs.
 //
-
 #define HVPP_MAX_CPU  256
 
 //

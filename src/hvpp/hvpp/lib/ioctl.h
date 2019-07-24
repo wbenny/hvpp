@@ -3,11 +3,11 @@
 
 enum class ioctl_access : uint32_t
 {
-  none = 0,
-  read = 1,
-  write = 2,
+  none        = 0,
+  read        = 1,
+  write       = 2,
 
-  read_write = read | write
+  read_write  = read | write
 };
 
 constexpr inline auto
@@ -23,7 +23,7 @@ make_ioctl_code_windows(
   (void)(size);
 
   //
-  // Took from CTL_CODE() macro.
+  // Taken from CTL_CODE() macro.
   //
   constexpr auto ctl_code_impl = [](
     uint32_t DeviceType,
@@ -69,7 +69,7 @@ make_ioctl_code_linux(
   ) noexcept
 {
   //
-  // Took from Linux source code (include/uapi/asm-generic/ioctl.h).
+  // Taken from Linux source code (include/uapi/asm-generic/ioctl.h).
   //
   constexpr auto ctl_code_impl = [](
     uint32_t dir,

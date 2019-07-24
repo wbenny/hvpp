@@ -32,7 +32,7 @@ struct vmexit_storage_t
   // This is subcategory of exit_reason::exception_or_nmi (0) and
   // exit_reason::external_interrupt (1).
   //
-  std::array<T, 256>          expt_vector;
+  std::array<T, 256>          exception_vector;
 
   //
   // Storage for each CPUID instruction:
@@ -126,6 +126,14 @@ class vmexit_handler
     //
              vmexit_handler() noexcept;
     virtual ~vmexit_handler() noexcept;
+
+    //
+    // Non-copyable, non-movable.
+    //
+    vmexit_handler(const vmexit_handler& other) noexcept = delete;
+    vmexit_handler(vmexit_handler&& other) noexcept = delete;
+    vmexit_handler& operator=(const vmexit_handler& other) noexcept = delete;
+    vmexit_handler& operator=(vmexit_handler&& other) noexcept = delete;
 
     //
     // This method allows you to set up VCPU state before VMLAUNCH.
@@ -260,11 +268,8 @@ class vmexit_compositor_handler
   : public vmexit_handler
 {
   public:
-    vmexit_compositor_handler() noexcept
-    { }
-
-    ~vmexit_compositor_handler() noexcept override
-    { }
+    vmexit_compositor_handler() noexcept = default;
+    ~vmexit_compositor_handler() noexcept override = default;
 
     void setup(vcpu_t& vp) noexcept override
     {
@@ -287,8 +292,7 @@ class vmexit_compositor_handler
       });
     }
 
-    using vmexit_handler_tuple_t = std::tuple<ARGS...>;
-    vmexit_handler_tuple_t handlers;
+    std::tuple<ARGS...> handlers;
 };
 
 }

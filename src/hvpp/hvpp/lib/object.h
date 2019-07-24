@@ -49,12 +49,12 @@ class object_t
     const T* operator->() const noexcept { return &as_object(); }
           T* operator->()       noexcept { return &as_object(); }
 
-    const T& operator*()  const noexcept { return as_object(); }
-          T& operator*()        noexcept { return as_object(); }
+    const T& operator*()  const noexcept { return as_object();  }
+          T& operator*()        noexcept { return as_object();  }
 
   private:
-    const T& as_object() const noexcept { return reinterpret_cast<T&>(object_data_); }
-          T& as_object()       noexcept { return reinterpret_cast<T&>(object_data_); }
+    const T& as_object()  const noexcept { return reinterpret_cast<T&>(object_data_); }
+          T& as_object()        noexcept { return reinterpret_cast<T&>(object_data_); }
 
     std::aligned_storage_t<sizeof(T), alignof(T)> object_data_;
 };
