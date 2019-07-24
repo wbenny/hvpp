@@ -30,6 +30,18 @@ namespace detail
     static constexpr uint8_t opcode[] = { 0x48, 0x0f, 0x07 };
     return memcmp(address, opcode, sizeof(opcode)) == 0;
   }
+
+  static bool is_rdtsc_instruction(const void* address) noexcept
+  {
+    static constexpr uint8_t opcode[] = { 0x0f, 0x31 };
+    return memcmp(address, opcode, sizeof(opcode)) == 0;
+  }
+
+  static bool is_rdtscp_instruction(const void* address) noexcept
+  {
+    static constexpr uint8_t opcode[] = { 0x0f, 0x01, 0xf9 };
+    return memcmp(address, opcode, sizeof(opcode)) == 0;
+  }
 }
 
 void vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept
@@ -1124,20 +1136,55 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
 
         case exception_vector::general_protection:
         {
+          //
+          // 3 bytes are enough to hold either `rdtsc' or `rdtscp'
+          // instruction opcode.
+          //
+          uint8_t buffer[3];
+
+          auto instruction_length = static_cast<size_t>(vp.exit_instruction_length());
+          auto read_size = std::max(instruction_length, sizeof(buffer));
+
+          if (auto err_va = vp.guest_read_memory(vp.context().rip, buffer, read_size))
+          {
+            hvpp_trace("handle_interrupt (general_protection) - read_guest_memory(%p, %u) failed, injecting #PF",
+                       vp.context().rip,
+                       instruction_length);
+
+            write<cr2_t>({ err_va.value() });
+            vp.interrupt_inject(interrupt::page_fault);
+            vp.suppress_rip_adjust();
+
+            return;
+          }
+
+          //
+          // Compare copied memory to `rdtsc' & `rdtscp' instructions.
+          //
+          if (detail::is_rdtsc_instruction(buffer))
+          {
+            handle_emulate_rdtsc(vp);
+            return;
+          }
+          else if (detail::is_rdtscp_instruction(buffer))
+          {
+            handle_emulate_rdtscp(vp);
+            return;
+          }
 
 #ifdef HVPP_ENABLE_VMWARE_WORKAROUND
 
-          //
-          // VMWare I/O backdoor (port 0x5658/0x5659) workaround.
-          //
-          cr3_guard _{ vp.guest_cr3() };
-
-          vmx::exit_qualification_io_instruction_t exit_qualification;
-          if (try_decode_io_instruction(vp.context(), exit_qualification))
-          {
-            ia32_asm_io_with_context(exit_qualification, vp.context());
-            return;
-          }
+//           //
+//           // VMWare I/O backdoor (port 0x5658/0x5659) workaround.
+//           //
+//           cr3_guard _{ vp.guest_cr3() };
+//
+//           vmx::exit_qualification_io_instruction_t exit_qualification;
+//           if (try_decode_io_instruction(vp.context(), exit_qualification))
+//           {
+//             ia32_asm_io_with_context(exit_qualification, vp.context());
+//             return;
+//           }
 
 #endif
 
@@ -1321,6 +1368,16 @@ void vmexit_passthrough_handler::handle_emulate_sysret(vcpu_t& vp) noexcept
   ss.access       = segment_access_vmx_t{ 0xc0f3 };             // G+DB+P+S+DPL3+Data
   ss.selector     = ss_t{ uint16_t(((star >> 48) + 8) | 3) };   // (STAR[63:48]+8) | 3 (* RPL forced to 3 *)
   vp.guest_ss(ss);
+}
+
+void vmexit_passthrough_handler::handle_emulate_rdtsc(vcpu_t& vp) noexcept
+{
+  handle_execute_rdtsc(vp);
+}
+
+void vmexit_passthrough_handler::handle_emulate_rdtscp(vcpu_t& vp) noexcept
+{
+  handle_execute_rdtscp(vp);
 }
 
 }

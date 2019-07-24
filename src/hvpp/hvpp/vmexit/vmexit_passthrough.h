@@ -66,6 +66,8 @@ class vmexit_passthrough_handler
 
     virtual void handle_emulate_syscall(vcpu_t& vp) noexcept;
     virtual void handle_emulate_sysret(vcpu_t& vp) noexcept;
+    virtual void handle_emulate_rdtsc(vcpu_t& vp) noexcept;
+    virtual void handle_emulate_rdtscp(vcpu_t& vp) noexcept;
 };
 
 }

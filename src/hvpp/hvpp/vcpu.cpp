@@ -48,6 +48,13 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
   , ept_index_{}
 
   //
+  // Initialize timestamp-counter members.
+  //
+  , tsc_entry_{}
+  , tsc_delta_previous_{}
+  , tsc_delta_sum_{}
+
+  //
   // Well, this is also not necessary.
   // This member is reset to "false" on each VM-exit in entry_host() method.
   //
