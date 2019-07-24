@@ -244,8 +244,9 @@ constexpr inline const char* instruction_info_gdtr_idtr_to_string(uint64_t value
     case instruction_info_gdtr_idtr_access_t::instruction_sidt: return "sidt";
     case instruction_info_gdtr_idtr_access_t::instruction_lgdt: return "lgdt";
     case instruction_info_gdtr_idtr_access_t::instruction_lidt: return "lidt";
-    default: return "";
   }
+
+  return "";
 }
 
 
@@ -257,8 +258,9 @@ constexpr inline const char* instruction_info_ldtr_tr_to_string(uint64_t value) 
     case instruction_info_ldtr_tr_access_t::instruction_str:  return "str";
     case instruction_info_ldtr_tr_access_t::instruction_lldt: return "lldt";
     case instruction_info_ldtr_tr_access_t::instruction_ltr:  return "ltr";
-    default: return "";
   }
+
+  return "";
 }
 
 }

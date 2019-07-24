@@ -361,8 +361,9 @@ constexpr inline const char* memory_type_to_string(memory_type type) noexcept
     case memory_type::write_through: return "WT";
     case memory_type::write_protected: return "WP";
     case memory_type::write_back: return "WB";
-    default: return "";
   }
+
+  return "";
 };
 
 }

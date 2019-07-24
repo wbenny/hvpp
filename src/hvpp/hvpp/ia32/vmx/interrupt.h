@@ -64,8 +64,9 @@ constexpr inline const char* interrupt_type_to_string(interrupt_type value) noex
     case interrupt_type::privileged_exception: return "privileged_exception";
     case interrupt_type::software_exception: return "software_exception";
     case interrupt_type::other_event: return "other_event";
-    default: return "";
   }
+
+  return "";
 }
 
 }

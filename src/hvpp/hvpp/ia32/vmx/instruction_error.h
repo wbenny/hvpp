@@ -69,8 +69,9 @@ constexpr inline const char* instruction_error_to_string(instruction_error value
     case instruction_error::vmentry_mov_ss: return "vmentry_mov_ss";
     case instruction_error::reserved_3: return "reserved_3";
     case instruction_error::invept_invvpid_invalid_operand: return "invept_invvpid_invalid_operand";
-    default: return "";
   }
+
+  return "";
 }
 
 }

@@ -104,8 +104,9 @@ constexpr inline const char* exception_vector_to_string(exception_vector value) 
     case exception_vector::nt_dpc_interrupt: return "nt_dpc_interrupt";
     case exception_vector::nt_clock_interrupt: return "nt_clock_interrupt";
     case exception_vector::nt_pmi_interrupt: return "nt_pmi_interrupt";
-    default: return "";
   }
+
+  return "";
 }
 
 }

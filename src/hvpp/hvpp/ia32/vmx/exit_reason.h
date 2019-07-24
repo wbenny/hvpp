@@ -138,8 +138,9 @@ constexpr inline const char* exit_reason_to_string(exit_reason value) noexcept
     case exit_reason::page_modification_log_full: return "page_modification_log_full";
     case exit_reason::execute_xsaves: return "execute_xsaves";
     case exit_reason::execute_xrstors: return "execute_xrstors";
-    default: return "";
   }
+
+  return "";
 }
 
 }
