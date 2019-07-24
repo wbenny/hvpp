@@ -64,13 +64,12 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
   memset(stack_.data, 0xcc, sizeof(stack_));
 
   //
-  // Reset guest and exit context.
+  // Reset CPU context.
   // This is not really needed, as they are overwritten anyway (in
   // entry_guest_()/entry_host_()), but since initialization is done
   // just once, it also doesn't hurt.
   //
-  guest_context_.clear();
-  exit_context_.clear();
+  context_.clear();
 
   //
   // Assertions.
@@ -85,12 +84,12 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
     //
     constexpr intptr_t VCPU_RSP                         =  offsetof(vcpu_t, stack_) + sizeof(vcpu_t::stack_);
     constexpr intptr_t VCPU_OFFSET                      =  -0x8000;   // -vcpu_stack_size
-    constexpr intptr_t VCPU_LAUNCH_CONTEXT_OFFSET       =   0;
-    constexpr intptr_t VCPU_EXIT_CONTEXT_OFFSET         =   144;      // sizeof(context);
-
+    constexpr intptr_t VCPU_CONTEXT_OFFSET              =   0;        // ..
+    constexpr intptr_t VCPU_LAUNCH_CONTEXT_OFFSET       =   0;        // ... connected by union {}
+                                                                      //
     static_assert(VCPU_RSP + VCPU_OFFSET                == offsetof(vcpu_t, stack_));
-    static_assert(VCPU_RSP + VCPU_LAUNCH_CONTEXT_OFFSET == offsetof(vcpu_t, guest_context_));
-    static_assert(VCPU_RSP + VCPU_EXIT_CONTEXT_OFFSET   == offsetof(vcpu_t, exit_context_));
+    static_assert(VCPU_RSP + VCPU_CONTEXT_OFFSET        == offsetof(vcpu_t, context_));
+    static_assert(VCPU_RSP + VCPU_LAUNCH_CONTEXT_OFFSET == offsetof(vcpu_t, launch_context_));
 
     //
     // The Windows x64 ABI assumes that each function is called with 16-byte
@@ -146,19 +145,19 @@ auto vcpu_t::start() noexcept -> error_code_t
 {
   //
   // Launch of the VCPU is performed via similar principle as setjmp/longjmp:
-  //   - Save current state here (guest_context_.capture() returns 0 if it's
+  //   - Save current state here (launch_context_.capture() returns 0 if it's
   //     been called by original code - which is the same as state::off).
   //   - Call vcpu_t::vmx_enter(), which will enter VMX operation and set up VCMS.
   //   - Launch the VM.
   //     Note that vmlaunch() function should NOT return - the next instruction
   //     after vmlaunch should be at vcpu_t::entry_guest_() (vcpu.asm).
-  //   - The guest will set guest_context_.rax = state::launching (see entry_guest())
-  //     and perform guest_context_.restore() (see vcpu.asm).
+  //   - The guest will set launch_context_.rax = state::launching (see entry_guest())
+  //     and perform launch_context_.restore() (see vcpu.asm).
   //     That will catapult us back here.
   //   - We'll set state to state::running and exit this function.
   //
 
-  switch (static_cast<state>(guest_context_.capture()))
+  switch (static_cast<state>(launch_context_.capture()))
   {
     case state::off:
       if (auto err = vmx_enter())
@@ -184,7 +183,7 @@ auto vcpu_t::start() noexcept -> error_code_t
     case state::launching:
       //
       // The vcpu_t::entry_guest() successfully put this VCPU into
-      // "launching" state and vcpu.asm called guest_context_.restore().
+      // "launching" state and vcpu.asm called launch_context_.restore().
       // This means that guest is running properly.
       //
       state_ = state::running;
@@ -278,7 +277,7 @@ void vcpu_t::vmx_leave() noexcept
     // Advance RIP before we exit VMX-root mode. This skips the "vmcall"
     // instruction.
     //
-    exit_context_.rip += exit_instruction_length();
+    context_.rip += exit_instruction_length();
 
     //
     // When running in VMX-root mode, the processor will set limits of the
@@ -414,9 +413,9 @@ auto vcpu_t::ept(uint16_t index /* = 0 */) noexcept -> ept_t&
   return ept_[index];
 }
 
-auto vcpu_t::exit_context() noexcept -> context_t&
+auto vcpu_t::context() noexcept -> context_t&
 {
-  return exit_context_;
+  return context_;
 }
 
 void vcpu_t::suppress_rip_adjust() noexcept
@@ -753,13 +752,13 @@ void vcpu_t::entry_host() noexcept
     //
     mm::allocator_guard _;
 
-    const auto captured_rsp    = exit_context_.rsp;
-    const auto captured_rflags = exit_context_.rflags;
+    const auto captured_rsp    = context_.rsp;
+    const auto captured_rflags = context_.rflags;
 
     {
-      exit_context_.rsp    = guest_rsp();
-      exit_context_.rip    = guest_rip();
-      exit_context_.rflags = guest_rflags();
+      context_.rsp    = guest_rsp();
+      context_.rip    = guest_rip();
+      context_.rflags = guest_rflags();
 
       //
       // WinDbg will show full callstack (hypervisor + interrupted application)
@@ -770,8 +769,8 @@ void vcpu_t::entry_host() noexcept
       // exit_instruction_length() is added to the guest_rip() to create
       // this value.
       //
-      stack_.machine_frame.rip = exit_context_.rip + exit_instruction_length();
-      stack_.machine_frame.rsp = exit_context_.rsp;
+      stack_.machine_frame.rip = context_.rip + exit_instruction_length();
+      stack_.machine_frame.rsp = context_.rsp;
 
       {
         handler_.handle(*this);
@@ -791,18 +790,18 @@ void vcpu_t::entry_host() noexcept
 
         if (!suppress_rip_adjust_)
         {
-          exit_context_.rip += exit_instruction_length();
+          context_.rip += exit_instruction_length();
         }
       }
 
-      guest_rsp(exit_context_.rsp);
-      guest_rip(exit_context_.rip);
-      guest_rflags(exit_context_.rflags);
+      guest_rsp(context_.rsp);
+      guest_rip(context_.rip);
+      guest_rflags(context_.rflags);
     }
 
-    exit_context_.rflags = captured_rflags;
-    exit_context_.rsp    = captured_rsp;
-    exit_context_.rip    = reinterpret_cast<uint64_t>(&vmx::vmresume);
+    context_.rflags = captured_rflags;
+    context_.rsp    = captured_rsp;
+    context_.rip    = reinterpret_cast<uint64_t>(&vmx::vmresume);
   }
 
 exit:
@@ -813,7 +812,7 @@ void vcpu_t::entry_guest() noexcept
 {
   // hvpp_assert(state_ == state::initializing);
 
-  guest_context_.rax = static_cast<uint64_t>(state::launching);
+  launch_context_.rax = static_cast<uint64_t>(state::launching);
 }
 
 }

@@ -125,13 +125,13 @@ void vmexit_passthrough_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
 {
   uint32_t cpu_info[4];
   ia32_asm_cpuid_ex(cpu_info,
-                    vp.exit_context().eax,
-                    vp.exit_context().ecx);
+                    vp.context().eax,
+                    vp.context().ecx);
 
-  vp.exit_context().rax = cpu_info[0];
-  vp.exit_context().rbx = cpu_info[1];
-  vp.exit_context().rcx = cpu_info[2];
-  vp.exit_context().rdx = cpu_info[3];
+  vp.context().rax = cpu_info[0];
+  vp.context().rbx = cpu_info[1];
+  vp.context().rcx = cpu_info[2];
+  vp.context().rdx = cpu_info[3];
 }
 
 void vmexit_passthrough_handler::handle_execute_invd(vcpu_t& vp) noexcept
@@ -200,18 +200,18 @@ void vmexit_passthrough_handler::handle_execute_invlpg(vcpu_t& vp) noexcept
 void vmexit_passthrough_handler::handle_execute_rdtsc(vcpu_t& vp) noexcept
 {
   uint64_t tsc = ia32_asm_read_tsc();
-  vp.exit_context().rax = tsc & 0xffffffff;
-  vp.exit_context().rdx = tsc >> 32;
+  vp.context().rax = tsc & 0xffffffff;
+  vp.context().rdx = tsc >> 32;
 }
 
 void vmexit_passthrough_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
 {
-  if (vp.exit_context().rcx == vmcall_terminate_id &&
+  if (vp.context().rcx == vmcall_terminate_id &&
       vp.guest_cs().selector.request_privilege_level == 0)
   {
     vp.vmx_leave();
   }
-  else if (vp.exit_context().rcx == vmcall_breakpoint_id)
+  else if (vp.context().rcx == vmcall_breakpoint_id)
   {
     debugger::breakpoint();
   }
@@ -224,7 +224,7 @@ void vmexit_passthrough_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
 void vmexit_passthrough_handler::handle_mov_cr(vcpu_t& vp) noexcept
 {
   auto  exit_qualification = vp.exit_qualification().mov_cr;
-  auto& gp_register = vp.exit_context().gp_register[exit_qualification.gp_register];
+  auto& gp_register = vp.context().gp_register[exit_qualification.gp_register];
 
   switch (exit_qualification.access_type)
   {
@@ -380,7 +380,7 @@ void vmexit_passthrough_handler::handle_mov_cr(vcpu_t& vp) noexcept
 void vmexit_passthrough_handler::handle_mov_dr(vcpu_t& vp) noexcept
 {
   auto  exit_qualification = vp.exit_qualification().mov_dr;
-  auto& gp_register = vp.exit_context().gp_register[exit_qualification.gp_register];
+  auto& gp_register = vp.context().gp_register[exit_qualification.gp_register];
 
   //
   // The MOV DR instruction causes a VM exit if the "MOV-DR exiting"
@@ -549,15 +549,15 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
     //
     port_value.as_ptr =
       exit_qualification.access_type == vmx::exit_qualification_io_instruction_t::access_in
-        ? vp.exit_context().rdi_as_pointer
-        : vp.exit_context().rsi_as_pointer;
+        ? vp.context().rdi_as_pointer
+        : vp.context().rsi_as_pointer;
   }
   else
   {
     //
     // Save pointer to the RAX register.
     //
-    port_value.as_ptr = &vp.exit_context().rax;
+    port_value.as_ptr = &vp.context().rax;
   }
 
   //
@@ -571,7 +571,7 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
   // from *CX register.
   //
   auto count = exit_qualification.rep_prefixed
-    ? vp.exit_context().ecx
+    ? vp.context().ecx
     : 1;
 
   auto size = static_cast<uint32_t>(exit_qualification.size_of_access) + 1;
@@ -583,7 +583,7 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
   (void)(count);
   (void)(size);
 
-  ia32_asm_io_with_context(exit_qualification, vp.exit_context());
+  ia32_asm_io_with_context(exit_qualification, vp.context());
 
 #else
 
@@ -603,7 +603,7 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
       {
         //
         // Note that port_value holds pointer to the
-        // vp.exit_context().rax member, therefore we're
+        // vp.context().rax member, therefore we're
         // directly overwriting the RAX value.
         //
         switch (size)
@@ -629,7 +629,7 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
       {
         //
         // Note that port_value holds pointer to the
-        // vp.exit_context().rax member, therefore we're
+        // vp.context().rax member, therefore we're
         // directly reading from the RAX value.
         //
         switch (size)
@@ -653,10 +653,10 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
     //
     auto& gp_register =
       exit_qualification.access_type == vmx::exit_qualification_io_instruction_t::access_in
-        ? vp.exit_context().rdi
-        : vp.exit_context().rsi;
+        ? vp.context().rdi
+        : vp.context().rsi;
 
-    if (vp.exit_context().rflags.direction_flag)
+    if (vp.context().rflags.direction_flag)
     {
       gp_register -= count * size;
     }
@@ -671,7 +671,7 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
     //
     if (exit_qualification.rep_prefixed)
     {
-      vp.exit_context().rcx = 0;
+      vp.context().rcx = 0;
     }
   }
 
@@ -680,7 +680,7 @@ void vmexit_passthrough_handler::handle_execute_io_instruction(vcpu_t& vp) noexc
 
 void vmexit_passthrough_handler::handle_execute_rdmsr(vcpu_t& vp) noexcept
 {
-  uint32_t msr_id = vp.exit_context().ecx;
+  uint32_t msr_id = vp.context().ecx;
   uint64_t msr_value;
 
   switch (msr_id)
@@ -702,16 +702,16 @@ void vmexit_passthrough_handler::handle_execute_rdmsr(vcpu_t& vp) noexcept
       break;
   }
 
-  vp.exit_context().rax = msr_value & 0xffffffff;
-  vp.exit_context().rdx = msr_value >> 32;
+  vp.context().rax = msr_value & 0xffffffff;
+  vp.context().rdx = msr_value >> 32;
 }
 
 void vmexit_passthrough_handler::handle_execute_wrmsr(vcpu_t& vp) noexcept
 {
-  uint32_t msr_id    = vp.exit_context().ecx;
+  uint32_t msr_id    = vp.context().ecx;
   uint64_t msr_value =
-    vp.exit_context().rax |
-    vp.exit_context().rdx << 32;
+    vp.context().rax |
+    vp.context().rdx << 32;
 
   switch (msr_id)
   {
@@ -819,7 +819,7 @@ void vmexit_passthrough_handler::handle_ldtr_tr_access(vcpu_t& vp) noexcept
     instruction_info.access_type == vmx::instruction_info_t::access_memory
       ? *reinterpret_cast<uint16_t*>(vp.exit_instruction_info_guest_va())
       // instruction_info.access_type == vmx::instruction_info::access_register
-      :  reinterpret_cast<uint16_t&>(vp.exit_context().gp_register[instruction_info.register_1]);
+      :  reinterpret_cast<uint16_t&>(vp.context().gp_register[instruction_info.register_1]);
 
   switch (instruction_info.instruction)
   {
@@ -871,9 +871,9 @@ void vmexit_passthrough_handler::handle_execute_rdtscp(vcpu_t& vp) noexcept
   uint32_t tsc_aux;
   uint64_t tsc = ia32_asm_read_tscp(&tsc_aux);
 
-  vp.exit_context().rax = tsc & 0xffffffff;
-  vp.exit_context().rdx = tsc >> 32;
-  vp.exit_context().rcx = tsc_aux;
+  vp.context().rax = tsc & 0xffffffff;
+  vp.context().rdx = tsc >> 32;
+  vp.context().rcx = tsc_aux;
 }
 
 void vmexit_passthrough_handler::handle_execute_wbinvd(vcpu_t& vp) noexcept
@@ -885,9 +885,9 @@ void vmexit_passthrough_handler::handle_execute_wbinvd(vcpu_t& vp) noexcept
 
 void vmexit_passthrough_handler::handle_execute_xsetbv(vcpu_t& vp) noexcept
 {
-  ia32_asm_write_xcr(vp.exit_context().ecx,
-                     vp.exit_context().rdx << 32 |
-                     vp.exit_context().rax);
+  ia32_asm_write_xcr(vp.context().ecx,
+                     vp.context().rdx << 32 |
+                     vp.context().rax);
 }
 
 void vmexit_passthrough_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
@@ -895,7 +895,7 @@ void vmexit_passthrough_handler::handle_execute_invpcid(vcpu_t& vp) noexcept
   auto instruction_info = vp.exit_instruction_info().invalidate;
   auto guest_va = vp.exit_instruction_info_guest_va();
 
-  invpcid_t type = static_cast<invpcid_t>(vp.exit_context().gp_register[instruction_info.register_2]);
+  invpcid_t type = static_cast<invpcid_t>(vp.context().gp_register[instruction_info.register_2]);
   invpcid_desc_t descriptor;
 
   //
@@ -1044,13 +1044,13 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
         {
           cr3_guard _{ vp.guest_cr3() };
 
-          if (detail::is_syscall_instruction(vp.exit_context().rip_as_pointer))
+          if (detail::is_syscall_instruction(vp.context().rip_as_pointer))
           {
             handle_emulate_syscall(vp);
             vp.suppress_rip_adjust();
             return;
           }
-          else if (detail::is_sysret_instruction(vp.exit_context().rip_as_pointer))
+          else if (detail::is_sysret_instruction(vp.context().rip_as_pointer))
           {
             handle_emulate_sysret(vp);
             vp.suppress_rip_adjust();
@@ -1071,9 +1071,9 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
           cr3_guard _{ vp.guest_cr3() };
 
           vmx::exit_qualification_io_instruction_t exit_qualification;
-          if (try_decode_io_instruction(vp.exit_context(), exit_qualification))
+          if (try_decode_io_instruction(vp.context(), exit_qualification))
           {
-            ia32_asm_io_with_context(exit_qualification, vp.exit_context());
+            ia32_asm_io_with_context(exit_qualification, vp.context());
             return;
           }
 
@@ -1135,15 +1135,15 @@ void vmexit_passthrough_handler::handle_emulate_syscall(vcpu_t& vp) noexcept
   // into RCX and then load RIP from MSR_LSTAR.
   //
   const auto lstar = msr::read<msr::lstar_t>();
-  vp.exit_context().rcx = vp.exit_context().rip + vp.exit_instruction_length();
-  vp.exit_context().rip = lstar;
+  vp.context().rcx = vp.context().rip + vp.exit_instruction_length();
+  vp.context().rip = lstar;
 
   //
   // Save RFLAGS into R11 and then mask RFLAGS using MSR_FMASK.
   //
   const auto fmask = msr::read<msr::fmask_t>();
-  vp.exit_context().r11 = vp.exit_context().rflags.flags;
-  vp.exit_context().rflags.flags &= ~fmask.flags;
+  vp.context().r11 = vp.context().rflags.flags;
+  vp.context().rflags.flags &= ~fmask.flags;
 
   //
   // Load the CS and SS selectors with values derived from
@@ -1201,14 +1201,14 @@ void vmexit_passthrough_handler::handle_emulate_sysret(vcpu_t& vp) noexcept
   //
   // Load RIP from RCX.
   //
-  vp.exit_context().rip = vp.exit_context().rcx;
+  vp.context().rip = vp.context().rcx;
 
   //
   // Load RFLAGS from R11. Clear RF, VM, reserved bits.
   //
-  vp.exit_context().rflags.flags = vp.exit_context().r11;
-  vp.exit_context().rflags.flags &= ~rflags_t::reserved_bits;
-  vp.exit_context().rflags.flags |=  rflags_t::fixed_bits;
+  vp.context().rflags.flags = vp.context().r11;
+  vp.context().rflags.flags &= ~rflags_t::reserved_bits;
+  vp.context().rflags.flags |=  rflags_t::fixed_bits;
 
   //
   // SYSRET loads the CS and SS selectors with values

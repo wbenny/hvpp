@@ -23,7 +23,7 @@ HvppHandleExecuteCpuid(
   _In_ PVOID Passthrough
   )
 {
-  PVCPU_CONTEXT Context = HvppVcpuExitContext(Vcpu);
+  PVCPU_CONTEXT Context = HvppVcpuContext(Vcpu);
 
   if (Context->Eax == 'ppvh')
   {
@@ -47,7 +47,7 @@ HvppHandleExecuteVmcall(
 {
   UNREFERENCED_PARAMETER(Vcpu);
 
-  PVCPU_CONTEXT Context = HvppVcpuExitContext(Vcpu);
+  PVCPU_CONTEXT Context = HvppVcpuContext(Vcpu);
   PEPT Ept = HvppVcpuGetCurrentEpt(Vcpu);
 
   PPER_VCPU_DATA Data = &PerVcpuData[KeGetCurrentProcessorNumberEx(NULL)];

@@ -350,11 +350,11 @@ HvppVcpuGetCurrentEpt(
 
 PVCPU_CONTEXT
 NTAPI
-HvppVcpuExitContext(
+HvppVcpuContext(
   _In_ PVCPU Vcpu
   )
 {
-  return (PVCPU_CONTEXT)&vcpu_->exit_context();
+  return (PVCPU_CONTEXT)&vcpu_->context();
 }
 
 VOID

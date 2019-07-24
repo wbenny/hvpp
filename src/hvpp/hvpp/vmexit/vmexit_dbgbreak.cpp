@@ -53,14 +53,14 @@ void vmexit_dbgbreak_handler::handle(vcpu_t& vp) noexcept
       break;
 
     case vmx::exit_reason::execute_cpuid:
-      if (vp.exit_context().eax < (0x0000'0000u + vmexit_dbgbreak_storage_t::cpuid_0_max))
+      if (vp.context().eax < (0x0000'0000u + vmexit_dbgbreak_storage_t::cpuid_0_max))
       {
-        hvpp_break_if(storage_.cpuid_0[vp.exit_context().eax]);
+        hvpp_break_if(storage_.cpuid_0[vp.context().eax]);
       }
-      else if (vp.exit_context().eax >= 0x8000'0000u &&
-               vp.exit_context().eax < (0x8000'0000u + vmexit_dbgbreak_storage_t::cpuid_8_max))
+      else if (vp.context().eax >= 0x8000'0000u &&
+               vp.context().eax < (0x8000'0000u + vmexit_dbgbreak_storage_t::cpuid_8_max))
       {
-        hvpp_break_if(storage_.cpuid_8[vp.exit_context().eax - 0x8000'0000u]);
+        hvpp_break_if(storage_.cpuid_8[vp.context().eax - 0x8000'0000u]);
       }
       else
       {
@@ -116,14 +116,14 @@ void vmexit_dbgbreak_handler::handle(vcpu_t& vp) noexcept
       break;
 
     case vmx::exit_reason::execute_rdmsr:
-      if (vp.exit_context().ecx <= 0x0000'1fffu)
+      if (vp.context().ecx <= 0x0000'1fffu)
       {
-        hvpp_break_if(storage_.rdmsr_0[vp.exit_context().ecx]);
+        hvpp_break_if(storage_.rdmsr_0[vp.context().ecx]);
       }
-      else if (vp.exit_context().ecx >= 0xc000'0000u &&
-               vp.exit_context().ecx <= 0xc000'1fffu)
+      else if (vp.context().ecx >= 0xc000'0000u &&
+               vp.context().ecx <= 0xc000'1fffu)
       {
-        hvpp_break_if(storage_.rdmsr_c[vp.exit_context().ecx - 0xc000'0000u]);
+        hvpp_break_if(storage_.rdmsr_c[vp.context().ecx - 0xc000'0000u]);
       }
       else
       {
@@ -132,14 +132,14 @@ void vmexit_dbgbreak_handler::handle(vcpu_t& vp) noexcept
       break;
 
     case vmx::exit_reason::execute_wrmsr:
-      if (vp.exit_context().ecx <= 0x0000'1fffu)
+      if (vp.context().ecx <= 0x0000'1fffu)
       {
-        hvpp_break_if(storage_.wrmsr_0[vp.exit_context().ecx]);
+        hvpp_break_if(storage_.wrmsr_0[vp.context().ecx]);
       }
-      else if (vp.exit_context().ecx >= 0xc000'0000u &&
-               vp.exit_context().ecx <= 0xc000'1fffu)
+      else if (vp.context().ecx >= 0xc000'0000u &&
+               vp.context().ecx <= 0xc000'1fffu)
       {
-        hvpp_break_if(storage_.wrmsr_c[vp.exit_context().ecx - 0xc000'0000u]);
+        hvpp_break_if(storage_.wrmsr_c[vp.context().ecx - 0xc000'0000u]);
       }
       else
       {

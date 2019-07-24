@@ -37,8 +37,9 @@ INCLUDE ia32/common.inc
 ; Useful definitions.
 ;
     VCPU_OFFSET                         = -8000h             ; -vcpu_stack_size
-    VCPU_LAUNCH_CONTEXT_OFFSET          =  0
-    VCPU_EXIT_CONTEXT_OFFSET            =  144               ; sizeof context
+    VCPU_CONTEXT_OFFSET                 =  0                 ; ..
+    VCPU_LAUNCH_CONTEXT_OFFSET          =  0                 ; ... connected by union {}
+                                                             ;
     SHADOW_SPACE                        =  20h
 
 ;
@@ -122,13 +123,13 @@ INCLUDE ia32/common.inc
         push    rcx
 
 ;
-; RCX = &vcpu.exit_context_
+; RCX = &vcpu.context_
 ;
-        lea     rcx, qword ptr [rsp + 8 + VCPU_EXIT_CONTEXT_OFFSET]
+        lea     rcx, qword ptr [rsp + 8 + VCPU_CONTEXT_OFFSET]
         call    ?capture@context_t@ia32@@QEAAHXZ
 
 ;
-; RBX = &vcpu.exit_context_
+; RBX = &vcpu.context_
 ; RCX = original value of RCX
 ; RSP = original value of RSP
 ;

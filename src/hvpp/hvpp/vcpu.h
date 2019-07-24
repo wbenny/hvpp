@@ -34,7 +34,7 @@ class vcpu_t final
 
     auto ept(uint16_t index = 0) noexcept -> ept_t&;
 
-    auto exit_context() noexcept -> context_t&;
+    auto context() noexcept -> context_t&;
     void suppress_rip_adjust() noexcept;
 
     //
@@ -343,12 +343,20 @@ class vcpu_t final
     static_assert(sizeof(stack_t::shadow_space_t) == 32);
 
     //
-    // If you reorder following three members (stack, guest context and exit
-    // context), you have to edit offsets in vcpu.asm.
+    // If you reorder following three members (stack, exit context
+    // and launch context), you have to edit offsets in vcpu.asm.
     //
     stack_t            stack_;
-    context_t          guest_context_;
-    context_t          exit_context_;
+
+    union
+    {
+      //
+      // As these two contexts are never used at the same time,
+      // they can share the memory.
+      //
+      context_t        context_;
+      context_t        launch_context_;
+    };
 
     //
     // Various VMX structures.

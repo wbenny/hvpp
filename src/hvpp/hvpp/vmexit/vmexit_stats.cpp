@@ -85,21 +85,21 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
       break;
 
     case vmx::exit_reason::execute_cpuid:
-      if (vp.exit_context().eax < (0x0000'0000u + vmexit_stats_storage_t::cpuid_0_max))
+      if (vp.context().eax < (0x0000'0000u + vmexit_stats_storage_t::cpuid_0_max))
       {
-        stats.cpuid_0[vp.exit_context().eax] += 1;
+        stats.cpuid_0[vp.context().eax] += 1;
       }
-      else if (vp.exit_context().eax >= 0x8000'0000u &&
-               vp.exit_context().eax < (0x8000'0000u + vmexit_stats_storage_t::cpuid_8_max))
+      else if (vp.context().eax >= 0x8000'0000u &&
+               vp.context().eax < (0x8000'0000u + vmexit_stats_storage_t::cpuid_8_max))
       {
-        stats.cpuid_8[vp.exit_context().eax - 0x8000'0000u] += 1;
+        stats.cpuid_8[vp.context().eax - 0x8000'0000u] += 1;
       }
       else
       {
         stats.cpuid_other += 1;
       }
 
-      hvpp_trace_if_enabled("exit_reason::execute_cpuid: 0x%08x", vp.exit_context().eax);
+      hvpp_trace_if_enabled("exit_reason::execute_cpuid: 0x%08x", vp.context().eax);
       break;
 
     case vmx::exit_reason::execute_invd:
@@ -123,7 +123,7 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
           hvpp_trace_if_enabled(
             "exit_reason::mov_cr: (to_cr%u) 0x%p",
             vp.exit_qualification().mov_cr.cr_number,
-            vp.exit_context().gp_register[vp.exit_qualification().mov_cr.gp_register]);
+            vp.context().gp_register[vp.exit_qualification().mov_cr.gp_register]);
           break;
 
         case vmx::exit_qualification_mov_cr_t::access_from_cr:
@@ -132,7 +132,7 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
           hvpp_trace_if_enabled(
             "exit_reason::mov_cr: (from_cr%u) 0x%p",
             vp.exit_qualification().mov_cr.cr_number,
-            vp.exit_context().gp_register[vp.exit_qualification().mov_cr.gp_register]);
+            vp.context().gp_register[vp.exit_qualification().mov_cr.gp_register]);
           break;
 
         case vmx::exit_qualification_mov_cr_t::access_clts:
@@ -158,7 +158,7 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
           hvpp_trace_if_enabled(
             "exit_reason::mov_dr: (to_dr%u) 0x%p",
             vp.exit_qualification().mov_dr.dr_number,
-            vp.exit_context().gp_register[vp.exit_qualification().mov_dr.gp_register]);
+            vp.context().gp_register[vp.exit_qualification().mov_dr.gp_register]);
           break;
 
         case vmx::exit_qualification_mov_dr_t::access_from_dr:
@@ -167,7 +167,7 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
           hvpp_trace_if_enabled(
             "exit_reason::mov_dr: (from_dr%u) 0x%p",
             vp.exit_qualification().mov_dr.dr_number,
-            vp.exit_context().gp_register[vp.exit_qualification().mov_dr.gp_register]);
+            vp.context().gp_register[vp.exit_qualification().mov_dr.gp_register]);
           break;
       }
       break;
@@ -194,38 +194,38 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
       break;
 
     case vmx::exit_reason::execute_rdmsr:
-      if (vp.exit_context().ecx <= 0x0000'1fffu)
+      if (vp.context().ecx <= 0x0000'1fffu)
       {
-        stats.rdmsr_0[vp.exit_context().ecx] += 1;
+        stats.rdmsr_0[vp.context().ecx] += 1;
       }
-      else if (vp.exit_context().ecx >= 0xc000'0000u &&
-               vp.exit_context().ecx <= 0xc000'1fffu)
+      else if (vp.context().ecx >= 0xc000'0000u &&
+               vp.context().ecx <= 0xc000'1fffu)
       {
-        stats.rdmsr_c[vp.exit_context().ecx - 0xc000'0000u] += 1;
+        stats.rdmsr_c[vp.context().ecx - 0xc000'0000u] += 1;
       }
       else
       {
         stats.rdmsr_other += 1;
       }
-      hvpp_trace_if_enabled("exit_reason::execute_rdmsr: 0x%08x", vp.exit_context().ecx);
+      hvpp_trace_if_enabled("exit_reason::execute_rdmsr: 0x%08x", vp.context().ecx);
       break;
 
     case vmx::exit_reason::execute_wrmsr:
-      if (vp.exit_context().ecx <= 0x0000'1fffu)
+      if (vp.context().ecx <= 0x0000'1fffu)
       {
-        stats.wrmsr_0[vp.exit_context().ecx] += 1;
+        stats.wrmsr_0[vp.context().ecx] += 1;
       }
-      else if (vp.exit_context().ecx >= 0xc000'0000u &&
-               vp.exit_context().ecx <= 0xc000'1fffu)
+      else if (vp.context().ecx >= 0xc000'0000u &&
+               vp.context().ecx <= 0xc000'1fffu)
       {
-        stats.wrmsr_c[vp.exit_context().ecx - 0xc000'0000u] += 1;
+        stats.wrmsr_c[vp.context().ecx - 0xc000'0000u] += 1;
       }
       else
       {
         stats.wrmsr_other += 1;
       }
 
-      hvpp_trace_if_enabled("exit_reason::execute_wrmsr: 0x%08x", vp.exit_context().ecx);
+      hvpp_trace_if_enabled("exit_reason::execute_wrmsr: 0x%08x", vp.context().ecx);
       break;
 
     case vmx::exit_reason::gdtr_idtr_access:
@@ -260,8 +260,8 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
 
     case vmx::exit_reason::execute_xsetbv:
       hvpp_trace_if_enabled("exit_reason::execute_xsetbv: [0x%08x] -> %p",
-        vp.exit_context().ecx,
-        vp.exit_context().rdx << 32 | vp.exit_context().rax);
+        vp.context().ecx,
+        vp.context().rdx << 32 | vp.context().rax);
       break;
 
     case vmx::exit_reason::execute_invpcid:

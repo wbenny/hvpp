@@ -45,7 +45,7 @@ bool vcpu_t::interrupt_inject(interrupt_t interrupt, bool first /*= false */) no
   //
   if (interrupt.type() == vmx::interrupt_type::external)
   {
-    bool interruptible = exit_context().rflags.interrupt_enable_flag &&
+    bool interruptible = context().rflags.interrupt_enable_flag &&
                          guest_interruptibility_state().flags;
 
     if (!interruptible)
@@ -237,11 +237,11 @@ auto vcpu_t::exit_instruction_info_guest_va() const noexcept -> void*
   auto displacement = exit_qualification().displacement;
 
   auto base = !instruction_info.base_register_invalid
-    ? exit_context_.gp_register[instruction_info.base_register]
+    ? context_.gp_register[instruction_info.base_register]
     : 0;
 
   auto index = !instruction_info.index_register_invalid
-    ? exit_context_.gp_register[instruction_info.index_register]
+    ? context_.gp_register[instruction_info.index_register]
     : 0;
 
   auto segment_base = reinterpret_cast<uint64_t>(

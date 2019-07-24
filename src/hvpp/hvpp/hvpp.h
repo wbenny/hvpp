@@ -841,7 +841,7 @@ typedef struct _VMEXIT_PASSTHROUGH
 #define HvppVmExitPassthrough(Passthrough)                    \
   (((PVMEXIT_PASSTHROUGH)(Passthrough))->PasstroughRoutine(Passthrough));
 
-#define HvppVmExitContext(Passthrough)                        \
+#define HvppVmContext(Passthrough)                            \
   ((PVMEXIT_PASSTHROUGH)(Passthrough)->Context)
 
 //////////////////////////////////////////////////////////////////////////
@@ -1290,7 +1290,7 @@ HvppVcpuGetCurrentEpt(
 
 PVCPU_CONTEXT
 NTAPI
-HvppVcpuExitContext(
+HvppVcpuContext(
   _In_ PVCPU Vcpu
   );
 

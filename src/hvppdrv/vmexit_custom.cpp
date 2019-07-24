@@ -135,15 +135,15 @@ void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
 
 void vmexit_custom_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
 {
-  if (vp.exit_context().eax == 'ppvh')
+  if (vp.context().eax == 'ppvh')
   {
     //
     // "hello from hvpp\0"
     //
-    vp.exit_context().rax = 'lleh';
-    vp.exit_context().rbx = 'rf o';
-    vp.exit_context().rcx = 'h mo';
-    vp.exit_context().rdx = 'ppv';
+    vp.context().rax = 'lleh';
+    vp.context().rbx = 'rf o';
+    vp.context().rcx = 'h mo';
+    vp.context().rdx = 'ppv';
   }
   else
   {
@@ -155,14 +155,14 @@ void vmexit_custom_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
 {
   auto& data = data_[mp::cpu_index()];
 
-  switch (vp.exit_context().rcx)
+  switch (vp.context().rcx)
   {
     case 0xc1:
       {
         cr3_guard _{ vp.guest_cr3() };
 
-        data.page_read = pa_t::from_va(vp.exit_context().rdx_as_pointer);
-        data.page_exec = pa_t::from_va(vp.exit_context().r8_as_pointer);
+        data.page_read = pa_t::from_va(vp.context().rdx_as_pointer);
+        data.page_exec = pa_t::from_va(vp.context().r8_as_pointer);
       }
 
       hvpp_trace("vmcall (hook) EXEC: 0x%p READ: 0x%p", data.page_exec.value(), data.page_read.value());
