@@ -112,38 +112,46 @@ class pa_t
 class va_t
 {
   public:
-    va_t()                             noexcept = default;
-    va_t(const va_t& other)            noexcept = default;
-    va_t(va_t&& other)                 noexcept = default;
-    va_t& operator=(const va_t& other) noexcept = default;
-    va_t& operator=(va_t&& other)      noexcept = default;
-    va_t(const void* va)               noexcept : value_{ uint64_t(va) } {              }
-    va_t(uint64_t va)                  noexcept : value_{ va } {                        }
+    static constexpr auto bits = 48;
+    static constexpr auto mask = (1ull << bits) - 1;
 
-    va_t& operator= (uint64_t other)   noexcept { value_ = other; return *this;         }
+    va_t()                              noexcept = default;
+    va_t(const va_t& other)             noexcept = default;
+    va_t(va_t&& other)                  noexcept = default;
+    va_t& operator=(const va_t& other)  noexcept = default;
+    va_t& operator=(va_t&& other)       noexcept = default;
+    va_t(const void* va)                noexcept : value_{ uint64_t(va) } {              }
+    va_t(uint64_t va)                   noexcept : value_{ va } {                        }
 
-    va_t  operator+ (va_t other) const noexcept { return va_t(value_ + other.value_);   }
-    va_t& operator+=(va_t other)       noexcept { value_ += other.value_; return *this; }
+    va_t& operator= (uint64_t other)    noexcept { value_ = other; return *this;         }
 
-    va_t  operator- (va_t other) const noexcept { return va_t(value_ - other.value_);   }
-    va_t& operator-=(va_t other)       noexcept { value_ -= other.value_; return *this; }
+    va_t  operator+ (va_t other)  const noexcept { return va_t(value_ + other.value_);   }
+    va_t& operator+=(va_t other)        noexcept { value_ += other.value_; return *this; }
 
-    va_t  operator| (va_t other) const noexcept { return va_t(value_ | other.value_);   }
-    va_t& operator|=(va_t other)       noexcept { value_ |= other.value_; return *this; }
+    va_t  operator- (va_t other)  const noexcept { return va_t(value_ - other.value_);   }
+    va_t& operator-=(va_t other)        noexcept { value_ -= other.value_; return *this; }
 
-    va_t  operator& (va_t other) const noexcept { return va_t(value_ & other.value_);   }
-    va_t& operator&=(va_t other)       noexcept { value_ &= other.value_; return *this; }
+    va_t  operator| (va_t other)  const noexcept { return va_t(value_ | other.value_);   }
+    va_t& operator|=(va_t other)        noexcept { value_ |= other.value_; return *this; }
 
-    bool  operator< (va_t other) const noexcept { return value_  < other.value_;        }
-    bool  operator<=(va_t other) const noexcept { return value_ <= other.value_;        }
-    bool  operator> (va_t other) const noexcept { return value_  > other.value_;        }
-    bool  operator>=(va_t other) const noexcept { return value_ >= other.value_;        }
-    bool  operator==(va_t other) const noexcept { return value_ == other.value_;        }
-    bool  operator!=(va_t other) const noexcept { return value_ != other.value_;        }
-    bool  operator! (          ) const noexcept { return !value_;                       }
+    va_t  operator& (va_t other)  const noexcept { return va_t(value_ & other.value_);   }
+    va_t& operator&=(va_t other)        noexcept { value_ &= other.value_; return *this; }
 
-    auto  value()                const noexcept { return value_;                        }
-    auto  ptr()                  const noexcept { return (const void*)(value_);         }
+    bool  operator< (va_t other)  const noexcept { return value_  < other.value_;        }
+    bool  operator<=(va_t other)  const noexcept { return value_ <= other.value_;        }
+    bool  operator> (va_t other)  const noexcept { return value_  > other.value_;        }
+    bool  operator>=(va_t other)  const noexcept { return value_ >= other.value_;        }
+    bool  operator==(va_t other)  const noexcept { return value_ == other.value_;        }
+    bool  operator!=(va_t other)  const noexcept { return value_ != other.value_;        }
+    bool  operator! (          )  const noexcept { return !value_;                       }
+
+    explicit operator bool()      const noexcept { return value_ != 0;                   }
+
+    auto  value()                 const noexcept { return value_;                        }
+    auto  ptr()                   const noexcept { return (const void*)(value_);         }
+
+    auto  canonical()             const noexcept { return va_t(value_ & mask);           }
+    bool  is_canonical()          const noexcept { return ((value_ >> bits) + 1) <= 1;   }
 
     uint64_t index(pml level) const noexcept
     {
