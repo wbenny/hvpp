@@ -1342,6 +1342,21 @@ HvppVmCall(
   _In_ ULONG_PTR R9
   );
 
+ULONG_PTR
+NTAPI
+HvppVmCallEx(
+  _In_ ULONG_PTR Rcx,
+  _In_ ULONG_PTR Rdx,
+  _In_ ULONG_PTR R8,
+  _In_ ULONG_PTR R9,
+  _In_ ULONG_PTR R10,
+  _In_ ULONG_PTR R11,
+  _In_ ULONG_PTR R12,
+  _In_ ULONG_PTR R13,
+  _In_ ULONG_PTR R14,
+  _In_ ULONG_PTR R15
+  );
+
 VOID
 NTAPI
 HvppInveptAll(

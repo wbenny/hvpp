@@ -425,6 +425,24 @@ HvppVmCall(
   return vmx::vmcall(Rcx, Rdx, R8, R9);
 }
 
+ULONG_PTR
+NTAPI
+HvppVmCallEx(
+  _In_ ULONG_PTR Rcx,
+  _In_ ULONG_PTR Rdx,
+  _In_ ULONG_PTR R8,
+  _In_ ULONG_PTR R9,
+  _In_ ULONG_PTR R10,
+  _In_ ULONG_PTR R11,
+  _In_ ULONG_PTR R12,
+  _In_ ULONG_PTR R13,
+  _In_ ULONG_PTR R14,
+  _In_ ULONG_PTR R15
+  )
+{
+  return vmx::vmcall_ex(Rcx, Rdx, R8, R9, R10, R11, R12, R13, R14, R15);
+}
+
 VOID
 NTAPI
 HvppInveptAll(

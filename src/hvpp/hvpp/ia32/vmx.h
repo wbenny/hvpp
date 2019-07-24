@@ -199,6 +199,61 @@ inline TResult vmcall(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3
   return r.as_value;
 }
 
+template <
+  typename TResult = uint64_t,
+  typename TArg1   = uint64_t,
+  typename TArg2   = uint64_t,
+  typename TArg3   = uint64_t,
+  typename TArg4   = uint64_t,
+  typename TArg5   = uint64_t,
+  typename TArg6   = uint64_t,
+  typename TArg7   = uint64_t,
+  typename TArg8   = uint64_t,
+  typename TArg9   = uint64_t,
+  typename TArg10  = uint64_t
+>
+inline TResult vmcall_ex(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3(), TArg4 r9 = TArg4(),
+                         TArg5 r10 = TArg5(), TArg6 r11 = TArg6(), TArg7 r12 = TArg7(), TArg8 r13 = TArg8(),
+                         TArg9 r14 = TArg9(), TArg10 r15 = TArg10()) noexcept
+{
+  detail::u64_t<TArg1>   a1{};
+  detail::u64_t<TArg2>   a2{};
+  detail::u64_t<TArg3>   a3{};
+  detail::u64_t<TArg4>   a4{};
+  detail::u64_t<TArg5>   a5{};
+  detail::u64_t<TArg6>   a6{};
+  detail::u64_t<TArg7>   a7{};
+  detail::u64_t<TArg8>   a8{};
+  detail::u64_t<TArg9>   a9{};
+  detail::u64_t<TArg10>  a10{};
+  detail::u64_t<TResult> r {};
+
+  a1.as_value = rcx;
+  a2.as_value = rdx;
+  a3.as_value = r8;
+  a4.as_value = r9;
+  a5.as_value = r10;
+  a6.as_value = r11;
+  a7.as_value = r12;
+  a8.as_value = r13;
+  a9.as_value = r14;
+  a10.as_value = r15;
+
+  r.as_uint64_t = ia32_asm_vmx_vmcall_ex(
+    a1.as_uint64_t,
+    a2.as_uint64_t,
+    a3.as_uint64_t,
+    a4.as_uint64_t,
+    a5.as_uint64_t,
+    a6.as_uint64_t,
+    a7.as_uint64_t,
+    a8.as_uint64_t,
+    a9.as_uint64_t,
+    a10.as_uint64_t);
+
+  return r.as_value;
+}
+
 inline error_code invept(invept_t type, invept_desc_t* descriptor = nullptr) noexcept
 {
   if (!descriptor)

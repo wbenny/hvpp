@@ -571,7 +571,7 @@ inline uint8_t ia32_asm_vmx_vmwrite(uint64_t vmcs_field, uint64_t value) noexcep
 }
 
 uint64_t ia32_asm_vmx_vmcall(uint64_t rcx, uint64_t rdx, uint64_t r8, uint64_t r9) noexcept;
-
+uint64_t ia32_asm_vmx_vmcall_ex(uint64_t rcx, uint64_t rdx, uint64_t r8, uint64_t r9, uint64_t r10, uint64_t r11, uint64_t r12, uint64_t r13, uint64_t r14, uint64_t r15) noexcept;
 
 void __vmx_vmptrst(unsigned __int64*);
 #pragma intrinsic(__vmx_vmptrst)
