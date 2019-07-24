@@ -1,4 +1,5 @@
 #pragma once
+#include "enum.h"
 #include "error.h"
 
 #include <cstdint>
@@ -35,29 +36,8 @@ namespace logger
     default_flags = print_time | print_processor_number /*| print_function_name*/,
   };
 
-  constexpr inline level_t operator&(level_t value1, level_t value2) noexcept
-  { return static_cast<level_t>(static_cast<uint32_t>(value1) & static_cast<uint32_t>(value2)); }
-
-  constexpr inline level_t operator|(level_t value1, level_t value2) noexcept
-  { return static_cast<level_t>(static_cast<uint32_t>(value1) | static_cast<uint32_t>(value2)); }
-
-  constexpr inline level_t& operator&=(level_t& value1, level_t value2) noexcept
-  { value1 = value1 & value2; return value1; }
-
-  constexpr inline level_t& operator|=(level_t& value1, level_t value2) noexcept
-  { value1 = value1 | value2; return value1; }
-
-  constexpr inline options_t operator&(options_t value1, options_t value2) noexcept
-  { return static_cast<options_t>(static_cast<uint32_t>(value1) & static_cast<uint32_t>(value2)); }
-
-  constexpr inline options_t operator|(options_t value1, options_t value2) noexcept
-  { return static_cast<options_t>(static_cast<uint32_t>(value1) | static_cast<uint32_t>(value2)); }
-
-  constexpr inline options_t& operator&=(options_t& value1, options_t value2) noexcept
-  { value1 = value1 & value2; return value1; }
-
-  constexpr inline options_t& operator|=(options_t& value1, options_t value2) noexcept
-  { value1 = value1 | value2; return value1; }
+  hvpp_enum_operators(level_t);
+  hvpp_enum_operators(options_t);
 
   namespace detail
   {

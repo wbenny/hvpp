@@ -338,6 +338,9 @@
     <ClInclude Include="hvpp\lib\mm\physical_memory_descriptor.h">
       <Filter>Header Files\hvpp\lib\mm</Filter>
     </ClInclude>
+    <ClInclude Include="hvpp\lib\enum.h">
+      <Filter>Header Files\hvpp\lib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="hvpp\ia32\context.asm">

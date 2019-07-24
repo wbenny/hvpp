@@ -140,6 +140,7 @@
     <ClInclude Include="hvpp\interrupt.h" />
     <ClInclude Include="hvpp\lib\debugger.h" />
     <ClInclude Include="hvpp\lib\device.h" />
+    <ClInclude Include="hvpp\lib\enum.h" />
     <ClInclude Include="hvpp\lib\ioctl.h" />
     <ClInclude Include="hvpp\config.h" />
     <ClInclude Include="hvpp\ept.h" />
