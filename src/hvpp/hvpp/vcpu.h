@@ -4,6 +4,7 @@
 
 #include "ia32/arch.h"
 
+#include "lib/deque.h"
 #include "lib/error.h"
 
 #include "lib/mm/memory_mapper.h"
@@ -61,18 +62,27 @@ class vcpu_t final
 
   public:
     //
-    // Make storage for up-to 16 pending interrupts.
+    // Pending interrupt queue (FIFO).
+    // Make storage for up-to 64 pending interrupts.
     // In practice I haven't seen more than 2 pending interrupts.
     //
-    static constexpr auto pending_interrupt_queue_size = 16;
+    using interrupt_queue_t = fixed_dequeue<interrupt_t, 64>;
+
+    enum interrupt_queue_type
+    {
+      interrupt_queue_external, // vmx::interrupt_type::external (0)
+      interrupt_queue_nmi,      // vmx::interrupt_type::nmi (2)
+
+      interrupt_queue_max
+    };
 
     auto interrupt_info() const noexcept -> interrupt_t;
     auto idt_vectoring_info() const noexcept -> interrupt_t;
 
-    bool interrupt_inject(interrupt_t interrupt, bool first = false) noexcept;
+    bool interrupt_inject(interrupt_t interrupt, bool front = false) noexcept;
     void interrupt_inject_force(interrupt_t interrupt) noexcept;
-    void interrupt_inject_pending() noexcept;
-    bool interrupt_is_pending() const noexcept;
+    void interrupt_inject_pending(interrupt_queue_type queue_type) noexcept;
+    bool interrupt_is_pending(interrupt_queue_type queue_type) const noexcept;
 
     auto exit_instruction_info_guest_va() const noexcept -> void*;
 
@@ -410,9 +420,7 @@ class vcpu_t final
     //
     // Pending interrupt queue (FIFO).
     //
-    interrupt_t           pending_interrupt_[pending_interrupt_queue_size];
-    uint8_t               pending_interrupt_first_;
-    uint8_t               pending_interrupt_count_;
+    interrupt_queue_t     pending_interrupt_queue_[interrupt_queue_max];
 
     bool                  suppress_rip_adjust_;
 };

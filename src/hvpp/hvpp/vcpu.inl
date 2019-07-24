@@ -36,77 +36,82 @@ auto vcpu_t::idt_vectoring_info() const noexcept -> interrupt_t
   return result;
 }
 
-bool vcpu_t::interrupt_inject(interrupt_t interrupt, bool first /*= false */) noexcept
+#define interrupt_type_to_queue_type(type)  (                         \
+    type == vmx::interrupt_type::external ? interrupt_queue_external  \
+  : type == vmx::interrupt_type::nmi      ? interrupt_queue_nmi       \
+  : vcpu_t::interrupt_queue_type(-1) /* error */                      \
+  )
+
+bool vcpu_t::interrupt_inject(interrupt_t interrupt, bool front /*= false */) noexcept
 {
-  //
-  // External interrupts cannot be injected into the
-  // guest if guest isn't interruptible (e.g.: guest
-  // is blocked by "mov ss", or EFLAGS.IF == 0).
-  //
+  bool interruptible = true;
+
   if (interrupt.type() == vmx::interrupt_type::external)
   {
-    bool interruptible = context().rflags.interrupt_enable_flag &&
-                         guest_interruptibility_state().flags;
-
-    if (!interruptible)
-    {
-      //
-      // Make sure there aren't too much pending interrupts.
-      // We don't want the queue to overflow.
-      //
-      hvpp_assert(pending_interrupt_count_ < pending_interrupt_queue_size);
-
-      if (first)
-      {
-        //
-        // Enqueue pending interrupt ("push_front").
-        //
-        pending_interrupt_first_ = !pending_interrupt_first_
-          ? pending_interrupt_queue_size - 1
-          : pending_interrupt_first_ - 1;
-
-        pending_interrupt_[pending_interrupt_first_] = interrupt;
-        pending_interrupt_count_ += 1;
-      }
-      else
-      {
-        //
-        // Enqueue pending interrupt ("push_back").
-        //
-        auto index = (pending_interrupt_first_ + pending_interrupt_count_) % pending_interrupt_queue_size;
-
-        pending_interrupt_[index] = interrupt;
-        pending_interrupt_count_ += 1;
-      }
-
-      //
-      // Enable Interrupt-window exiting.
-      //
-      auto procbased_ctls = processor_based_controls();
-      procbased_ctls.interrupt_window_exiting = true;
-      processor_based_controls(procbased_ctls);
-
-      //
-      // "false" signalizes that the interrupt hasn't been
-      // immediately injected.
-      //
-      return false;
-    }
+    //
+    // External interrupts cannot be injected into the
+    // guest if guest isn't interruptible (e.g.: guest
+    // is blocked by "mov ss", or EFLAGS.IF == 0).
+    //
+    interruptible = context().rflags.interrupt_enable_flag &&
+                    guest_interruptibility_state().flags;
+  }
+  else if (interrupt.type() == vmx::interrupt_type::nmi)
+  {
+    interruptible = !guest_interruptibility_state().blocking_by_nmi;
   }
 
-  //
-  // Inject interrupt immediately.
-  //
-  interrupt_inject_force(interrupt);
+  if (interruptible)
+  {
+    //
+    // Inject interrupt immediately.
+    //
+    interrupt_inject_force(interrupt);
+
+    //
+    // Signalize immediately injected interrupt.
+    //
+    return true;
+  }
+
+  auto  queue_type = interrupt_type_to_queue_type(interrupt.type());
+  auto& queue      = pending_interrupt_queue_[queue_type];
 
   //
-  // Signalize immediately injected interrupt.
+  // Enqueue pending interrupt.
   //
-  return true;
+  front
+    ? queue.push_front(std::move(interrupt))
+    : queue.push_back(std::move(interrupt));
+
+  //
+  // Enable Interrupt/NMI-window exiting.
+  //
+  auto procbased_ctls = processor_based_controls();
+
+  if (interrupt.type() == vmx::interrupt_type::external)
+  {
+    procbased_ctls.interrupt_window_exiting = true;
+  }
+  else if (interrupt.type() == vmx::interrupt_type::nmi)
+  {
+    procbased_ctls.nmi_window_exiting = true;
+  }
+
+  processor_based_controls(procbased_ctls);
+
+  //
+  // "false" signalizes that the interrupt hasn't been
+  // immediately injected.
+  //
+  return false;
 }
 
 void vcpu_t::interrupt_inject_force(interrupt_t interrupt) noexcept
 {
+  //
+  // Set ctrl_vmentry_interruption_info.
+  //
   entry_interruption_info(interrupt.info_);
 
   if (interrupt.valid())
@@ -200,35 +205,22 @@ void vcpu_t::interrupt_inject_force(interrupt_t interrupt) noexcept
   }
 }
 
-void vcpu_t::interrupt_inject_pending() noexcept
+void vcpu_t::interrupt_inject_pending(interrupt_queue_type queue_type) noexcept
 {
   //
-  // Make sure there is at least 1 pending interrupt.
+  // Dequeue and inject pending interrupt.
   //
-  hvpp_assert(
-    interrupt_is_pending()   &&
-    pending_interrupt_count_ <= pending_interrupt_queue_size
-  );
+  auto& queue = pending_interrupt_queue_[queue_type];
 
-  //
-  // Dequeue pending interrupt ("pop_front").
-  //
-  auto interrupt = pending_interrupt_[pending_interrupt_first_];
-
-  pending_interrupt_first_ += 1;
-  pending_interrupt_count_ -= 1;
-
-  if (!pending_interrupt_count_ || pending_interrupt_first_ == pending_interrupt_queue_size)
-  {
-    pending_interrupt_first_ = 0;
-  }
-
-  interrupt_inject_force(interrupt);
+  interrupt_inject_force(queue.front());
+  queue.pop_front();
 }
 
-bool vcpu_t::interrupt_is_pending() const noexcept
+bool vcpu_t::interrupt_is_pending(interrupt_queue_type queue_type) const noexcept
 {
-  return pending_interrupt_count_ > 0;
+  auto& queue = pending_interrupt_queue_[queue_type];
+
+  return queue.size() > 0;
 }
 
 auto vcpu_t::exit_instruction_info_guest_va() const noexcept -> void*

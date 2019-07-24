@@ -11,6 +11,13 @@ class interrupt_t final
     // Constructors.
     //
     constexpr
+    interrupt_t() noexcept  // TODO: make default-constructor private!
+      : info_{}
+      , error_code_{}
+      , rip_adjust_{}
+    { }
+
+    constexpr
     interrupt_t(
       vmx::interrupt_type interrupt_type,
       exception_vector exception_vector,
@@ -59,13 +66,6 @@ class interrupt_t final
 
   private:
     friend class vcpu_t;
-
-    constexpr
-    interrupt_t() noexcept
-      : info_{}
-      , error_code_{}
-      , rip_adjust_{}
-    { }
 
     constexpr
     interrupt_t(

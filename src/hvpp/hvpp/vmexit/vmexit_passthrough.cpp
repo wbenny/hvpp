@@ -99,19 +99,19 @@ void vmexit_passthrough_handler::handle_interrupt_window(vcpu_t& vp) noexcept
   //
   // Make sure there is an interrupt pending.
   //
-  hvpp_assert(vp.interrupt_is_pending());
+  hvpp_assert(vp.interrupt_is_pending(vcpu_t::interrupt_queue_external));
 
   //
   // Guest is in the interruptible state.
   // Dequeue one pending interrupt from the queue
   // and inject it.
   //
-  vp.interrupt_inject_pending();
+  vp.interrupt_inject_pending(vcpu_t::interrupt_queue_external);
 
   //
   // If queue is empty, disable Interrupt-window exiting.
   //
-  if (!vp.interrupt_is_pending())
+  if (!vp.interrupt_is_pending(vcpu_t::interrupt_queue_external))
   {
     auto procbased_ctls = vp.processor_based_controls();
     procbased_ctls.interrupt_window_exiting = false;
