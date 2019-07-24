@@ -449,6 +449,21 @@ auto vcpu_t::guest_write_memory(va_t guest_va, const void* buffer, size_t size, 
   return translator_.write(guest_va, ::detail::kernel_cr3(guest_cr3()), buffer, size, ignore_errors);
 }
 
+auto vcpu_t::tsc_entry() const noexcept -> uint64_t
+{
+  return tsc_entry_;
+}
+
+auto vcpu_t::tsc_delta_previous() const noexcept -> uint64_t
+{
+  return tsc_delta_previous_;
+}
+
+auto vcpu_t::tsc_delta_sum() const noexcept -> uint64_t
+{
+  return tsc_delta_sum_;
+}
+
 //
 // Private
 //
@@ -748,6 +763,8 @@ void vcpu_t::entry_host() noexcept
   hvpp_assert(state_ == state::running ||
               state_ == state::terminating);
 
+  tsc_entry_ = ia32_asm_read_tsc();
+
   //
   // Reset RIP-adjust flag.
   //
@@ -840,6 +857,9 @@ void vcpu_t::entry_host() noexcept
 
 exit:
   ia32_asm_fx_restore(&fxsave_area_);
+
+  tsc_delta_previous_ = ia32_asm_read_tsc() - tsc_entry_;
+  tsc_delta_sum_ += tsc_delta_previous_;
 }
 
 void vcpu_t::entry_guest() noexcept

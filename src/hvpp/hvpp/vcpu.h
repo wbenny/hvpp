@@ -51,6 +51,10 @@ class vcpu_t final
     auto guest_read_memory(va_t guest_va, void* buffer, size_t size, bool ignore_errors = false) noexcept -> va_t;
     auto guest_write_memory(va_t guest_va, const void* buffer, size_t size, bool ignore_errors = false) noexcept -> va_t;
 
+    auto tsc_entry() const noexcept -> uint64_t;
+    auto tsc_delta_previous() const noexcept -> uint64_t;
+    auto tsc_delta_sum() const noexcept -> uint64_t;
+
     //
     // VMCS manipulation. Implementation is in vcpu.inl.
     //
@@ -399,6 +403,9 @@ class vcpu_t final
     mm::memory_mapper     mapper_;
     mm::memory_translator translator_;
 
+    uint64_t              tsc_entry_;
+    uint64_t              tsc_delta_previous_;
+    uint64_t              tsc_delta_sum_;
 
     //
     // Pending interrupt queue (FIFO).
