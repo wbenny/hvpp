@@ -330,9 +330,11 @@ class vcpu_t final
         {
           uint8_t         dummy[size
                                 - sizeof(shadow_space_t)
-                                - sizeof(machine_frame_t)];
+                                - sizeof(machine_frame_t)
+                                - sizeof(uint64_t)];
           shadow_space_t  shadow_space;
           machine_frame_t machine_frame;
+          uint64_t        unused;
         };
       };
     };

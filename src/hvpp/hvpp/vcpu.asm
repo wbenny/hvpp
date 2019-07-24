@@ -23,6 +23,14 @@
 INCLUDE ksamd64.inc
 INCLUDE ia32/common.inc
 
+    machine_frame_t struct
+        $rip    dq ?
+        $cs     dq ?
+        $eflags dq ?
+        $rsp    dq ?
+        $ss     dq ?
+    machine_frame_t ends
+
 .CODE
 
 ;
@@ -172,25 +180,23 @@ INCLUDE ia32/common.inc
 ;   nt!KiSystemCall64(Shadow) work in similar way.
 ;
 ; Note2:
-;   Correct values of RIP and RSP fields are set in the
-;   vcpu_t::entry_host() method (vcpu.cpp).
+;   We set dummy values here.  Correct values of RIP and RSP fields
+;   are set in the vcpu_t::entry_host() method (vcpu.cpp).
 ;
 ; See: https://docs.microsoft.com/en-us/cpp/build/struct-unwind-code
 ;
-        push    KGDT64_R3_DATA or RPL_MASK  ; push dummy SS selector
-        push    2                           ; push dummy RSP
-        push    3                           ; push dummy EFLAGS
-        push    KGDT64_R3_CODE or RPL_MASK  ; push dummy CS selector
-        push    5                           ; push dummy RIP
+
+        sub     rsp, 8 + sizeof machine_frame_t
+        mov     machine_frame_t.$ss[rsp],     KGDT64_R3_DATA or RPL_MASK
+        mov     machine_frame_t.$rsp[rsp],    2
+        mov     machine_frame_t.$eflags[rsp], 3
+        mov     machine_frame_t.$cs[rsp],     KGDT64_R3_CODE or RPL_MASK
+        mov     machine_frame_t.$rip[rsp],    5
 
         .pushframe
 
 ;
 ; Create shadow space.
-;
-; The "+ 8" part is just to align RSP to 16 bytes, otherwise
-; XMM operations might fail - especially in optimized builds,
-; where they are used most.
 ;
 ; The .allocstack directive will tell the compiler to emit
 ; UWOP_ALLOC_SMALL opcode into the unwind information of the
@@ -204,8 +210,8 @@ INCLUDE ia32/common.inc
 ; to look for return addresses or stack pointers (RIP/RSP).
 ;
 
-        sub     rsp, SHADOW_SPACE + 8
-        .allocstack  SHADOW_SPACE + 8
+        sub     rsp, SHADOW_SPACE
+        .allocstack  SHADOW_SPACE
 
 ;
 ; Finally, issue the .endprolog directive.

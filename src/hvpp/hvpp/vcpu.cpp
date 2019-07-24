@@ -91,6 +91,31 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
     static_assert(VCPU_RSP + VCPU_OFFSET                == offsetof(vcpu_t, stack_));
     static_assert(VCPU_RSP + VCPU_LAUNCH_CONTEXT_OFFSET == offsetof(vcpu_t, guest_context_));
     static_assert(VCPU_RSP + VCPU_EXIT_CONTEXT_OFFSET   == offsetof(vcpu_t, exit_context_));
+
+    //
+    // The Windows x64 ABI assumes that each function is called with 16-byte
+    // alignment.  If this promise is broken, we can experience bugchecks,
+    // e.g.: XMM operations will fail - especially in optimized builds, where
+    // they are used the most.
+    //
+    // For example, if "movdqa" (move ALIGNED double qword) instruction
+    // operate on non-16 byte aligned stack, the CPU throws #GP.
+    // The NT kernel is clever and it patches such instruction to "movdqu"
+    // (move UNALIGNED double qword) in the exception handler.
+    // The real problem is that the stack is also checked in the exception
+    // handler.  And because the VMX-root mode operates with "ivalid stack"
+    // (from NT's point of view), the NT will throw bugcheck 0x1CE
+    // (INVALID_KERNEL_STACK_ADDRESS).
+    //
+    // When CPU reaches the vcpu_t::entry_host() method, the RSP will point
+    // to the firt byte of "stack_.shadow_space".  Because stack "grows"
+    // from top to bottom, the effective stack of the vcpu_t::entry_host()
+    // function is the "stack_t::dummy" array, and begins at its last byte,
+    // located at (stack_t::data + sizeof(stack_t::dummy)).
+    //
+    // Therefore, we need to ensure that "stack_t::dummy" is 16-byte aligned.
+    //
+    static_assert(sizeof(vcpu_t::stack_t::dummy) % 16 == 0);
   };
 }
 
