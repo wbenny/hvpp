@@ -90,7 +90,7 @@ class bitmap_local
   : public bitmap
 {
   public:
-    bitmap_local() : bitmap{ buffer_, SIZE_IN_BITS } { }
+    bitmap_local() : bitmap{ buffer_, SIZE_IN_BITS }, buffer_{} { }
     bitmap_local(const bitmap_local& other) noexcept = delete;
     bitmap_local(bitmap_local&& other) noexcept = default;
     bitmap_local& operator=(const bitmap_local& other) noexcept = delete;
