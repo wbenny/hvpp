@@ -150,6 +150,9 @@
     <ClCompile Include="hvpp\lib\mm\memory_mapper.cpp">
       <Filter>Source Files\hvpp\lib\mm</Filter>
     </ClCompile>
+    <ClCompile Include="hvpp\lib\mm\memory_translator.cpp">
+      <Filter>Source Files\hvpp\lib\mm</Filter>
+    </ClCompile>
     <ClCompile Include="hvpp\lib\mm\win32\memory_mapper.cpp">
       <Filter>Source Files\hvpp\lib\mm\win32</Filter>
     </ClCompile>
@@ -321,6 +324,9 @@
       <Filter>Header Files\hvpp</Filter>
     </ClInclude>
     <ClInclude Include="hvpp\lib\mm\memory_mapper.h">
+      <Filter>Header Files\hvpp\lib\mm</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\lib\mm\memory_translator.h">
       <Filter>Header Files\hvpp\lib\mm</Filter>
     </ClInclude>
     <ClInclude Include="hvpp\lib\mm\mtrr_descriptor.h">
