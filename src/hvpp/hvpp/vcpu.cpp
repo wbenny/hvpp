@@ -582,8 +582,16 @@ auto vcpu_t::setup_host() noexcept -> error_code_t
   host_ss(segment_t{ gdtr, read<ss_t>() });
   host_tr(segment_t{ gdtr, read<tr_t>() });
 
+  //
+  // Notice how we're setting "system_cr3" as HOST_CR3.
+  //
+  // Because current function can be called in context of any process (which
+  // can die at any time), we can't use current CR3 for the hypervisor.
+  // We MUST use such CR3 that will live long enough - which is "System"
+  // process.
+  //
   host_cr0(read<cr0_t>());
-  host_cr3(read<cr3_t>());
+  host_cr3(mm::paging_descriptor().system_cr3());
   host_cr4(read<cr4_t>());
 
   //
