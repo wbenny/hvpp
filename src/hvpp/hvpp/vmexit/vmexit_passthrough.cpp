@@ -4,6 +4,7 @@
 #include "hvpp/vcpu.h"
 
 #include "hvpp/lib/assert.h"
+#include "hvpp/lib/log.h"
 #include "hvpp/lib/cr3_guard.h"
 #include "hvpp/lib/debugger.h"
 
@@ -1080,15 +1081,38 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
       {
         case exception_vector::invalid_opcode:
         {
-          cr3_guard _{ vp.guest_cr3() };
+          //
+          // 3 bytes are enough to hold either `syscall' or `sysret'
+          // instruction opcode.
+          //
+          uint8_t buffer[3];
 
-          if (detail::is_syscall_instruction(vp.context().rip_as_pointer))
+          auto instruction_length = static_cast<size_t>(vp.exit_instruction_length());
+          auto read_size = std::max(instruction_length, sizeof(buffer));
+
+          if (auto err_va = vp.guest_read_memory(vp.context().rip, buffer, read_size))
+          {
+            hvpp_trace("handle_interrupt (invalid_opcode) - read_guest_memory(%p, %u) failed, injecting #PF",
+                       vp.context().rip,
+                       instruction_length);
+
+            write<cr2_t>({ err_va.value() });
+            vp.interrupt_inject(interrupt::page_fault);
+            vp.suppress_rip_adjust();
+
+            return;
+          }
+
+          //
+          // Compare copied memory to `syscall' & `sysret' instructions.
+          //
+          if (detail::is_syscall_instruction(buffer))
           {
             handle_emulate_syscall(vp);
             vp.suppress_rip_adjust();
             return;
           }
-          else if (detail::is_sysret_instruction(vp.context().rip_as_pointer))
+          else if (detail::is_sysret_instruction(buffer))
           {
             handle_emulate_sysret(vp);
             vp.suppress_rip_adjust();

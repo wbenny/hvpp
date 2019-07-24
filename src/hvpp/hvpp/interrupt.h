@@ -128,6 +128,13 @@ namespace interrupt
         exception_vector::general_protection,
         exception_error_code_t{}
       };
+
+    static constexpr auto page_fault =
+      interrupt_t {
+        vmx::interrupt_type::hardware_exception,
+        exception_vector::page_fault,
+        exception_error_code_t{}
+      };
 }
 
 }
