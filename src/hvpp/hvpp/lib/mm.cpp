@@ -114,7 +114,7 @@ namespace mm
       allocator_item = system_allocator;
     }
 
-    return error_code_t{};
+    return {};
   }
 
   void destroy() noexcept
@@ -292,7 +292,7 @@ namespace mm
     global.allocated_bytes = 0;
     global.free_bytes = size;
 
-    return error_code_t{};
+    return {};
   }
 
   auto allocate(size_t size) noexcept -> void*

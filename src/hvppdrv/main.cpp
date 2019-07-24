@@ -89,7 +89,7 @@ namespace driver
     hvpp_info("Hypervisor started, current free memory: %" PRIu64 " MB",
                mm::free_bytes() / 1024 / 1024);
 
-    return error_code_t{};
+    return {};
   }
 
   void destroy() noexcept

@@ -131,7 +131,7 @@ namespace hvpp::hypervisor
     //
     global.running = true;
 
-    return error_code_t{};
+    return {};
   }
 
   void stop() noexcept

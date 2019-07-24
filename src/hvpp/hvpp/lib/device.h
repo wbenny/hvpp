@@ -34,19 +34,19 @@ class device
     //
 
     virtual error_code_t on_create() noexcept
-    { return error_code_t{}; }
+    { return {}; }
 
     virtual error_code_t on_close() noexcept
-    { return error_code_t{}; }
+    { return {}; }
 
     virtual error_code_t on_read(void* buffer, size_t buffer_size, size_t& bytes_read) noexcept
-    { (void)(buffer); (void)(buffer_size); (void)(bytes_read); return error_code_t{}; }
+    { (void)(buffer); (void)(buffer_size); (void)(bytes_read); return {}; }
 
     virtual error_code_t on_write(void* buffer, size_t buffer_size, size_t& bytes_written) noexcept
-    { (void)(buffer); (void)(buffer_size); (void)(bytes_written); return error_code_t{}; }
+    { (void)(buffer); (void)(buffer_size); (void)(bytes_written); return {}; }
 
     virtual error_code_t on_ioctl(void* buffer, size_t buffer_size, uint32_t code) noexcept
-    { (void)(buffer); (void)(buffer_size); (void)(code); return error_code_t{}; }
+    { (void)(buffer); (void)(buffer_size); (void)(code); return {}; }
 
     static error_code_t copy_from_user(void* buffer_to, const void* buffer_from, size_t length) noexcept;
     static error_code_t copy_to_user(void* buffer_to, const void* buffer_from, size_t length) noexcept;

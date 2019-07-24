@@ -163,7 +163,7 @@ auto vcpu_t::start() noexcept -> error_code_t
       // This means that guest is running properly.
       //
       state_ = state::running;
-      return error_code_t{};
+      return {};
 
     default:
       //
@@ -227,7 +227,7 @@ auto vcpu_t::vmx_enter() noexcept -> error_code_t
 
   handler_.setup(*this);
 
-  return error_code_t{};
+  return {};
 }
 
 void vcpu_t::vmx_leave() noexcept
@@ -494,7 +494,7 @@ auto vcpu_t::load_vmxon() noexcept -> error_code_t
   //
   vmx::invept_all_contexts();
 
-  return error_code_t{};
+  return {};
 }
 
 auto vcpu_t::load_vmcs() noexcept -> error_code_t
@@ -514,7 +514,7 @@ auto vcpu_t::load_vmcs() noexcept -> error_code_t
     return make_error_code_t(std::errc::permission_denied);
   }
 
-  return error_code_t{};
+  return {};
 }
 
 auto vcpu_t::setup_host() noexcept -> error_code_t
@@ -572,7 +572,7 @@ auto vcpu_t::setup_host() noexcept -> error_code_t
   host_rsp(reinterpret_cast<uint64_t>(std::end(stack_.data)));
   host_rip(reinterpret_cast<uint64_t>(&vcpu_t::entry_host_));
 
-  return error_code_t{};
+  return {};
 }
 
 auto vcpu_t::setup_guest() noexcept -> error_code_t
@@ -682,7 +682,7 @@ auto vcpu_t::setup_guest() noexcept -> error_code_t
   guest_rsp(reinterpret_cast<uint64_t>(std::end(stack_.data)));
   guest_rip(reinterpret_cast<uint64_t>(&vcpu_t::entry_guest_));
 
-  return error_code_t{};
+  return {};
 }
 
 void vcpu_t::entry_host() noexcept

@@ -52,7 +52,7 @@ namespace logger::detail
       return make_error_code_t(std::errc::not_enough_memory);
     }
 
-    return error_code_t{};
+    return {};
   }
 
   void destroy() noexcept

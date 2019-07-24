@@ -178,7 +178,7 @@ error_code_t device::copy_from_user(void* buffer_to, const void* buffer_from, si
     return make_error_code_t(std::errc::bad_address);
   }
 
-  return error_code_t{};
+  return {};
 }
 
 error_code_t device::copy_to_user(void* buffer_to, const void* buffer_from, size_t length) noexcept
@@ -193,5 +193,5 @@ error_code_t device::copy_to_user(void* buffer_to, const void* buffer_from, size
     return make_error_code_t(std::errc::bad_address);
   }
 
-  return error_code_t{};
+  return {};
 }
