@@ -66,8 +66,9 @@ namespace mm
 
     allocator_t allocator[HVPP_MAX_CPU];
 
-    object_t<ia32::physical_memory_descriptor> memory_descriptor;
-    object_t<ia32::mtrr> memory_type_range_registers;
+    object_t<physical_memory_descriptor_t> physical_memory_descriptor;
+    object_t<mtrr_descriptor_t> mtrr_descriptor;
+
     object_t<spinlock> lock;
   };
 
@@ -98,8 +99,8 @@ namespace mm
     //
     // Initialize physical memory descriptor and MTRRs.
     //
-    global.memory_descriptor.initialize();
-    global.memory_type_range_registers.initialize();
+    global.physical_memory_descriptor.initialize();
+    global.mtrr_descriptor.initialize();
 
     //
     // Initialize lock.
@@ -124,8 +125,8 @@ namespace mm
     // Note that this method doesn't acquire the lock and
     // assumes all allocations has been already freed.
     //
-    global.memory_type_range_registers.destroy();
-    global.memory_descriptor.destroy();
+    global.mtrr_descriptor.destroy();
+    global.physical_memory_descriptor.destroy();
     global.lock.destroy();
 
     //
@@ -179,7 +180,7 @@ namespace mm
 
   auto assign(void* address, size_t size) noexcept -> error_code_t
   {
-    if (size < ia32::page_size * 3)
+    if (size < page_size * 3)
     {
       //
       // We need at least 3 pages (see explanation below).
@@ -192,11 +193,11 @@ namespace mm
     // If the provided address is not page aligned, align it
     // to the next page.
     //
-    if (ia32::byte_offset(address) != 0)
+    if (byte_offset(address) != 0)
     {
-      const auto lost_bytes = ia32::byte_offset(address);
+      const auto lost_bytes = byte_offset(address);
 
-      address = reinterpret_cast<uint8_t*>(ia32::page_align(address)) + ia32::page_size;
+      address = reinterpret_cast<uint8_t*>(page_align(address)) + page_size;
 
       //
       // Subtract amount of "lost" bytes due to alignment.
@@ -207,12 +208,12 @@ namespace mm
     //
     // Align size to the page boundary.
     //
-    size = ia32::page_align(size);
+    size = page_align(size);
 
     //
     // Check again.
     //
-    if (size < ia32::page_size * 3)
+    if (size < page_size * 3)
     {
       hvpp_assert(0);
       return make_error_code_t(std::errc::invalid_argument);
@@ -245,17 +246,17 @@ namespace mm
     // Construct the page bitmap.
     //
     uint8_t* page_bitmap_buffer = reinterpret_cast<uint8_t*>(address);
-    global.page_bitmap_buffer_size = static_cast<int>(ia32::round_to_pages(size / ia32::page_size / 8));
+    global.page_bitmap_buffer_size = static_cast<int>(round_to_pages(size / page_size / 8));
     memset(page_bitmap_buffer, 0, global.page_bitmap_buffer_size);
 
-    int page_bitmap_size_in_bits = static_cast<int>(size / ia32::page_size);
+    int page_bitmap_size_in_bits = static_cast<int>(size / page_size);
     global.page_bitmap.initialize(page_bitmap_buffer, page_bitmap_size_in_bits);
 
     //
     // Construct the page allocation map.
     //
     global.page_allocation_map = reinterpret_cast<pgmap_t*>(page_bitmap_buffer + global.page_bitmap_buffer_size);
-    global.page_allocation_map_size = static_cast<int>(ia32::round_to_pages(size / ia32::page_size) * sizeof(pgmap_t));
+    global.page_allocation_map_size = static_cast<int>(round_to_pages(size / page_size) * sizeof(pgmap_t));
     memset(global.page_allocation_map, 0, global.page_allocation_map_size);
 
     //
@@ -308,7 +309,7 @@ namespace mm
       size = 1;
     }
 
-    int page_count = static_cast<int>(ia32::bytes_to_pages(size));
+    int page_count = static_cast<int>(bytes_to_pages(size));
 
     //
     // Check if the desired number of pages can fit into the
@@ -348,8 +349,8 @@ namespace mm
       previous_page_offset = global.last_page_offset;
       global.last_page_offset += page_count;
 
-      global.allocated_bytes += page_count * ia32::page_size;
-      global.free_bytes      -= page_count * ia32::page_size;
+      global.allocated_bytes += page_count * page_size;
+      global.free_bytes      -= page_count * page_size;
     }
 
     //
@@ -358,7 +359,7 @@ namespace mm
     // everything neccessary has been done (bitmap + page allocation map
     // manipulation).
     //
-    return global.base_address + previous_page_offset * ia32::page_size;
+    return global.base_address + previous_page_offset * page_size;
   }
 
   void free(void* address) noexcept
@@ -366,9 +367,9 @@ namespace mm
     //
     // Our allocator always provides page-aligned memory.
     //
-    hvpp_assert(ia32::byte_offset(address) == 0);
+    hvpp_assert(byte_offset(address) == 0);
 
-    const auto offset = static_cast<int>(ia32::bytes_to_pages(reinterpret_cast<uint8_t*>(address) - global.base_address));
+    const auto offset = static_cast<int>(bytes_to_pages(reinterpret_cast<uint8_t*>(address) - global.base_address));
 
     if (address == nullptr)
     {
@@ -379,7 +380,7 @@ namespace mm
       return;
     }
 
-    if (size_t(offset) * ia32::page_size > global.available_size)
+    if (size_t(offset) * page_size > global.available_size)
     {
       //
       // We don't own this memory.
@@ -410,8 +411,8 @@ namespace mm
     //
     global.page_bitmap->clear(offset, page_count);
 
-    global.allocated_bytes -= page_count * ia32::page_size;
-    global.free_bytes      += page_count * ia32::page_size;
+    global.allocated_bytes -= page_count * page_size;
+    global.free_bytes      += page_count * page_size;
   }
 
   auto system_allocate(size_t size) noexcept -> void*
@@ -444,14 +445,14 @@ namespace mm
     global.allocator[mp::cpu_index()] = new_allocator;
   }
 
-  auto physical_memory_descriptor() noexcept -> const ia32::physical_memory_descriptor&
+  auto physical_memory_descriptor() noexcept -> const physical_memory_descriptor_t&
   {
-    return *global.memory_descriptor;
+    return *global.physical_memory_descriptor;
   }
 
-  auto mtrr() noexcept -> const ia32::mtrr&
+  auto mtrr_descriptor() noexcept -> const mtrr_descriptor_t&
   {
-    return *global.memory_type_range_registers;
+    return *global.mtrr_descriptor;
   }
 }
 

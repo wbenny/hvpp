@@ -378,8 +378,8 @@ template <
     )
   >
 >
-constexpr inline uint32_t byte_offset(T va, PAGE_DESCRIPTOR) noexcept
-{ return (uint32_t)(uintptr_t(va) & ~PAGE_DESCRIPTOR::mask); }
+constexpr inline uint64_t byte_offset(T va, PAGE_DESCRIPTOR) noexcept
+{ return (uint64_t)(uintptr_t(va) & ~PAGE_DESCRIPTOR::mask); }
 
 //
 // Return how many pages are needed to cover specified size.
@@ -422,7 +422,7 @@ constexpr inline T page_align_up(T va) noexcept
 { return page_align_up(va, pt_t{}); }
 
 template <typename T>
-constexpr inline uint32_t byte_offset(T va) noexcept
+constexpr inline uint64_t byte_offset(T va) noexcept
 { return byte_offset(va, pt_t{}); }
 
 template <typename T>

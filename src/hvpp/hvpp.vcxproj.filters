@@ -67,6 +67,15 @@
     <Filter Include="Header Files\hvpp\lib\vmware">
       <UniqueIdentifier>{b199f4fb-0f50-4a62-b44d-f80541e9b91a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\hvpp\lib\mm">
+      <UniqueIdentifier>{8e3b0296-08e1-46b7-83f6-555347ca5fe9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\hvpp\lib\mm">
+      <UniqueIdentifier>{48924d45-28d4-4be4-96bc-ef93b3095d01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\hvpp\lib\mm\win32">
+      <UniqueIdentifier>{c53a048f-d7da-48c6-88a5-fa1ed9bfc1ed}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hvpp\lib\mm.cpp">
@@ -138,6 +147,15 @@
     <ClCompile Include="hvpp\ia32\memory.cpp">
       <Filter>Source Files\hvpp\ia32</Filter>
     </ClCompile>
+    <ClCompile Include="hvpp\lib\mm\memory_mapper.cpp">
+      <Filter>Source Files\hvpp\lib\mm</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\lib\mm\win32\memory_mapper.cpp">
+      <Filter>Source Files\hvpp\lib\mm\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\lib\mm\win32\physical_memory_descriptor.cpp">
+      <Filter>Source Files\hvpp\lib\mm\win32</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hvpp\lib\bitmap.h">
@@ -156,9 +174,6 @@
       <Filter>Header Files\hvpp\ia32</Filter>
     </ClInclude>
     <ClInclude Include="hvpp\ia32\msr.h">
-      <Filter>Header Files\hvpp\ia32</Filter>
-    </ClInclude>
-    <ClInclude Include="hvpp\ia32\mtrr.h">
       <Filter>Header Files\hvpp\ia32</Filter>
     </ClInclude>
     <ClInclude Include="hvpp\ia32\vmx.h">
@@ -301,6 +316,15 @@
     </ClInclude>
     <ClInclude Include="hvpp\interrupt.h">
       <Filter>Header Files\hvpp</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\lib\mm\memory_mapper.h">
+      <Filter>Header Files\hvpp\lib\mm</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\lib\mm\mtrr_descriptor.h">
+      <Filter>Header Files\hvpp\lib\mm</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\lib\mm\physical_memory_descriptor.h">
+      <Filter>Header Files\hvpp\lib\mm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

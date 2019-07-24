@@ -1,10 +1,10 @@
 #pragma once
-#include "hvpp/lib/log.h"
 #include "paging.h"
 #include "arch.h"
 
 #include <cstddef>      // std::byte
 #include <cstdint>
+#include <cinttypes>
 #include <numeric>
 #include <type_traits>
 
@@ -26,18 +26,13 @@ static constexpr auto page_mask  = page_size - 1;
 
 class pa_t;
 class va_t;
-class mapping_t;
+class memory_range;
 class physical_memory_range;
-class physical_memory_descriptor;
 
 namespace detail
 {
   uint64_t pa_from_va(const void* va) noexcept;
-  uint64_t pa_from_va(const void* va, cr3_t cr3) noexcept;
   void*    va_from_pa(uint64_t pa) noexcept;
-  void*    mapping_allocate(size_t size) noexcept;
-  void     mapping_free(void* va) noexcept;
-  void     check_physical_memory(physical_memory_range* range_list, int range_list_size, int& count) noexcept;
 }
 
 //
@@ -53,8 +48,6 @@ class pa_t
 
     static pa_t from_pfn(uint64_t pfn)  noexcept { return pa_t(pfn << page_shift);       }
     static pa_t from_va(const void* va) noexcept { return pa_t(detail::pa_from_va(va));  }
-    static pa_t from_va(const void* va,
-                        cr3_t cr3)      noexcept { return pa_t(detail::pa_from_va(va, cr3)); }
 
     //
     // ctor/operators
@@ -161,38 +154,10 @@ class va_t
       return static_cast<int>(result);
     }
 
-    pe_t* pt_entry(cr3_t cr3 = read<cr3_t>(), pml level = pml::pt) const noexcept;
+    pe_t* pt_entry(pml level = pml::pt) const noexcept;
 
   private:
     uint64_t value_;
-};
-
-//
-// Mapping
-//
-
-class mapping_t
-{
-  public:
-    mapping_t() noexcept;
-    ~mapping_t() noexcept;
-
-    mapping_t(const mapping_t& other) noexcept = delete;
-    mapping_t(mapping_t&& other) noexcept = delete;
-    mapping_t& operator=(const mapping_t& other) noexcept = delete;
-    mapping_t& operator=(mapping_t&& other) noexcept = delete;
-
-    void* map(pa_t pa) noexcept;
-    void  unmap() noexcept;
-
-    void  read(pa_t pa, void* buffer, size_t size) noexcept;
-    void  write(pa_t pa, const void* buffer, size_t size) noexcept;
-
-  private:
-    void  read_write(pa_t pa, void* buffer, size_t size, bool write) noexcept;
-
-    void* va_;
-    pe_t* pte_;
 };
 
 //
@@ -301,55 +266,6 @@ class physical_memory_range
   private:
     pa_t begin_;
     pa_t end_;
-};
-
-//
-// Class for receiving physical memory ranges which are backed up
-// by actual physical memory.
-//
-
-class physical_memory_descriptor
-{
-  public:
-    static constexpr int max_range_count = 32;
-
-    physical_memory_descriptor() noexcept { check_physical_memory(); }
-    physical_memory_descriptor(const physical_memory_descriptor& other) noexcept = delete;
-    physical_memory_descriptor(physical_memory_descriptor&& other) noexcept = delete;
-    physical_memory_descriptor& operator=(const physical_memory_descriptor& other) noexcept = delete;
-    physical_memory_descriptor& operator=(physical_memory_descriptor&& other) noexcept = delete;
-
-    auto begin() const noexcept { return const_cast<const physical_memory_range*>(&range_[0]); }
-    auto end()   const noexcept { return const_cast<const physical_memory_range*>(&range_[count_]); }
-    auto size()  const noexcept { return static_cast<size_t>(count_); }
-
-    auto total_physical_memory_size() const noexcept
-    {
-      return std::accumulate(begin(), end(), size_t(0), [](auto sum, auto next) {
-        return sum + next.size();
-      });
-    }
-
-    void dump() const noexcept
-    {
-      hvpp_info("Physical memory ranges (%i)", count_);
-
-      for (int i = 0; i < count_; ++i)
-      {
-        hvpp_info(
-          "  %3i)    [%p - %p] (%8u kb)", i,
-          range_[i].begin().value(),
-          range_[i].end().value(),
-          range_[i].size() / 1024);
-      }
-    }
-
-  private:
-    void check_physical_memory() noexcept
-    { detail::check_physical_memory(range_, max_range_count, count_); }
-
-    physical_memory_range range_[max_range_count];
-    int                   count_ = 0;
 };
 
 constexpr inline const char* memory_type_to_string(memory_type type) noexcept

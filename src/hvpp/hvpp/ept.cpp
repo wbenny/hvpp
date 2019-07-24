@@ -28,7 +28,7 @@ ept_t::ept_t() noexcept
   // Initialize EPT pointer.
   // It's not really JUST pointer, but Intel Manual calls it this way.
   //
-  eptptr_.memory_type = static_cast<uint64_t>(mm::mtrr().type(empl4_pa));
+  eptptr_.memory_type = static_cast<uint64_t>(mm::mtrr_descriptor().type(empl4_pa));
   eptptr_.page_walk_length = ept_ptr_t::page_walk_length_4;
   eptptr_.page_frame_number = empl4_pa.pfn();
 }
@@ -399,7 +399,7 @@ epte_t* ept_t::map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt,
 
   if (level == pml::pdpt)
   {
-    pdpte->update(host_pa, mm::mtrr().type(guest_pa), true, access);
+    pdpte->update(host_pa, mm::mtrr_descriptor().type(guest_pa), true, access);
     return pdpte;
   }
 
@@ -414,7 +414,7 @@ epte_t* ept_t::map_pd(pa_t guest_pa, pa_t host_pa, epte_t* pd,
 
   if (level == pml::pd)
   {
-    pde->update(host_pa, mm::mtrr().type(guest_pa), true, access);
+    pde->update(host_pa, mm::mtrr_descriptor().type(guest_pa), true, access);
     return pde;
   }
 
@@ -430,7 +430,7 @@ epte_t* ept_t::map_pt(pa_t guest_pa, pa_t host_pa, epte_t* pt,
   (void)(level);
   hvpp_assert(level == pml::pt);
   {
-    pte->update(host_pa, mm::mtrr().type(guest_pa), access);
+    pte->update(host_pa, mm::mtrr_descriptor().type(guest_pa), access);
     return pte;
   }
 }

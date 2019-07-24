@@ -49,7 +49,7 @@ namespace driver::common
     //
     // Print memory information to the debugger.
     //
-    mm::mtrr().dump();
+    mm::mtrr_descriptor().dump();
     mm::physical_memory_descriptor().dump();
 
     //
