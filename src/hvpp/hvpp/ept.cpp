@@ -172,9 +172,9 @@ epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
   // Start at PML4 and traverse down the paging hierarchy.
   // Returns nullptr for unmapped (non-present) physical addresses.
   //
-  const auto pml4e = &epml4_[guest_pa.index(pml::pml4)];
+  const auto pml4e = &epml4_[guest_pa.offset(pml::pml4)];
   const auto pdpte = pml4e->present()
-    ? &pml4e->subtable()[guest_pa.index(pml::pdpt)]
+    ? &pml4e->subtable()[guest_pa.offset(pml::pdpt)]
     : nullptr;
 
   if (!pdpte || pdpte->large_page || level == pml::pdpt)
@@ -183,7 +183,7 @@ epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
   }
 
   const auto pde = pdpte->present()
-    ? &pdpte->subtable()[guest_pa.index(pml::pd)]
+    ? &pdpte->subtable()[guest_pa.offset(pml::pd)]
     : nullptr;
 
   if (!pde || pde->large_page || level == pml::pd)
@@ -192,7 +192,7 @@ epte_t* ept_t::ept_entry(pa_t guest_pa, pml level /* = pml::pt */) noexcept
   }
 
   const auto pte = pde->present()
-    ? &pde->subtable()[guest_pa.index(pml::pt)]
+    ? &pde->subtable()[guest_pa.offset(pml::pt)]
     : nullptr;
 
   return pte;
@@ -386,7 +386,7 @@ epte_t* ept_t::map_subtable(epte_t* table) noexcept
 epte_t* ept_t::map_pml4(pa_t guest_pa, pa_t host_pa, epte_t* pml4,
                         epte_t::access_type access, pml level) noexcept
 {
-  const auto pml4e = &pml4[guest_pa.index(pml::pml4)];
+  const auto pml4e = &pml4[guest_pa.offset(pml::pml4)];
   const auto pdpt = map_subtable(pml4e);
 
   return map_pdpt(guest_pa, host_pa, pdpt, access, level);
@@ -395,7 +395,7 @@ epte_t* ept_t::map_pml4(pa_t guest_pa, pa_t host_pa, epte_t* pml4,
 epte_t* ept_t::map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt,
                         epte_t::access_type access, pml level) noexcept
 {
-  const auto pdpte = &pdpt[guest_pa.index(pml::pdpt)];
+  const auto pdpte = &pdpt[guest_pa.offset(pml::pdpt)];
 
   if (level == pml::pdpt)
   {
@@ -410,7 +410,7 @@ epte_t* ept_t::map_pdpt(pa_t guest_pa, pa_t host_pa, epte_t* pdpt,
 epte_t* ept_t::map_pd(pa_t guest_pa, pa_t host_pa, epte_t* pd,
                       epte_t::access_type access, pml level) noexcept
 {
-  const auto pde = &pd[guest_pa.index(pml::pd)];
+  const auto pde = &pd[guest_pa.offset(pml::pd)];
 
   if (level == pml::pd)
   {
@@ -425,7 +425,7 @@ epte_t* ept_t::map_pd(pa_t guest_pa, pa_t host_pa, epte_t* pd,
 epte_t* ept_t::map_pt(pa_t guest_pa, pa_t host_pa, epte_t* pt,
                       epte_t::access_type access, pml level) noexcept
 {
-  const auto pte = &pt[guest_pa.index(pml::pt)];
+  const auto pte = &pt[guest_pa.offset(pml::pt)];
 
   (void)(level);
   hvpp_assert(level == pml::pt);

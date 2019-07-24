@@ -92,7 +92,7 @@ class pa_t
     auto pfn()                    const noexcept { return value_ >> page_shift;          }
     auto va()                     const noexcept { return detail::va_from_pa(value_);    }
 
-    int index(pml level) const noexcept
+    int offset(pml level) const noexcept
     {
       uint64_t result = value_;
       result >>= page_shift + static_cast<uint8_t>(level) * 9;
@@ -145,10 +145,17 @@ class va_t
     auto  value()                const noexcept { return value_;                        }
     auto  ptr()                  const noexcept { return (const void*)(value_);         }
 
-    int index(pml level) const noexcept
+    uint64_t index(pml level) const noexcept
     {
       uint64_t result = value_;
       result >>= page_shift + static_cast<uint8_t>(level) * 9;
+
+      return result;
+    }
+
+    int offset(pml level) const noexcept
+    {
+      uint64_t result = index(level);
       result &= (1 << 9) - 1; // 0x1ff
 
       return static_cast<int>(result);

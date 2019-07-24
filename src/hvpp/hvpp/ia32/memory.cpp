@@ -10,7 +10,7 @@ pe_t* va_t::pt_entry(pml level /*= pml::pt*/) const noexcept
 {
   const auto pml4e = &reinterpret_cast<pe_t*>(
     pa_t::from_pfn(read<cr3_t>().page_frame_number).va()
-    )[index(pml::pml4)];
+    )[offset(pml::pml4)];
 
   if (!pml4e->present || level == pml::pml4)
   {
@@ -19,7 +19,7 @@ pe_t* va_t::pt_entry(pml level /*= pml::pt*/) const noexcept
 
   const auto pdpte = &reinterpret_cast<pe_t*>(
     pa_t::from_pfn(pml4e->page_frame_number).va()
-    )[index(pml::pdpt)];
+    )[offset(pml::pdpt)];
 
   if (!pdpte->present || pdpte->large_page || level == pml::pdpt)
   {
@@ -28,7 +28,7 @@ pe_t* va_t::pt_entry(pml level /*= pml::pt*/) const noexcept
 
   const auto pde = &reinterpret_cast<pe_t*>(
     pa_t::from_pfn(pdpte->page_frame_number).va()
-    )[index(pml::pd)];
+    )[offset(pml::pd)];
 
   if (!pde->present || pde->large_page || level == pml::pd)
   {
@@ -37,7 +37,7 @@ pe_t* va_t::pt_entry(pml level /*= pml::pt*/) const noexcept
 
   const auto pt = &reinterpret_cast<pe_t*>(
     pa_t::from_pfn(pde->page_frame_number).va()
-    )[index(pml::pt)];
+    )[offset(pml::pt)];
 
   return pt;
 }
