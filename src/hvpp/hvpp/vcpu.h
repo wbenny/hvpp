@@ -6,6 +6,9 @@
 
 #include "lib/error.h"
 
+#include "lib/mm/memory_mapper.h"
+#include "lib/mm/memory_translator.h"
+
 #include <cstdint>
 
 namespace hvpp {
@@ -36,6 +39,17 @@ class vcpu_t final
 
     auto context() noexcept -> context_t&;
     void suppress_rip_adjust() noexcept;
+
+    //
+    // Guest helper methods.
+    //
+
+    auto guest_memory_mapper() noexcept -> mm::memory_mapper&;
+    auto guest_memory_translator() noexcept -> mm::memory_translator&;
+
+    auto guest_va_to_pa(va_t guest_va) noexcept -> pa_t;
+    auto guest_read_memory(va_t guest_va, void* buffer, size_t size, bool ignore_errors = false) noexcept -> va_t;
+    auto guest_write_memory(va_t guest_va, const void* buffer, size_t size, bool ignore_errors = false) noexcept -> va_t;
 
     //
     // VMCS manipulation. Implementation is in vcpu.inl.
@@ -346,7 +360,7 @@ class vcpu_t final
     // If you reorder following three members (stack, exit context
     // and launch context), you have to edit offsets in vcpu.asm.
     //
-    stack_t            stack_;
+    stack_t               stack_;
 
     union
     {
@@ -354,39 +368,46 @@ class vcpu_t final
       // As these two contexts are never used at the same time,
       // they can share the memory.
       //
-      context_t        context_;
-      context_t        launch_context_;
+      context_t           context_;
+      context_t           launch_context_;
     };
 
     //
     // Various VMX structures.
     // Keep in mind they have "alignas(PAGE_SIZE)" specifier.
     //
-    vmx::vmcs_t        vmxon_;
-    vmx::vmcs_t        vmcs_;
-    vmx::msr_bitmap_t  msr_bitmap_;
-    vmx::io_bitmap_t   io_bitmap_;
+    vmx::vmcs_t           vmxon_;
+    vmx::vmcs_t           vmcs_;
+    vmx::msr_bitmap_t     msr_bitmap_;
+    vmx::io_bitmap_t      io_bitmap_;
 
     //
     // FXSAVE area - to keep SSE registers sane between VM-exits.
     //
-    fxsave_area_t      fxsave_area_;
+    fxsave_area_t         fxsave_area_;
 
-    vmexit_handler&    handler_;
-    state              state_;
+    vmexit_handler&       handler_;
+    state                 state_;
 
-    ept_t*             ept_;
-    uint16_t           ept_count_;
-    uint16_t           ept_index_;
+    ept_t*                ept_;
+    uint16_t              ept_count_;
+    uint16_t              ept_index_;
+
+    //
+    //
+    //
+    mm::memory_mapper     mapper_;
+    mm::memory_translator translator_;
+
 
     //
     // Pending interrupt queue (FIFO).
     //
-    interrupt_t        pending_interrupt_[pending_interrupt_queue_size];
-    uint8_t            pending_interrupt_first_;
-    uint8_t            pending_interrupt_count_;
+    interrupt_t           pending_interrupt_[pending_interrupt_queue_size];
+    uint8_t               pending_interrupt_first_;
+    uint8_t               pending_interrupt_count_;
 
-    bool               suppress_rip_adjust_;
+    bool                  suppress_rip_adjust_;
 };
 
 }

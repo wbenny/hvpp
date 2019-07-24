@@ -4,6 +4,7 @@
 #include "lib/assert.h"
 #include "lib/log.h"
 #include "lib/mm.h"
+#include "lib/cr3_guard.h"
 
 #include <iterator> // std::end()
 
@@ -421,6 +422,31 @@ auto vcpu_t::context() noexcept -> context_t&
 void vcpu_t::suppress_rip_adjust() noexcept
 {
   suppress_rip_adjust_ = true;
+}
+
+auto vcpu_t::guest_memory_mapper() noexcept -> mm::memory_mapper&
+{
+  return mapper_;
+}
+
+auto vcpu_t::guest_memory_translator() noexcept -> mm::memory_translator&
+{
+  return translator_;
+}
+
+auto vcpu_t::guest_va_to_pa(va_t guest_va) noexcept -> pa_t
+{
+  return translator_.va_to_pa(guest_va, ::detail::kernel_cr3(guest_cr3()));
+}
+
+auto vcpu_t::guest_read_memory(va_t guest_va, void* buffer, size_t size, bool ignore_errors /* = false*/) noexcept -> va_t
+{
+  return translator_.read(guest_va, ::detail::kernel_cr3(guest_cr3()), buffer, size, ignore_errors);
+}
+
+auto vcpu_t::guest_write_memory(va_t guest_va, const void* buffer, size_t size, bool ignore_errors /* = false*/) noexcept -> va_t
+{
+  return translator_.write(guest_va, ::detail::kernel_cr3(guest_cr3()), buffer, size, ignore_errors);
 }
 
 //
