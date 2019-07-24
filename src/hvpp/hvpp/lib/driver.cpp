@@ -51,6 +51,7 @@ namespace driver::common
     //
     mm::mtrr_descriptor().dump();
     mm::physical_memory_descriptor().dump();
+    mm::paging_descriptor().dump();
 
     //
     // Estimate required memory size.

@@ -66,6 +66,7 @@ namespace mm
 
     allocator_t allocator[HVPP_MAX_CPU];
 
+    object_t<paging_descriptor_t> paging_descriptor;
     object_t<physical_memory_descriptor_t> physical_memory_descriptor;
     object_t<mtrr_descriptor_t> mtrr_descriptor;
 
@@ -99,6 +100,7 @@ namespace mm
     //
     // Initialize physical memory descriptor and MTRRs.
     //
+    global.paging_descriptor.initialize();
     global.physical_memory_descriptor.initialize();
     global.mtrr_descriptor.initialize();
 
@@ -127,6 +129,7 @@ namespace mm
     //
     global.mtrr_descriptor.destroy();
     global.physical_memory_descriptor.destroy();
+    global.paging_descriptor.destroy();
     global.lock.destroy();
 
     //
@@ -443,6 +446,11 @@ namespace mm
   void allocator(const allocator_t& new_allocator) noexcept
   {
     global.allocator[mp::cpu_index()] = new_allocator;
+  }
+
+  auto paging_descriptor() noexcept -> const paging_descriptor_t&
+  {
+    return *global.paging_descriptor;
   }
 
   auto physical_memory_descriptor() noexcept -> const physical_memory_descriptor_t&

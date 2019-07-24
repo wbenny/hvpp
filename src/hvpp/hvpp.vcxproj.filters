@@ -153,6 +153,9 @@
     <ClCompile Include="hvpp\lib\mm\win32\memory_mapper.cpp">
       <Filter>Source Files\hvpp\lib\mm\win32</Filter>
     </ClCompile>
+    <ClCompile Include="hvpp\lib\mm\win32\paging_descriptor.cpp">
+      <Filter>Source Files\hvpp\lib\mm\win32</Filter>
+    </ClCompile>
     <ClCompile Include="hvpp\lib\mm\win32\physical_memory_descriptor.cpp">
       <Filter>Source Files\hvpp\lib\mm\win32</Filter>
     </ClCompile>
@@ -321,6 +324,9 @@
       <Filter>Header Files\hvpp\lib\mm</Filter>
     </ClInclude>
     <ClInclude Include="hvpp\lib\mm\mtrr_descriptor.h">
+      <Filter>Header Files\hvpp\lib\mm</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\lib\mm\paging_descriptor.h">
       <Filter>Header Files\hvpp\lib\mm</Filter>
     </ClInclude>
     <ClInclude Include="hvpp\lib\mm\physical_memory_descriptor.h">

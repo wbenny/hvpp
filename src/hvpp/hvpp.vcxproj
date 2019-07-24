@@ -106,6 +106,7 @@
     <ClCompile Include="hvpp\ia32\memory.cpp" />
     <ClCompile Include="hvpp\lib\mm\memory_mapper.cpp" />
     <ClCompile Include="hvpp\lib\mm\win32\memory_mapper.cpp" />
+    <ClCompile Include="hvpp\lib\mm\win32\paging_descriptor.cpp" />
     <ClCompile Include="hvpp\lib\mm\win32\physical_memory_descriptor.cpp" />
     <ClCompile Include="hvpp\vcpu.cpp" />
     <ClCompile Include="hvpp\vmexit.cpp">
@@ -144,6 +145,7 @@
     <ClInclude Include="hvpp\hypervisor.h" />
     <ClInclude Include="hvpp\lib\mm\memory_mapper.h" />
     <ClInclude Include="hvpp\lib\mm\mtrr_descriptor.h" />
+    <ClInclude Include="hvpp\lib\mm\paging_descriptor.h" />
     <ClInclude Include="hvpp\lib\mm\physical_memory_descriptor.h" />
     <ClInclude Include="hvpp\vcpu.h" />
     <ClInclude Include="hvpp\vmexit.h" />

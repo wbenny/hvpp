@@ -3,8 +3,10 @@
 
 #include "error.h"
 
+#include "mm/paging_descriptor.h"
 #include "mm/physical_memory_descriptor.h"
 #include "mm/mtrr_descriptor.h"
+
 #include <cstdint>
 
 namespace mm
@@ -60,6 +62,7 @@ namespace mm
   auto allocator() noexcept -> const allocator_t&;
   void allocator(const allocator_t& new_allocator) noexcept;
 
+  auto paging_descriptor() noexcept -> const paging_descriptor_t&;
   auto physical_memory_descriptor() noexcept -> const physical_memory_descriptor_t&;
   auto mtrr_descriptor() noexcept -> const mtrr_descriptor_t&;
 }
