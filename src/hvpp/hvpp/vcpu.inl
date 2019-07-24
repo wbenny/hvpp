@@ -1,3 +1,41 @@
+// #define HVPP_ENABLE_INTERRUPT_TRACE
+
+#if defined(HVPP_ENABLE_INTERRUPT_TRACE)
+# define __trace_interrupt_inject_vectoring()                                 \
+  hvpp_trace("interrupt_inject (vectoring) - vector: %s, type: %s, nmi_unblocking: %u, valid: %u",\
+             ::ia32::exception_vector_to_string(vectoring.vector()),          \
+             ::ia32::vmx::interrupt_type_to_string(vectoring.type()),         \
+             vectoring.nmi_unblocking(),                                      \
+             vectoring.valid())
+
+# define __trace_interrupt_inject_push()                                      \
+  hvpp_trace("interrupt_inject (push-%s) - vector: %s, type: %s, queue_size: %u",\
+              front ? "front" : "back",                                       \
+              ::ia32::exception_vector_to_string(interrupt.vector()),         \
+              ::ia32::vmx::interrupt_type_to_string(interrupt.type()),        \
+              queue.size() + 1)
+
+# define __trace_interrupt_inject_pop()                                       \
+  hvpp_trace("interrupt_inject (pop-front) - vector: %s, type: %s, queue_size: %u",\
+             ::ia32::exception_vector_to_string(queue.front().vector()),      \
+             ::ia32::vmx::interrupt_type_to_string(queue.front().type()),     \
+             queue.size() - 1)
+
+
+# define __trace_interrupt_inject()                                           \
+  hvpp_trace("interrupt_inject - vector: %s, type: %s",                       \
+             ::ia32::exception_vector_to_string(interrupt.vector()),          \
+             ::ia32::vmx::interrupt_type_to_string(interrupt.type()))
+
+
+#else
+# define __trace_interrupt_inject_vectoring()
+# define __trace_interrupt_inject_push()
+# define __trace_interrupt_inject_pop()
+# define __trace_interrupt_inject()
+#endif
+
+
 namespace hvpp {
 
 auto vcpu_t::interrupt_info() const noexcept -> interrupt_t
@@ -61,6 +99,12 @@ bool vcpu_t::interrupt_inject(interrupt_t interrupt, bool front /*= false */) no
     interruptible = !guest_interruptibility_state().blocking_by_nmi;
   }
 
+  if (auto vectoring = idt_vectoring_info();
+           vectoring.valid())
+  {
+    __trace_interrupt_inject_vectoring();
+  }
+
   if (interruptible)
   {
     //
@@ -76,6 +120,12 @@ bool vcpu_t::interrupt_inject(interrupt_t interrupt, bool front /*= false */) no
 
   auto  queue_type = interrupt_type_to_queue_type(interrupt.type());
   auto& queue      = pending_interrupt_queue_[queue_type];
+
+  //
+  // Inform that there was an attempt to inject an interrupt
+  // while CPU wasn't in the interruptible state.
+  //
+  __trace_interrupt_inject_push();
 
   //
   // Enqueue pending interrupt.
@@ -109,6 +159,11 @@ bool vcpu_t::interrupt_inject(interrupt_t interrupt, bool front /*= false */) no
 
 void vcpu_t::interrupt_inject_force(interrupt_t interrupt) noexcept
 {
+  //
+  // Inform that interrupt is being injected.
+  //
+  __trace_interrupt_inject();
+
   //
   // Set ctrl_vmentry_interruption_info.
   //
@@ -211,6 +266,8 @@ void vcpu_t::interrupt_inject_pending(interrupt_queue_type queue_type) noexcept
   // Dequeue and inject pending interrupt.
   //
   auto& queue = pending_interrupt_queue_[queue_type];
+
+  __trace_interrupt_inject_pop();
 
   interrupt_inject_force(queue.front());
   queue.pop_front();
