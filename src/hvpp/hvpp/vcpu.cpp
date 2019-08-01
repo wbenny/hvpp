@@ -66,12 +66,13 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
   memset(stack_.data, 0xcc, sizeof(stack_));
 
   //
-  // Reset CPU context.
+  // Reset CPU contexts.
   // This is not really needed, as they are overwritten anyway (in
   // entry_guest_()/entry_host_()), but since initialization is done
   // just once, it also doesn't hurt.
   //
   context_.clear();
+  resume_context_.clear();
 
   //
   // Assertions.
@@ -419,6 +420,12 @@ auto vcpu_t::context() noexcept -> context_t&
 void vcpu_t::suppress_rip_adjust() noexcept
 {
   suppress_rip_adjust_ = true;
+}
+
+void vcpu_t::guest_resume() noexcept
+{
+  resume_context_.rax = 1;
+  resume_context_.restore();
 }
 
 auto vcpu_t::guest_memory_mapper() noexcept -> mm::memory_mapper&
@@ -820,26 +827,40 @@ void vcpu_t::entry_host() noexcept
       stack_.machine_frame.rip = context_.rip + exit_instruction_length();
       stack_.machine_frame.rsp = context_.rsp;
 
+      if (!resume_context_.capture())
       {
         handler_.handle(*this);
-
-        if (state_ == state::terminated)
+      }
+      else
+      {
+        //
+        // Some spinlocks on the stack still might be locked.
+        // Unlock them.
+        //
+        while (spinlock_queue_.size())
         {
-          //
-          // At this point we're not in the VMX-root mode (vmxoff has been
-          // executed) and we want to return control back to whomever caused
-          // this VM-exit.
-          //
-          // Note that at this point, we can't call any VMX instructions,
-          // as they would raise #UD (invalid opcode exception).
-          //
-          goto exit;
+          stacked_lock_guard_pop();
         }
 
-        if (!suppress_rip_adjust_)
-        {
-          context_.rip += exit_instruction_length();
-        }
+        handler_.handle_guest_resume(*this);
+      }
+
+      if (state_ == state::terminated)
+      {
+        //
+        // At this point we're not in the VMX-root mode (vmxoff has been
+        // executed) and we want to return control back to whomever caused
+        // this VM-exit.
+        //
+        // Note that at this point, we can't call any VMX instructions,
+        // as they would raise #UD (invalid opcode exception).
+        //
+        goto exit;
+      }
+
+      if (!suppress_rip_adjust_)
+      {
+        context_.rip += exit_instruction_length();
       }
 
       guest_rsp(context_.rsp);

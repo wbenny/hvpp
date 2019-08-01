@@ -171,6 +171,17 @@ class vmexit_handler
     //
     virtual void handle(vcpu_t& vp) noexcept;
 
+    //
+    // This method is called in reaction to `vp.guest_resume()' call.
+    // It should be responsible for cleaning up allocated resources,
+    // that haven't been freed by object desctructors.
+    //
+    // Note:
+    //   Use `auto _ = vp.stacked_lock_guard(lock)' for acquiring spinlocks.
+    //   Spinlocks that are locked this way are by always unlocked.
+    //
+    virtual void handle_guest_resume(vcpu_t& vp) noexcept;
+
   protected:
     //
     // Separate handlers for each VM-exit reason.

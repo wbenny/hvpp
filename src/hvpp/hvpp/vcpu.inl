@@ -38,6 +38,36 @@
 
 namespace hvpp {
 
+auto vcpu_t::stacked_lock_guard(spinlock& lock) noexcept -> stacked_lock_guard_t
+{
+  return stacked_lock_guard_t{ *this, lock };
+}
+
+void vcpu_t::stacked_lock_guard_push(spinlock& lock) noexcept
+{
+  lock.lock();
+  spinlock_queue_.push_back(&lock);
+}
+
+void vcpu_t::stacked_lock_guard_pop() noexcept
+{
+  auto& lock = *spinlock_queue_.back();
+  spinlock_queue_.pop_back();
+
+  lock.unlock();
+}
+
+vcpu_t::stacked_lock_guard_t::stacked_lock_guard_t(vcpu_t& vp, spinlock& lock) noexcept
+  : vp_{ vp }
+{
+  vp_.stacked_lock_guard_push(lock);
+}
+
+vcpu_t::stacked_lock_guard_t::~stacked_lock_guard_t() noexcept
+{
+  vp_.stacked_lock_guard_pop();
+}
+
 auto vcpu_t::interrupt_info() const noexcept -> interrupt_t
 {
   interrupt_t result;

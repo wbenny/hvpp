@@ -6,6 +6,7 @@
 
 #include "lib/deque.h"
 #include "lib/error.h"
+#include "lib/spinlock.h"
 
 #include "lib/mm/memory_mapper.h"
 #include "lib/mm/memory_translator.h"
@@ -45,6 +46,9 @@ class vcpu_t final
     // Guest helper methods.
     //
 
+    [[noreturn]]
+    void guest_resume() noexcept;
+
     auto guest_memory_mapper() noexcept -> mm::memory_mapper&;
     auto guest_memory_translator() noexcept -> mm::memory_translator&;
 
@@ -55,6 +59,28 @@ class vcpu_t final
     auto tsc_entry() const noexcept -> uint64_t;
     auto tsc_delta_previous() const noexcept -> uint64_t;
     auto tsc_delta_sum() const noexcept -> uint64_t;
+
+    //
+    // Stacked lock guard.
+    //
+
+    struct stacked_lock_guard_t
+    {
+      stacked_lock_guard_t(vcpu_t& vp, spinlock& lock) noexcept;
+      ~stacked_lock_guard_t() noexcept;
+
+      stacked_lock_guard_t(const stacked_lock_guard_t& other) noexcept = delete;
+      stacked_lock_guard_t(stacked_lock_guard_t&& other) noexcept = delete;
+      stacked_lock_guard_t& operator=(const stacked_lock_guard_t& other) noexcept = delete;
+      stacked_lock_guard_t& operator=(stacked_lock_guard_t&& other) noexcept = delete;
+
+    private:
+      vcpu_t& vp_;
+    };
+
+    auto stacked_lock_guard(spinlock& lock) noexcept -> stacked_lock_guard_t;
+    void stacked_lock_guard_push(spinlock& lock) noexcept;
+    void stacked_lock_guard_pop() noexcept;
 
     //
     // VMCS manipulation. Implementation is in vcpu.inl.
@@ -367,6 +393,8 @@ class vcpu_t final
       };
     };
 
+    using spinlock_queue_t = fixed_dequeue<spinlock*, 32>;
+
     static_assert(sizeof(stack_t) == stack_t::size);
     static_assert(sizeof(stack_t::shadow_space_t) == 32);
 
@@ -408,11 +436,20 @@ class vcpu_t final
     uint16_t              ept_index_;
 
     //
+    // Guest-resume support.
     //
+    context_t             resume_context_;
+    spinlock_queue_t      spinlock_queue_;
+
+    //
+    // Memory translation support.
     //
     mm::memory_mapper     mapper_;
     mm::memory_translator translator_;
 
+    //
+    // Timestamp-counter.
+    //
     uint64_t              tsc_entry_;
     uint64_t              tsc_delta_previous_;
     uint64_t              tsc_delta_sum_;

@@ -100,6 +100,11 @@ void vmexit_handler::handle(vcpu_t& vp) noexcept
   (this->*handlers_[handler_index])(vp);
 }
 
+void vmexit_handler::handle_guest_resume(vcpu_t& vp) noexcept
+{
+  (void)(vp);
+}
+
 //
 // "Do-nothing" handlers for all VM-exits.
 // VMX-instruction related VM-exits (VMREAD, VMWRITE, INVEPT, ...)

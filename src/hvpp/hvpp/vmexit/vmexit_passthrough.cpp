@@ -1114,6 +1114,10 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
             vp.interrupt_inject(interrupt::page_fault);
             vp.suppress_rip_adjust();
 
+            //
+            // `vp.guest_resume()' can be also used instead of `return'.
+            //
+
             return;
           }
 
@@ -1156,6 +1160,10 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
             write<cr2_t>({ err_va.value() });
             vp.interrupt_inject(interrupt::page_fault);
             vp.suppress_rip_adjust();
+
+            //
+            // `vp.guest_resume()' can be also used instead of `return'.
+            //
 
             return;
           }
