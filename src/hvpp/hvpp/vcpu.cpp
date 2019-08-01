@@ -246,12 +246,8 @@ auto vcpu_t::vmx_enter() noexcept -> error_code_t
   if (auto err = setup_guest())
   { return err; }
 
-  //
-  // #TODO: This function can fail, make it
-  // return appropriate error_code_t.
-  //
-
-  handler_.setup(*this);
+  if (auto err = handler_.setup(*this))
+  { return err; }
 
   return {};
 }

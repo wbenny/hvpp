@@ -19,7 +19,7 @@ vmexit_c_wrapper_handler::~vmexit_c_wrapper_handler() noexcept
 
 }
 
-void vmexit_c_wrapper_handler::setup(vcpu_t& vp) noexcept
+auto vmexit_c_wrapper_handler::setup(vcpu_t& vp) noexcept -> error_code_t
 {
   base_type::setup(vp);
 
@@ -30,6 +30,8 @@ void vmexit_c_wrapper_handler::setup(vcpu_t& vp) noexcept
   //
   vp.ept_enable();
   vp.ept().map_identity();
+
+  return {};
 }
 
 void vmexit_c_wrapper_handler::handle(vcpu_t& vp) noexcept

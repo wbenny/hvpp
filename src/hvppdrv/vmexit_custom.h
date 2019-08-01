@@ -15,7 +15,7 @@ class vmexit_custom_handler
   public:
     using base_type = vmexit_passthrough_handler;
 
-    void setup(vcpu_t& vp) noexcept override;
+    auto setup(vcpu_t& vp) noexcept -> error_code_t override;
 
     void handle_execute_cpuid(vcpu_t& vp) noexcept override;
     void handle_execute_vmcall(vcpu_t& vp) noexcept override;

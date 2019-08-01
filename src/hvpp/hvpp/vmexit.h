@@ -142,7 +142,7 @@ class vmexit_handler
     // Note:
     //   This method is guaranteed to be called in VMX-root mode.
     //
-    virtual void setup(vcpu_t& vp) noexcept;
+    virtual auto setup(vcpu_t& vp) noexcept -> error_code_t;
 
     //
     // This method is called from vcpu_t::stop() method.
@@ -271,11 +271,14 @@ class vmexit_compositor_handler
     vmexit_compositor_handler() noexcept = default;
     ~vmexit_compositor_handler() noexcept override = default;
 
-    void setup(vcpu_t& vp) noexcept override
+    auto setup(vcpu_t& vp) noexcept -> error_code_t override
     {
       for_each_element(handlers, [&](auto&& handler, int) {
-        handler.setup(vp);
+        if (auto err = handler.setup(vp))
+        { hvpp_assert(0); }
       });
+
+      return {};
     }
 
     void teardown(vcpu_t& vp) noexcept override

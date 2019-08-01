@@ -80,7 +80,8 @@ namespace hvpp::hypervisor
 
     //
     // Create array of VCPUs.
-    // Note that since
+    //
+    // Note that since:
     //   - vcpu_t is not default-constructible
     //   - operator new[] doesn't support constructing objects
     //     with parameters
@@ -99,8 +100,7 @@ namespace hvpp::hypervisor
     //
     std::for_each_n(global.vcpu_list, mp::cpu_count(),
       [&](vcpu_t& vp) {
-        ::new (static_cast<void*>(std::addressof(vp)))
-          vcpu_t(handler);
+        ::new (std::addressof(vp)) vcpu_t(handler);
       });
 
     //
@@ -128,8 +128,10 @@ namespace hvpp::hypervisor
     //
     // Check that CPU supports all required features to
     // run this hypervisor.
-    // Note that this check is performed only on current CPU
-    // and assumes all CPUs are symmetrical.
+    //
+    // Note:
+    //   This check is performed only on current CPU
+    //   and assumes all CPUs are symmetrical.
     //
     if (!detail::check_cpu_features())
     {
@@ -138,21 +140,43 @@ namespace hvpp::hypervisor
 
     //
     // Start virtualization on all CPUs.
-    // TODO:
-    //   - error handling
-    //   - create new error_category for VMX errors?
     //
-    mp::ipi_call([]() {
+    // Note:
+    //   IPI callbacks run at IRQL IPI_LEVEL,
+    //   At that level, we cannot call ExAllocatePoolWithTag,
+    //   therefore we have to use hypervisor allocator.
+    //
+    auto start_err = std::atomic<error_code_t>{};
+
+    mp::ipi_call([&start_err]() {
       mm::allocator_guard _;
 
       const auto idx = mp::cpu_index();
-      global.vcpu_list[idx].start();
+      const auto err = global.vcpu_list[idx].start();
+
+      auto expected = error_code_t{};
+      start_err.compare_exchange_strong(expected, err);
     });
 
     //
     // Signalize that hypervisor has started.
     //
     global.running = true;
+
+    //
+    // If any VCPU started with an error, stop
+    // the hypervisor.
+    //
+    // Note:
+    //   This check must come AFTER setting "running"
+    //   to true, otherwise "stop()" would perform
+    //   early-exit without any actual stopping.
+    //
+    if (auto err = start_err.load())
+    {
+      stop();
+      return err;
+    }
 
     return {};
   }

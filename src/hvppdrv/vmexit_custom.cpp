@@ -4,7 +4,7 @@
 #include <hvpp/lib/mp.h>
 #include <hvpp/lib/log.h>
 
-void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
+auto vmexit_custom_handler::setup(vcpu_t& vp) noexcept -> error_code_t
 {
   base_type::setup(vp);
 
@@ -131,6 +131,8 @@ void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
   vp.cr0_guest_host_mask(cr0_t{ ~0ull });
   vp.cr4_guest_host_mask(cr4_t{ ~0ull });
 #endif
+
+  return {};
 }
 
 void vmexit_custom_handler::handle_execute_cpuid(vcpu_t& vp) noexcept

@@ -44,7 +44,7 @@ namespace detail
   }
 }
 
-void vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept
+auto vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept -> error_code_t
 {
   //
   // Setup guest VMCS state to bare minimum.
@@ -74,6 +74,8 @@ void vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept
   vp.guest_ss(segment_t{ gdtr, read<ss_t>() });
   vp.guest_tr(segment_t{ gdtr, read<tr_t>() });
   vp.guest_ldtr(segment_t{ gdtr, read<ldtr_t>() });
+
+  return {};
 }
 
 void vmexit_passthrough_handler::teardown(vcpu_t& vp) noexcept
