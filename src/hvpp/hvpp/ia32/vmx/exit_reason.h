@@ -72,7 +72,7 @@ enum class exit_reason : uint16_t
   execute_xrstors               = 0x00000040,
 };
 
-constexpr inline const char* exit_reason_to_string(exit_reason value) noexcept
+constexpr inline const char* to_string(exit_reason value) noexcept
 {
   switch (value)
   {

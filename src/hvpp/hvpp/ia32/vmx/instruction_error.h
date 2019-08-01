@@ -36,7 +36,7 @@ enum instruction_error : uint32_t
   invept_invvpid_invalid_operand          = 28,
 };
 
-constexpr inline const char* instruction_error_to_string(instruction_error value) noexcept
+constexpr inline const char* to_string(instruction_error value) noexcept
 {
   switch (value)
   {

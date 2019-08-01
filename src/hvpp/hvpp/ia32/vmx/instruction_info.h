@@ -236,6 +236,10 @@ struct instruction_info_t
   };
 };
 
+//
+// #TODO: It would be nice to rename these functions just to `to_string`.
+//
+
 constexpr inline const char* instruction_info_gdtr_idtr_to_string(uint64_t value) noexcept
 {
   switch (value)

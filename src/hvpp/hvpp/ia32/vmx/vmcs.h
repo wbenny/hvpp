@@ -355,7 +355,7 @@ inline vmcs_t::field& operator-=(vmcs_t::field& vmcs_field, int index) noexcept
 
 static_assert(sizeof(vmcs_t) == page_size);
 
-constexpr inline const char* vmcs_field_to_string(vmcs_t::field value) noexcept
+constexpr inline const char* to_string(vmcs_t::field value) noexcept
 {
   switch (value)
   {

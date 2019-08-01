@@ -283,7 +283,7 @@ class physical_memory_range
     pa_t end_;
 };
 
-constexpr inline const char* memory_type_to_string(memory_type type) noexcept
+constexpr inline const char* to_string(memory_type type) noexcept
 {
   switch (type)
   {

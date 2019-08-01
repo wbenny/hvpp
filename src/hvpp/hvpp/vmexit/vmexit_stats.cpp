@@ -67,13 +67,13 @@ void vmexit_stats_handler::handle(vcpu_t& vp) noexcept
     case vmx::exit_reason::exception_or_nmi:
       stats.exception_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
 
-      hvpp_trace_if_enabled("exit_reason::exception_or_nmi: %s", exception_vector_to_string(vp.interrupt_info().vector()));
+      hvpp_trace_if_enabled("exit_reason::exception_or_nmi: %s", to_string(vp.interrupt_info().vector()));
       break;
 
     case vmx::exit_reason::external_interrupt:
       stats.exception_vector[static_cast<int>(vp.interrupt_info().vector())] += 1;
 
-      hvpp_trace_if_enabled("exit_reason::external_interrupt: %s", exception_vector_to_string(vp.interrupt_info().vector()));
+      hvpp_trace_if_enabled("exit_reason::external_interrupt: %s", to_string(vp.interrupt_info().vector()));
       break;
 
     case vmx::exit_reason::interrupt_window:
@@ -337,7 +337,7 @@ void vmexit_stats_handler::storage_dump(const vmexit_stats_storage_t& storage_to
     if (stats.vmexit[exit_reason_index] > 0)
     {
       hvpp_info("  %s: %u",
-        vmx::exit_reason_to_string(static_cast<vmx::exit_reason>(exit_reason_index)),
+        vmx::to_string(static_cast<vmx::exit_reason>(exit_reason_index)),
         stats.vmexit[exit_reason_index]);
 
       switch (static_cast<vmx::exit_reason>(exit_reason_index))
@@ -345,7 +345,7 @@ void vmexit_stats_handler::storage_dump(const vmexit_stats_storage_t& storage_to
         case vmx::exit_reason::exception_or_nmi:
           for (uint32_t i = 0; i < std::size(stats.exception_vector); ++i)
           {
-            const char* exception_vector_string = exception_vector_to_string(static_cast<exception_vector>(i));
+            const char* exception_vector_string = to_string(static_cast<exception_vector>(i));
             (void)(exception_vector_string);
             if (stats.exception_vector[i] > 0)
             {
@@ -357,7 +357,7 @@ void vmexit_stats_handler::storage_dump(const vmexit_stats_storage_t& storage_to
         case vmx::exit_reason::external_interrupt:
           for (uint32_t i = 0; i < std::size(stats.exception_vector); ++i)
           {
-            const char* exception_vector_string = exception_vector_to_string(static_cast<exception_vector>(i));
+            const char* exception_vector_string = to_string(static_cast<exception_vector>(i));
             (void)(exception_vector_string);
             if (stats.exception_vector[i] > 0)
             {

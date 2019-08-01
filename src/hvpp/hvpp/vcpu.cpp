@@ -489,7 +489,7 @@ auto vcpu_t::handle_vmx_launch_error() noexcept -> error_code_t
   const auto instruction_error = exit_instruction_error();
   hvpp_error("error: %u (%s)\n",
               static_cast<uint32_t>(instruction_error),
-              vmx::instruction_error_to_string(instruction_error));
+              vmx::to_string(instruction_error));
 
   //
   // If debugger is attached, break into it.
