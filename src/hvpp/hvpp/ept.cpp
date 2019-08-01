@@ -375,8 +375,32 @@ epte_t* ept_t::map_subtable(epte_t* table) noexcept
     return table->subtable();
   }
 
-  const auto subtable = new epte_t[512];
-  hvpp_assert(subtable != nullptr);
+  //
+  // const auto subtable = new (std::align_val_t(page_size)) epte_t[512];
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // This line triggers error:
+  //   error C2956:  sized deallocation function 'operator delete(void*, size_t)' would be chosen as placement deallocation function.
+  //   message    :  see declaration of 'operator delete[]'
+  //
+  // ... unless "/Zc:sizedDealloc-" is passed to the compiler.
+  //
+  // (ref: https://developercommunity.visualstudio.com/content/problem/528320/using-c17-new-stdalign-val-tn-syntax-results-in-er.html)
+  // (ref: https://bugzilla.mozilla.org/show_bug.cgi?id=1160146)
+  // (ref: https://docs.microsoft.com/en-us/cpp/build/reference/zc-sizeddealloc-enable-global-sized-dealloc-functions?view=vs-2019)
+  //
+  const auto subtable = reinterpret_cast<epte_t*>(operator new[](sizeof(epte_t) * 512, std::align_val_t(page_size)));
+
+  //
+  // Returned subtable must be non-null and page-aligned.
+  //
+  hvpp_assert(
+    subtable != nullptr &&
+    subtable == page_align(subtable)
+  );
+
+  //
+  // Initialize all entries with 0's.
+  //
   memset(subtable, 0, sizeof(epte_t) * 512);
 
   table->update(pa_t::from_va(subtable));
