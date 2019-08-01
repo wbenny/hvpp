@@ -1,6 +1,6 @@
 #pragma once
+#include <array>
 #include <type_traits>
-#include <cstdint>
 
 //
 // Object class to create type-erasure'd static objects.
@@ -53,8 +53,9 @@ class object_t
           T& operator*()        noexcept { return as_object();  }
 
   private:
-    const T& as_object()  const noexcept { return reinterpret_cast<T&>(object_data_); }
-          T& as_object()        noexcept { return reinterpret_cast<T&>(object_data_); }
+    const T& as_object()  const noexcept { return reinterpret_cast<T&>(*object_data_.data()); }
+          T& as_object()        noexcept { return reinterpret_cast<T&>(*object_data_.data()); }
 
-    std::aligned_storage_t<sizeof(T), alignof(T)> object_data_;
+    alignas(T)
+    std::array<std::byte, sizeof(T)> object_data_;
 };
