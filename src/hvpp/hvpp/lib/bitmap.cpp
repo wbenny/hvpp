@@ -1,26 +1,26 @@
 #include "bitmap.h"
 
-void* bitmap::buffer() noexcept
+void* basic_bitmap::buffer() noexcept
 {
   return buffer_;
 }
 
-const void* bitmap::buffer() const noexcept
+const void* basic_bitmap::buffer() const noexcept
 {
   return buffer_;
 }
 
-int bitmap::size_in_bits() const noexcept
+int basic_bitmap::size_in_bits() const noexcept
 {
   return size_in_bits_;
 }
 
-int bitmap::size_in_bytes() const noexcept
+int basic_bitmap::size_in_bytes() const noexcept
 {
   return size_in_bits_ / 8;
 }
 
-void bitmap::set(int index, int count) noexcept
+void basic_bitmap::set(int index, int count) noexcept
 {
   //
   // Stolen from ReactOS - RtlSetbits.
@@ -55,17 +55,17 @@ void bitmap::set(int index, int count) noexcept
   }
 }
 
-void bitmap::set(int bit) noexcept
+void basic_bitmap::set(int bit) noexcept
 {
   buffer_[word(bit)] |= mask(bit);
 }
 
-void bitmap::set() noexcept
+void basic_bitmap::set() noexcept
 {
   memset(buffer_, ~0, size_in_bits_ / 8);
 }
 
-void bitmap::clear(int index, int count) noexcept
+void basic_bitmap::clear(int index, int count) noexcept
 {
   //
   // Stolen from ReactOS - RtlClearBits.
@@ -100,27 +100,27 @@ void bitmap::clear(int index, int count) noexcept
   }
 }
 
-void bitmap::clear(int bit) noexcept
+void basic_bitmap::clear(int bit) noexcept
 {
   buffer_[word(bit)] &= ~mask(bit);
 }
 
-void bitmap::clear() noexcept
+void basic_bitmap::clear() noexcept
 {
   memset(buffer_, 0, size_in_bits_ / 8);
 }
 
-bool bitmap::test(int bit) const noexcept
+bool basic_bitmap::test(int bit) const noexcept
 {
   return !!ia32_asm_bt(buffer_, bit);
 }
 
-int bitmap::find_first_set(int count) const noexcept
+int basic_bitmap::find_first_set(int count) const noexcept
 {
   return find_first_set(0, count);
 }
 
-int bitmap::find_first_set(int index, int count) const noexcept
+int basic_bitmap::find_first_set(int index, int count) const noexcept
 {
   if (count > size_in_bits_)
   {
@@ -157,7 +157,7 @@ int bitmap::find_first_set(int index, int count) const noexcept
   return -1;
 }
 
-int bitmap::find_first_set() const noexcept
+int basic_bitmap::find_first_set() const noexcept
 {
   for (int i = 0; i * 8 < size_in_bits_; ++i)
   {
@@ -172,7 +172,7 @@ int bitmap::find_first_set() const noexcept
   return size_in_bits_;
 }
 
-int bitmap::find_first_clear(int index, int count) const noexcept
+int basic_bitmap::find_first_clear(int index, int count) const noexcept
 {
   if (count > size_in_bits_)
   {
@@ -209,12 +209,12 @@ int bitmap::find_first_clear(int index, int count) const noexcept
   return -1;
 }
 
-int bitmap::find_first_clear(int count) const noexcept
+int basic_bitmap::find_first_clear(int count) const noexcept
 {
   return find_first_clear(0, count);
 }
 
-int bitmap::find_first_clear() const noexcept
+int basic_bitmap::find_first_clear() const noexcept
 {
   for (int i = 0; i * 8 < size_in_bits_; ++i)
   {
@@ -229,7 +229,7 @@ int bitmap::find_first_clear() const noexcept
   return size_in_bits_;
 }
 
-bool bitmap::are_bits_set(int index, int count) const noexcept
+bool basic_bitmap::are_bits_set(int index, int count) const noexcept
 {
   if (index + count > size_in_bits_ ||
     index + count <= index)
@@ -240,7 +240,7 @@ bool bitmap::are_bits_set(int index, int count) const noexcept
   return get_length_of_set(index, count) >= count;
 }
 
-bool bitmap::are_bits_clear(int index, int count) const noexcept
+bool basic_bitmap::are_bits_clear(int index, int count) const noexcept
 {
   if (index + count > size_in_bits_ ||
     index + count <= index)
@@ -251,17 +251,17 @@ bool bitmap::are_bits_clear(int index, int count) const noexcept
   return get_length_of_clear(index, count) >= count;
 }
 
-bool bitmap::all_set() const noexcept
+bool basic_bitmap::all_set() const noexcept
 {
   return are_bits_set(0, size_in_bits_);
 }
 
-bool bitmap::all_clear() const noexcept
+bool basic_bitmap::all_clear() const noexcept
 {
   return are_bits_clear(0, size_in_bits_);
 }
 
-int bitmap::get_length_of_set(int index, int count) const noexcept
+int basic_bitmap::get_length_of_set(int index, int count) const noexcept
 {
   //
   // Stolen from ReactOS - RtlpGetLengthOfRunSet.
@@ -303,7 +303,7 @@ int bitmap::get_length_of_set(int index, int count) const noexcept
   return length;
 }
 
-int bitmap::get_length_of_clear(int index, int count) const noexcept
+int basic_bitmap::get_length_of_clear(int index, int count) const noexcept
 {
   //
   // Stolen from ReactOS - RtlpGetLengthOfRunClear.

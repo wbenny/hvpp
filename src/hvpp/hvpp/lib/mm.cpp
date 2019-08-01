@@ -45,7 +45,7 @@
 
 namespace mm
 {
-  using pgbmp_t = object_t<bitmap>;
+  using pgbmp_t = object_t<bitmap<>>;
   using pgmap_t = uint16_t;
 
   struct global_t

@@ -28,7 +28,7 @@ class vmexit_stats_handler
 
     void handle(vcpu_t& vp) noexcept override;
 
-    bitmap& trace_bitmap() noexcept
+    bitmap<>& trace_bitmap() noexcept
     { return vmexit_trace_bitmap_; }
 
     vmexit_stats_storage_t* storage() const noexcept
@@ -62,7 +62,7 @@ class vmexit_stats_handler
     // Bitmap of traced VM-exit reasons.
     // There are currently defined 65 VM-exit reasons.
     //
-    bitmap_local<65> vmexit_trace_bitmap_;
+    bitmap<65> vmexit_trace_bitmap_;
 
     //
     // Count of terminated VCPUs.

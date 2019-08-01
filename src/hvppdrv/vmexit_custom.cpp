@@ -23,7 +23,7 @@ void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
   vp.processor_based_controls(procbased_ctls);
 
   vmx::io_bitmap_t io_bitmap{};
-  bitmap(io_bitmap.a).set(0x64);
+  bitmap<>(io_bitmap.a).set(0x64);
 
   vp.io_bitmap(io_bitmap);
 #else
@@ -74,8 +74,8 @@ void vmexit_custom_handler::setup(vcpu_t& vp) noexcept
   //
   // Disable VMWare backdoor.
   //
-  bitmap(io_bitmap.a).clear(0x5658);
-  bitmap(io_bitmap.a).clear(0x5659);
+  bitmap<>(io_bitmap.a).clear(0x5658);
+  bitmap<>(io_bitmap.a).clear(0x5659);
 
   vp.io_bitmap(io_bitmap);
 #endif

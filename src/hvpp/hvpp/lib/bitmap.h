@@ -15,25 +15,25 @@
 # undef max
 #endif
 
-class bitmap
+class basic_bitmap
 {
   public:
-    bitmap() noexcept : buffer_{}, size_in_bits_{} { };
-    bitmap(const bitmap& other) noexcept = delete;
-    bitmap(bitmap&& other) noexcept = default;
-    bitmap& operator=(const bitmap& other) = delete;
-    bitmap& operator=(bitmap&& other) = default;
+    basic_bitmap() noexcept : buffer_{ nullptr }, size_in_bits_{ 0 } { };
+    basic_bitmap(const basic_bitmap& other) noexcept = delete;
+    basic_bitmap(basic_bitmap&& other) noexcept = default;
+    basic_bitmap& operator=(const basic_bitmap& other) = delete;
+    basic_bitmap& operator=(basic_bitmap&& other) = default;
 
-    bitmap(void* buffer, int size_in_bits) noexcept
+    basic_bitmap(void* buffer, int size_in_bits) noexcept
       : buffer_{ reinterpret_cast<word_t*>(buffer) }
       , size_in_bits_{ size_in_bits } { }
 
     template <typename T, int SIZE>
-    bitmap(T(&buffer)[SIZE], int size_in_bits = SIZE * sizeof(T)) noexcept
+    basic_bitmap(T(&buffer)[SIZE], int size_in_bits = SIZE * sizeof(T)) noexcept
       : buffer_{ reinterpret_cast<word_t*>(buffer) }
       , size_in_bits_{ size_in_bits } { }
 
-    ~bitmap() noexcept = default;
+    ~basic_bitmap() noexcept = default;
 
     const void* buffer() const noexcept;
     void* buffer() noexcept;
@@ -84,19 +84,33 @@ class bitmap
 };
 
 template <
-  size_t SIZE_IN_BITS
+  size_t SIZE_IN_BITS = 0
 >
-class bitmap_local
-  : public bitmap
+class bitmap;
+
+template <>
+class bitmap<>
+  : public basic_bitmap
 {
   public:
-    bitmap_local() : bitmap{ buffer_, SIZE_IN_BITS }, buffer_{} { }
-    bitmap_local(const bitmap_local& other) noexcept = delete;
-    bitmap_local(bitmap_local&& other) noexcept = default;
-    bitmap_local& operator=(const bitmap_local& other) noexcept = delete;
-    bitmap_local& operator=(bitmap_local&& other) = default;
+    using basic_bitmap::basic_bitmap;
+};
 
-    ~bitmap_local() noexcept = default;
+template <
+  size_t SIZE_IN_BITS
+>
+class bitmap
+  : public bitmap<>
+{
+  public:
+    bitmap() : bitmap<>{ buffer_, SIZE_IN_BITS }, buffer_{} { }
+    bitmap(const bitmap& other) noexcept = delete;
+    bitmap(bitmap&& other) noexcept = default;
+    bitmap& operator=(const bitmap& other) noexcept = delete;
+    bitmap& operator=(bitmap&& other) = default;
+
+    ~bitmap() noexcept = default;
+
   private:
     word_t buffer_[
        word  (SIZE_IN_BITS) +
