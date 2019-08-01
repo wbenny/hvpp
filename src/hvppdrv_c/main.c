@@ -18,6 +18,7 @@ DriverUnload(
 {
   UNREFERENCED_PARAMETER(DriverObject);
 
+  HvppStop();
   HvppDestroy();
 }
 
