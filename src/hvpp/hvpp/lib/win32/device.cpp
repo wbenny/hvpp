@@ -168,30 +168,68 @@ void device::destroy() noexcept
 
 error_code_t device::copy_from_user(void* buffer_to, const void* buffer_from, size_t length) noexcept
 {
+  if (!length)
+  {
+    return {};
+  }
+
+  PMDL Mdl = IoAllocateMdl((PVOID)(buffer_from), (ULONG)(length), FALSE, FALSE, NULL);
+
+  if (!Mdl)
+  {
+    return make_error_code_t(std::errc::not_enough_memory);
+  }
+
   __try
   {
-    ProbeForRead((volatile void*)buffer_from, length, sizeof(UCHAR));
-    RtlCopyMemory(buffer_to, buffer_from, length);
+    MmProbeAndLockPages(Mdl, UserMode, IoReadAccess);
   }
   __except (EXCEPTION_EXECUTE_HANDLER)
   {
-    return make_error_code_t(std::errc::bad_address);
+    IoFreeMdl(Mdl);
+    Mdl = NULL;
+
+    return make_error_code_t(std::errc::not_enough_memory);
   }
+
+  RtlCopyMemory(buffer_to, buffer_from, length);
+
+  MmUnlockPages(Mdl);
+  IoFreeMdl(Mdl);
 
   return {};
 }
 
 error_code_t device::copy_to_user(void* buffer_to, const void* buffer_from, size_t length) noexcept
 {
+  if (!length)
+  {
+    return {};
+  }
+
+  PMDL Mdl = IoAllocateMdl(buffer_to, (ULONG)(length), FALSE, FALSE, NULL);
+
+  if (!Mdl)
+  {
+    return make_error_code_t(std::errc::not_enough_memory);
+  }
+
   __try
   {
-    ProbeForWrite(buffer_to, length, sizeof(UCHAR));
-    RtlCopyMemory(buffer_to, buffer_from, length);
+    MmProbeAndLockPages(Mdl, UserMode, IoWriteAccess);
   }
   __except (EXCEPTION_EXECUTE_HANDLER)
   {
-    return make_error_code_t(std::errc::bad_address);
+    IoFreeMdl(Mdl);
+    Mdl = NULL;
+
+    return make_error_code_t(std::errc::not_enough_memory);
   }
+
+  RtlCopyMemory(buffer_to, buffer_from, length);
+
+  MmUnlockPages(Mdl);
+  IoFreeMdl(Mdl);
 
   return {};
 }
