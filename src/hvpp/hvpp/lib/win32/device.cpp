@@ -166,7 +166,7 @@ void device::destroy() noexcept
   impl_ = nullptr;
 }
 
-error_code_t device::copy_from_user(void* buffer_to, const void* buffer_from, size_t length) noexcept
+auto device::copy_from_user(void* buffer_to, const void* buffer_from, size_t length) noexcept -> error_code_t
 {
   if (!length)
   {
@@ -200,7 +200,7 @@ error_code_t device::copy_from_user(void* buffer_to, const void* buffer_from, si
   return {};
 }
 
-error_code_t device::copy_to_user(void* buffer_to, const void* buffer_from, size_t length) noexcept
+auto device::copy_to_user(void* buffer_to, const void* buffer_from, size_t length) noexcept -> error_code_t
 {
   if (!length)
   {
