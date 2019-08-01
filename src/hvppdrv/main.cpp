@@ -87,7 +87,7 @@ namespace driver
     // Tell debugger we're started.
     //
     hvpp_info("Hypervisor started, current free memory: %" PRIu64 " MB",
-               mm::free_bytes() / 1024 / 1024);
+               mm::hypervisor_allocator()->free_bytes() / 1024 / 1024);
 
     return {};
   }

@@ -3,6 +3,7 @@
 
 #include "ia32/cpuid/cpuid_eax_01.h"
 #include "lib/assert.h"
+#include "lib/driver.h"
 #include "lib/log.h"
 #include "lib/mm.h"
 #include "lib/mp.h"
@@ -103,6 +104,28 @@ namespace hvpp::hypervisor
       });
 
     //
+    // Check if hypervisor-allocator has been set.
+    //
+    // If the driver is calling `hypervisor::start()' from
+    // the `driver::initialize()' method without manually
+    // setting the allocator, then the allocator will be empty.
+    //
+    if (!mm::hypervisor_allocator())
+    {
+      //
+      // Hypervisor-allocator has not been set - create default one.
+      //
+      // Note:
+      //   Default hypervisor allocator is automatically destroyed
+      //   in the `driver::common::destroy()' function.
+      //
+      if (auto err = driver::common::hypervisor_allocator_default_initialize())
+      {
+        return err;
+      }
+    }
+
+    //
     // Check that CPU supports all required features to
     // run this hypervisor.
     // Note that this check is performed only on current CPU
@@ -160,7 +183,7 @@ namespace hvpp::hypervisor
     // Destroy array of VCPUs.
     //
     std::destroy_n(global.vcpu_list, mp::cpu_count());
-    delete global.vcpu_list;
+    delete static_cast<void*>(global.vcpu_list);
 
     global.vcpu_list = nullptr;
 

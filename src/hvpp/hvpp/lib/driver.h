@@ -17,6 +17,14 @@ namespace driver
       ) noexcept -> error_code_t;
 
     void destroy() noexcept;
+
+    auto hypervisor_allocator_recommended_capacity() noexcept -> size_t;
+
+    auto system_allocator_default_initialize() noexcept -> error_code_t;
+    void system_allocator_default_destroy() noexcept;
+
+    auto hypervisor_allocator_default_initialize() noexcept -> error_code_t;
+    void hypervisor_allocator_default_destroy() noexcept;
   }
 
   auto initialize() noexcept -> error_code_t;

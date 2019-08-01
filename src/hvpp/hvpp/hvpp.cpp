@@ -218,6 +218,19 @@ HvppInitialize(
     return STATUS_INSUFFICIENT_RESOURCES;
   }
 
+  if (auto err = driver::common::system_allocator_default_initialize())
+  {
+    driver::common::destroy();
+    return STATUS_INSUFFICIENT_RESOURCES;
+  }
+
+  if (auto err = driver::common::hypervisor_allocator_default_initialize())
+  {
+    driver::common::system_allocator_default_destroy();
+    driver::common::destroy();
+    return STATUS_INSUFFICIENT_RESOURCES;
+  }
+
   return STATUS_SUCCESS;
 }
 
@@ -232,6 +245,8 @@ HvppDestroy(
   //
 
   driver::common::destroy();
+  driver::common::hypervisor_allocator_default_destroy();
+  driver::common::system_allocator_default_destroy();
 }
 
 NTSTATUS

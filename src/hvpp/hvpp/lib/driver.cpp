@@ -3,17 +3,22 @@
 #include "assert.h"
 #include "mm.h"
 #include "mp.h"
+#include "object.h"
 #include "log.h"
 
 #include <cinttypes>
 
 namespace driver::common
 {
-  void*  system_memory_ = nullptr;
-  size_t system_memory_size_ = 0;
+  static driver_initialize_fn driver_initialize_;
+  static driver_destroy_fn    driver_destroy_;
 
-  driver_initialize_fn driver_initialize_;
-  driver_destroy_fn    driver_destroy_;
+  static object_t<mm::system_memory_allocator> system_memory_allocator_object_;
+  static object_t<mm::hypervisor_memory_allocator> hypervisor_memory_allocator_object_;
+
+  static bool   has_default_hypervisor_allocator_ = false;
+  static void*  hypervisor_allocator_base_address_ = nullptr;
+  static size_t hypervisor_allocator_capacity_ = 0;
 
   auto
   initialize(
@@ -21,9 +26,6 @@ namespace driver::common
     driver_destroy_fn driver_destroy
     ) noexcept -> error_code_t
   {
-    hvpp_assert(system_memory_ == nullptr);
-    hvpp_assert(system_memory_size_ == 0);
-
     //
     // Either both must be set or both must be nullptr,
     // nothing else.
@@ -54,59 +56,46 @@ namespace driver::common
     mm::paging_descriptor().dump();
 
     //
-    // Estimate required memory size.
-    // If hypervisor begins to run out of memory, required_memory_size
-    // is the right variable to adjust.
+    // Initialize default system allocator.
     //
-    // Default required memory size is 34MB per CPU.
-    //
-    const auto required_memory_size = (
-      //
-      // Estimated EPT size:
-      // Make space for 2MB EPT entries for 512 GB of the physical
-      // memory.  Each EPT entry has 8 bytes.
-      // 512GB / 2MB * 8 = 256kb * 8 = 2MB per CPU.
-      //
-      ((512ull * 1024 * 1024 * 1024) / (2ull * 1024 * 1024) * 8)
-
-      +
-
-      //
-      // Additional 32MB per CPU.
-      //
-      (32ull * 1024 * 1024)
-      ) * mp::cpu_count();
-
-    //
-    // Round up to page boundary.
-    //
-    system_memory_size_ = ia32::round_to_pages(required_memory_size);
-
-    hvpp_info("Number of processors: %u", mp::cpu_count());
-    hvpp_info("Reserved memory:      %" PRIu64 " MB",
-              system_memory_size_ / 1024 / 1024);
-
-    //
-    // Allocate memory.
-    //
-    system_memory_ = mm::system_allocate(required_memory_size);
-
-    if (!system_memory_)
-    {
-      return make_error_code_t(std::errc::not_enough_memory);
-    }
-
-    //
-    // Assign allocated memory to the memory manager.
-    //
-    if (auto err = mm::assign(system_memory_, system_memory_size_))
+    if (auto err = system_allocator_default_initialize())
     {
       return err;
     }
 
-    return driver_initialize_
-      ? driver_initialize_()
-      : error_code_t{};
+    //
+    // If driver doesn't have initialize() function, we're finished.
+    //
+    if (!driver_initialize_)
+    {
+      return {};
+    }
+
+    //
+    // ...otherwise, call the provided initialize() function.
+    //
+    if (auto err = driver_initialize_())
+    {
+      return err;
+    }
+
+    //
+    // Check if hypervisor allocator has been set.
+    //
+    if (mm::hypervisor_allocator())
+    {
+      return {};
+    }
+
+    //
+    // ...if not, create default hypervisor allocator.
+    //
+    if (auto err = hypervisor_allocator_default_initialize())
+    {
+      return err;
+    }
+
+    return {};
   }
 
   void
@@ -127,11 +116,145 @@ namespace driver::common
     logger::destroy();
 
     //
+    // Destroy default hypervisor allocator (if constructed).
+    //
+    if (has_default_hypervisor_allocator_)
+    {
+      hypervisor_allocator_default_destroy();
+    }
+
+    //
+    // At last, destroy default system allocator.
+    //
+    system_allocator_default_destroy();
+  }
+
+  auto system_allocator_default_initialize() noexcept -> error_code_t
+  {
+    //
+    // Construct and assign system allocator object.
+    //
+    system_memory_allocator_object_.initialize();
+    mm::system_allocator(&*system_memory_allocator_object_);
+
+    return {};
+  }
+
+  void system_allocator_default_destroy() noexcept
+  {
+    //
+    // Unassign system allocator and destroy the object.
+    //
+    mm::system_allocator(nullptr);
+    system_memory_allocator_object_.destroy();
+  }
+
+  auto hypervisor_allocator_default_initialize() noexcept -> error_code_t
+  {
+    hvpp_assert(hypervisor_allocator_base_address_ == nullptr);
+    hvpp_assert(hypervisor_allocator_capacity_ == 0);
+
+    //
+    // Construct hypervisor allocator object.
+    //
+    hypervisor_memory_allocator_object_.initialize();
+
+    hypervisor_allocator_capacity_ = hypervisor_allocator_recommended_capacity();
+
+    hvpp_info("Number of processors: %u", mp::cpu_count());
+    hvpp_info("Reserved memory:      %" PRIu64 " MB",
+              hypervisor_allocator_capacity_ / 1024 / 1024);
+
+    //
+    // Allocate memory.
+    //
+    hypervisor_allocator_base_address_ = mm::system_allocator()->allocate(hypervisor_allocator_capacity_);
+
+    if (!hypervisor_allocator_base_address_)
+    {
+      return make_error_code_t(std::errc::not_enough_memory);
+    }
+
+    //
+    // Attach allocated memory.
+    //
+    if (auto err = hypervisor_memory_allocator_object_->attach(hypervisor_allocator_base_address_, hypervisor_allocator_capacity_))
+    {
+      return err;
+    }
+
+    //
+    // Assign allocator.
+    //
+    mm::hypervisor_allocator(&*hypervisor_memory_allocator_object_);
+
+    has_default_hypervisor_allocator_ = true;
+
+    return {};
+  }
+
+  void hypervisor_allocator_default_destroy() noexcept
+  {
+    if (!hypervisor_allocator_base_address_)
+    {
+      return;
+    }
+
+    if (!mm::hypervisor_allocator())
+    {
+      return;
+    }
+
+    //
+    // Unassign allocator.
+    //
+    mm::hypervisor_allocator(nullptr);
+
+    //
+    // Detach allocated memory.
+    //
+    hypervisor_memory_allocator_object_->detach();
+
+    //
+    // Destroy object.
+    //
+    hypervisor_memory_allocator_object_.destroy();
+
+    //
     // Return allocated memory back to the system.
     //
-    if (system_memory_)
-    {
-      mm::system_free(system_memory_);
-    }
+    mm::system_allocator()->free(hypervisor_allocator_base_address_);
+  }
+
+  auto hypervisor_allocator_recommended_capacity() noexcept -> size_t
+  {
+    //
+    // Estimate required memory size.
+    // If hypervisor begins to run out of memory, required_memory_size
+    // is the right variable to adjust.
+    //
+    // Default required memory size is 34MB per CPU.
+    //
+    const auto recommended_memory_size = (
+      //
+      // Estimated EPT size:
+      // Make space for 2MB EPT entries for 512 GB of the physical
+      // memory.  Each EPT entry has 8 bytes.
+      // 512GB / 2MB * 8 = 256kb * 8 = 2MB per CPU.
+      //
+      ((512ull * 1024 * 1024 * 1024) / (2ull * 1024 * 1024) * 8)
+
+      +
+
+      //
+      // Additional 32MB per CPU.
+      //
+      (32ull * 1024 * 1024)
+      ) * mp::cpu_count();
+
+    //
+    // Round up to page boundary.
+    //
+    return ia32::round_to_pages(recommended_memory_size);
   }
 }

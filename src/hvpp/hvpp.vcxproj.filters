@@ -76,6 +76,15 @@
     <Filter Include="Source Files\hvpp\lib\mm\win32">
       <UniqueIdentifier>{c53a048f-d7da-48c6-88a5-fa1ed9bfc1ed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\hvpp\lib\mm\memory_allocator">
+      <UniqueIdentifier>{feefc873-6b26-444a-a474-21d23ab84328}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\hvpp\lib\mm\memory_allocator">
+      <UniqueIdentifier>{63686d7b-f1d9-4d9b-85af-efede73a8e9f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\hvpp\lib\mm\memory_allocator\win32">
+      <UniqueIdentifier>{095769d8-145a-47c6-abfa-d8a363b91f9b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hvpp\lib\mm.cpp">
@@ -113,9 +122,6 @@
     </ClCompile>
     <ClCompile Include="hvpp\lib\log.cpp">
       <Filter>Source Files\hvpp\lib</Filter>
-    </ClCompile>
-    <ClCompile Include="hvpp\lib\win32\mm.cpp">
-      <Filter>Source Files\hvpp\lib\win32</Filter>
     </ClCompile>
     <ClCompile Include="hvpp\lib\driver.cpp">
       <Filter>Source Files\hvpp\lib</Filter>
@@ -161,6 +167,15 @@
     </ClCompile>
     <ClCompile Include="hvpp\lib\mm\win32\physical_memory_descriptor.cpp">
       <Filter>Source Files\hvpp\lib\mm\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\lib\mm\memory_allocator\hypervisor_memory_allocator.cpp">
+      <Filter>Source Files\hvpp\lib\mm\memory_allocator</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\lib\mm\memory_allocator\system_memory_allocator.cpp">
+      <Filter>Source Files\hvpp\lib\mm\memory_allocator</Filter>
+    </ClCompile>
+    <ClCompile Include="hvpp\lib\mm\memory_allocator\win32\system_memory_allocator.cpp">
+      <Filter>Source Files\hvpp\lib\mm\memory_allocator\win32</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -343,6 +358,15 @@
     </ClInclude>
     <ClInclude Include="hvpp\lib\deque.h">
       <Filter>Header Files\hvpp\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\lib\mm\memory_allocator\hypervisor_memory_allocator.h">
+      <Filter>Header Files\hvpp\lib\mm\memory_allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\lib\mm\memory_allocator\system_memory_allocator.h">
+      <Filter>Header Files\hvpp\lib\mm\memory_allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="hvpp\lib\mm\memory_allocator.h">
+      <Filter>Header Files\hvpp\lib\mm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

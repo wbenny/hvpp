@@ -104,6 +104,9 @@
     <ClCompile Include="hvpp\hvpp.cpp" />
     <ClCompile Include="hvpp\hypervisor.cpp" />
     <ClCompile Include="hvpp\ia32\memory.cpp" />
+    <ClCompile Include="hvpp\lib\mm\memory_allocator\hypervisor_memory_allocator.cpp" />
+    <ClCompile Include="hvpp\lib\mm\memory_allocator\system_memory_allocator.cpp" />
+    <ClCompile Include="hvpp\lib\mm\memory_allocator\win32\system_memory_allocator.cpp" />
     <ClCompile Include="hvpp\lib\mm\memory_mapper.cpp" />
     <ClCompile Include="hvpp\lib\mm\memory_translator.cpp" />
     <ClCompile Include="hvpp\lib\mm\win32\memory_mapper.cpp" />
@@ -128,7 +131,6 @@
     <ClCompile Include="hvpp\lib\win32\debugger.cpp" />
     <ClCompile Include="hvpp\lib\win32\device.cpp" />
     <ClCompile Include="hvpp\lib\win32\log.cpp" />
-    <ClCompile Include="hvpp\lib\win32\mm.cpp" />
     <ClCompile Include="hvpp\lib\win32\mp.cpp" />
     <ClCompile Include="hvpp\lib\win32\tracelog.cpp">
       <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ConformanceMode>
@@ -146,6 +148,9 @@
     <ClInclude Include="hvpp\config.h" />
     <ClInclude Include="hvpp\ept.h" />
     <ClInclude Include="hvpp\hypervisor.h" />
+    <ClInclude Include="hvpp\lib\mm\memory_allocator.h" />
+    <ClInclude Include="hvpp\lib\mm\memory_allocator\hypervisor_memory_allocator.h" />
+    <ClInclude Include="hvpp\lib\mm\memory_allocator\system_memory_allocator.h" />
     <ClInclude Include="hvpp\lib\mm\memory_mapper.h" />
     <ClInclude Include="hvpp\lib\mm\memory_translator.h" />
     <ClInclude Include="hvpp\lib\mm\mtrr_descriptor.h" />
