@@ -314,6 +314,8 @@ namespace mm
       !(alignment & (alignment - 1)) // is power of 2
     );
 
+    (void)(alignment);
+
     return allocate(size);
   }
 
