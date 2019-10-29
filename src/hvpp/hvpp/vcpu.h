@@ -31,13 +31,12 @@ class vcpu_t final
     auto vmx_enter() noexcept -> error_code_t;
     void vmx_leave() noexcept;
 
-    void ept_enable(uint16_t count = 1) noexcept;
+    void ept_enable() noexcept;
     void ept_disable() noexcept;
+    bool ept_is_enabled() const noexcept;
 
-    auto ept_index() noexcept -> uint16_t;
-    void ept_index(uint16_t index) noexcept;
-
-    auto ept(uint16_t index = 0) noexcept -> ept_t&;
+    auto ept() noexcept -> ept_t&;
+    void ept(ept_t& new_ept) noexcept;
 
     auto context() noexcept -> context_t&;
     void suppress_rip_adjust() noexcept;
@@ -435,8 +434,6 @@ class vcpu_t final
     state                 state_;
 
     ept_t*                ept_;
-    uint16_t              ept_count_;
-    uint16_t              ept_index_;
 
     //
     // Guest-resume support.

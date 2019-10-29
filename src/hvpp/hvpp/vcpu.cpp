@@ -44,8 +44,6 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
   // VM-exit handler is responsible for EPT setup.
   //
   , ept_{}
-  , ept_count_{}
-  , ept_index_{}
 
   //
   // Initialize timestamp-counter members.
@@ -224,11 +222,6 @@ void vcpu_t::stop() noexcept
   // index.
   //
   handler_.teardown(*this);
-
-  //
-  // Destroy EPT.
-  //
-  ept_disable();
 }
 
 auto vcpu_t::vmx_enter() noexcept -> error_code_t
@@ -237,7 +230,6 @@ auto vcpu_t::vmx_enter() noexcept -> error_code_t
   // Enter VMX operation, invalidate EPT and VPID, load VMCS,
   // set VMCS fields and call handler's setup() method.
   //
-
   if (auto err = load_vmxon())
   { return err; }
 
@@ -347,72 +339,40 @@ void vcpu_t::vmx_leave() noexcept
   state_ = state::terminated;
 }
 
-void vcpu_t::ept_enable(uint16_t count /* = 1 */) noexcept
+void vcpu_t::ept_enable() noexcept
 {
-  hvpp_assert(ept_ == nullptr && count > 0);
-
-  //
-  // Allocate all EPTs and initialize them.
-  //
-  ept_ = new ept_t[count];
-  ept_count_ = count;
-  hvpp_assert(ept_ != nullptr);
-
   //
   // Enable EPT.
   //
   auto procbased_ctls2 = processor_based_controls2();
   procbased_ctls2.enable_ept = true;
   processor_based_controls2(procbased_ctls2);
-
-  //
-  // Automatically select the first EPT.
-  //
-  ept_index(0);
 }
 
 void vcpu_t::ept_disable() noexcept
 {
-  if (!ept_)
-  {
-    return;
-  }
-
   //
-  // Disable EPT functionality.
+  // Disable EPT.
   //
-  if (state_ != state::terminated)
-  {
-    auto procbased_ctls2 = processor_based_controls2();
-    procbased_ctls2.enable_ept = false;
-    processor_based_controls2(procbased_ctls2);
-  }
-
-  //
-  // Destroy EPT.
-  //
-  delete[] ept_;
-  ept_ = nullptr;
+  auto procbased_ctls2 = processor_based_controls2();
+  procbased_ctls2.enable_ept = false;
+  processor_based_controls2(procbased_ctls2);
 }
 
-auto vcpu_t::ept_index() noexcept -> uint16_t
+bool vcpu_t::ept_is_enabled() const noexcept
 {
-  return ept_index_;
+  return processor_based_controls2().enable_ept;
 }
 
-void vcpu_t::ept_index(uint16_t index) noexcept
+auto vcpu_t::ept() noexcept -> ept_t&
 {
-  hvpp_assert(index < ept_count_);
-
-  ept_pointer(ept_[index].ept_pointer());
-  ept_index_ = index;
+  return *ept_;
 }
 
-auto vcpu_t::ept(uint16_t index /* = 0 */) noexcept -> ept_t&
+void vcpu_t::ept(ept_t& new_ept) noexcept
 {
-  hvpp_assert(index < ept_count_);
-
-  return ept_[index];
+  ept_ = &new_ept;
+  ept_pointer(ept_->ept_pointer());
 }
 
 auto vcpu_t::context() noexcept -> context_t&

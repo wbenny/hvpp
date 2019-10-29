@@ -24,6 +24,8 @@ class vmexit_custom_handler
   private:
     struct per_vcpu_data
     {
+      ept_t ept;
+
       pa_t page_read;
       pa_t page_exec;
     };

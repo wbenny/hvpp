@@ -2,6 +2,20 @@
 #include <ntddk.h>
 #include <hvpp/hvpp.h>
 
+NTSTATUS
+NTAPI
+HvppSetup(
+  _In_ PVCPU Vcpu,
+  _In_ PVOID Passthrough
+  );
+
+VOID
+NTAPI
+HvppTeardown(
+  _In_ PVCPU Vcpu,
+  _In_ PVOID Passthrough
+  );
+
 VOID
 NTAPI
 HvppHandleExecuteCpuid(

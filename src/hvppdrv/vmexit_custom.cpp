@@ -11,8 +11,11 @@ auto vmexit_custom_handler::setup(vcpu_t& vp) noexcept -> error_code_t
   //
   // Enable EPT and mirror current physical memory.
   //
-  vp.ept_enable();
+  auto& vp_data = data_[mp::cpu_index()];
+  vp.ept(vp_data.ept);
   vp.ept().map_identity();
+
+  vp.ept_enable();
 
 #if 1
   //

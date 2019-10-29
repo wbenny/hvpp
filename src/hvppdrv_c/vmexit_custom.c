@@ -10,10 +10,52 @@
 
 typedef struct _PER_VCPU_DATA
 {
-  PHYSICAL_ADDRESS PageRead;
-  PHYSICAL_ADDRESS PageExec;
+  PEPT              Ept;
+
+  PHYSICAL_ADDRESS  PageRead;
+  PHYSICAL_ADDRESS  PageExec;
 } PER_VCPU_DATA, *PPER_VCPU_DATA;
 
+
+NTSTATUS
+NTAPI
+HvppSetup(
+  _In_ PVCPU Vcpu,
+  _In_ PVOID Passthrough
+  )
+{
+  HvppPassthroughSetup(Passthrough);
+
+  PEPT Ept = HvppEptCreate();
+  HvppEptMapIdentity(Ept);
+
+  HvppVcpuEnableEpt(Vcpu);
+  HvppVcpuSetEpt(Vcpu, Ept);
+
+  PPER_VCPU_DATA UserData = HvppAllocate(sizeof(PER_VCPU_DATA));
+  RtlZeroMemory(UserData, sizeof(PER_VCPU_DATA));
+
+  UserData->Ept = Ept;
+  HvppVcpuSetUserData(Vcpu, UserData);
+
+  return STATUS_SUCCESS;
+}
+
+VOID
+NTAPI
+HvppTeardown(
+  _In_ PVCPU Vcpu,
+  _In_ PVOID Passthrough
+  )
+{
+  PEPT Ept = HvppVcpuGetEpt(Vcpu);
+  HvppEptDestroy(Ept);
+
+  PPER_VCPU_DATA UserData = (PPER_VCPU_DATA)(HvppVcpuGetUserData(Vcpu));
+  HvppFree(UserData);
+
+  HvppPassthroughTeardown(Passthrough);
+}
 
 VOID
 NTAPI
@@ -33,7 +75,7 @@ HvppHandleExecuteCpuid(
   }
   else
   {
-    HvppVmExitPassthrough(Passthrough);
+    HvppPassthroughHandler(Passthrough);
   }
 }
 
@@ -44,12 +86,12 @@ HvppHandleExecuteVmcall(
   _In_ PVOID Passthrough
   )
 {
-  UNREFERENCED_PARAMETER(Vcpu);
-
   PVCPU_CONTEXT Context = HvppVcpuContext(Vcpu);
-  PEPT Ept = HvppVcpuGetCurrentEpt(Vcpu);
+  PEPT Ept = HvppVcpuGetEpt(Vcpu);
 
   PPER_VCPU_DATA UserData = (PPER_VCPU_DATA)(HvppVcpuGetUserData(Vcpu));
+
+  NT_ASSERT(Ept == UserData->Ept);
 
   switch (Context->Rcx)
   {
@@ -89,7 +131,7 @@ HvppHandleExecuteVmcall(
       break;
 
     default:
-      HvppVmExitPassthrough(Passthrough);
+      HvppPassthroughHandler(Passthrough);
       break;
   }
 }
@@ -111,9 +153,11 @@ HvppHandleEptViolation(
   GuestPhysicalAddress.QuadPart = (LONGLONG)HvppVmRead(VMCS_VMEXIT_GUEST_PHYSICAL_ADDRESS);
   GuestLinearAddress            = (PVOID)   HvppVmRead(VMCS_VMEXIT_GUEST_LINEAR_ADDRESS);
 
-  PEPT Ept = HvppVcpuGetCurrentEpt(Vcpu);
+  PEPT Ept = HvppVcpuGetEpt(Vcpu);
 
   PPER_VCPU_DATA UserData = (PPER_VCPU_DATA)(HvppVcpuGetUserData(Vcpu));
+
+  NT_ASSERT(Ept == UserData->Ept);
 
   if (EptViolation.DataRead || EptViolation.DataWrite)
   {

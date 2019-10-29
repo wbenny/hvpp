@@ -12,7 +12,12 @@ class ept_t final
 {
   public:
     ept_t() noexcept;
+    ept_t(const ept_t& other) noexcept = delete;
+    ept_t(ept_t&& other) noexcept = delete;
     ~ept_t() noexcept;
+
+    ept_t& operator=(const ept_t& other) noexcept = delete;
+    ept_t& operator=(ept_t&& other) noexcept = delete;
 
     void map_identity(epte_t::access_type access = epte_t::access_type::read_write_execute) noexcept;
 

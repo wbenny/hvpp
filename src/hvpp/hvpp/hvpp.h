@@ -827,28 +827,64 @@ typedef PVOID PEPT;
 // VM-exit pass-through handler.
 //////////////////////////////////////////////////////////////////////////
 
-typedef VOID (NTAPI* PVMEXIT_PASSTROUGH_ROUTINE)(
-  _In_ PVOID PassthroughContext
-  );
-
 typedef struct _VMEXIT_PASSTHROUGH
 {
-  PVMEXIT_PASSTROUGH_ROUTINE PassthroughRoutine;
+  PVOID PassthroughRoutine;
   PVOID Context;
   // UCHAR Data[1];
 } VMEXIT_PASSTHROUGH, *PVMEXIT_PASSTHROUGH;
 
-#define HvppVmExitPassthrough(Passthrough)                    \
-  (((PVMEXIT_PASSTHROUGH)(Passthrough))->PassthroughRoutine(Passthrough));
-
-#define HvppVmContext(Passthrough)                            \
+#define HvppPassthroughContext(Passthrough)                   \
   ((PVMEXIT_PASSTHROUGH)(Passthrough)->Context)
+
+//
+// Setup.
+//
+
+typedef NTSTATUS (NTAPI* PVMEXIT_PASSTHROUGH_SETUP_ROUTINE)(
+  _In_ PVOID PassthroughContext
+  );
+
+#define HvppPassthroughSetup(Passthrough)                     \
+  (((PVMEXIT_PASSTHROUGH_SETUP_ROUTINE)(((PVMEXIT_PASSTHROUGH)(Passthrough))->PassthroughRoutine))(Passthrough));
+
+//
+// Teardown.
+//
+
+typedef VOID (NTAPI* PVMEXIT_PASSTHROUGH_TEARDOWN_ROUTINE)(
+  _In_ PVOID PassthroughContext
+  );
+
+#define HvppPassthroughTeardown(Passthrough)                  \
+  (((PVMEXIT_PASSTHROUGH_TEARDOWN_ROUTINE)(((PVMEXIT_PASSTHROUGH)(Passthrough))->PassthroughRoutine))(Passthrough));
+
+//
+// Handler.
+//
+
+typedef VOID (NTAPI* PVMEXIT_PASSTHROUGH_HANDLER_ROUTINE)(
+  _In_ PVOID PassthroughContext
+  );
+
+#define HvppPassthroughHandler(Passthrough)                   \
+  (((PVMEXIT_PASSTHROUGH_HANDLER_ROUTINE)(((PVMEXIT_PASSTHROUGH)(Passthrough))->PassthroughRoutine))(Passthrough));
 
 //////////////////////////////////////////////////////////////////////////
 // VM-exit handler.
 //////////////////////////////////////////////////////////////////////////
 
 typedef VOID (NTAPI* PVMEXIT_HANDLER_ROUTINE)(
+  _In_ PVCPU Vcpu,
+  _In_ PVOID Passthrough
+  );
+
+typedef NTSTATUS (NTAPI* PVMEXIT_HANDLER_SETUP_ROUTINE)(
+  _In_ PVCPU Vcpu,
+  _In_ PVOID Passthrough
+  );
+
+typedef VOID (NTAPI* PVMEXIT_HANDLER_TEARDOWN_ROUTINE)(
   _In_ PVCPU Vcpu,
   _In_ PVOID Passthrough
   );
@@ -1120,6 +1156,31 @@ typedef struct _EPTE
   };
 } EPTE, *PEPTE;
 
+PEPT
+NTAPI
+HvppEptCreate(
+  VOID
+  );
+
+VOID
+NTAPI
+HvppEptDestroy(
+  _In_ PEPT Ept
+  );
+
+VOID
+NTAPI
+HvppEptMapIdentity(
+  _In_ PEPT Ept
+  );
+
+VOID
+NTAPI
+HvppEptMapIdentityEx(
+  _In_ PEPT Ept,
+  _In_ ULONG Access
+  );
+
 PEPTE
 NTAPI
 HvppEptMap(
@@ -1227,7 +1288,9 @@ HvppDestroy(
 NTSTATUS
 NTAPI
 HvppStart(
-  _In_ PVMEXIT_HANDLER VmExitHandler
+  _In_ PVMEXIT_HANDLER VmExitHandler,
+  _In_ PVMEXIT_HANDLER_SETUP_ROUTINE SetupRoutine,
+  _In_ PVMEXIT_HANDLER_TEARDOWN_ROUTINE TeardownRoutine
   );
 
 VOID
@@ -1253,8 +1316,7 @@ HvppIsRunning(
 VOID
 NTAPI
 HvppVcpuEnableEpt(
-  _In_ PVCPU Vcpu,
-  _In_ USHORT Count
+  _In_ PVCPU Vcpu
   );
 
 VOID
@@ -1263,29 +1325,17 @@ HvppVcpuDisableEpt(
   _In_ PVCPU Vcpu
   );
 
-USHORT
-HvppVcpuGetEptIndex(
+PEPT
+NTAPI
+HvppVcpuGetEpt(
   _In_ PVCPU Vcpu
   );
 
 VOID
 NTAPI
-HvppVcpuSetEptIndex(
+HvppVcpuSetEpt(
   _In_ PVCPU Vcpu,
-  _In_ USHORT Index
-  );
-
-PEPT
-NTAPI
-HvppVcpuGetEpt(
-  _In_ PVCPU Vcpu,
-  _In_ USHORT Index
-  );
-
-PEPT
-NTAPI
-HvppVcpuGetCurrentEpt(
-  _In_ PVCPU Vcpu
+  _In_ PEPT Ept
   );
 
 PVCPU_CONTEXT
