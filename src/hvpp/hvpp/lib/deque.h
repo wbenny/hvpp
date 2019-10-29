@@ -3,6 +3,7 @@
 
 #include <array>      // std::array
 #include <memory>     // std::move
+#include <cstddef>    // size_t
 
 template <
   typename T,
