@@ -30,33 +30,33 @@ struct enum_operators
   }
 
 template<typename Enum1>
-constexpr typename std::enable_if_t<enum_operators<Enum1>::enable_neg, bool> operator!(Enum1 rhs) noexcept
+constexpr inline typename std::enable_if_t<enum_operators<Enum1>::enable_neg, bool> operator!(Enum1 rhs) noexcept
 { return static_cast<bool>(!static_cast<std::underlying_type_t<Enum1>>(rhs)); }
 
 template<typename Enum1>
-constexpr typename std::enable_if_t<enum_operators<Enum1>::enable_not, Enum1> operator~(Enum1 rhs) noexcept
+constexpr inline typename std::enable_if_t<enum_operators<Enum1>::enable_not, Enum1> operator~(Enum1 rhs) noexcept
 { return static_cast<Enum1>(~static_cast<std::underlying_type_t<Enum1>>(rhs)); }
 
 template<typename Enum1, typename Enum2>
-constexpr typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_and, Enum1> operator&(Enum1 lhs, Enum2 rhs) noexcept
+constexpr inline typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_and, Enum1> operator&(Enum1 lhs, Enum2 rhs) noexcept
 { return static_cast<Enum1>( static_cast<std::underlying_type_t<Enum1>>(lhs) & static_cast<std::underlying_type_t<Enum2>>(rhs)); }
 
 template<typename Enum1, typename Enum2>
-constexpr typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_or, Enum1> operator|(Enum1 lhs, Enum2 rhs) noexcept
+constexpr inline typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_or, Enum1> operator|(Enum1 lhs, Enum2 rhs) noexcept
 { return static_cast<Enum1>(static_cast<std::underlying_type_t<Enum1>>(lhs) | static_cast<std::underlying_type_t<Enum2>>(rhs)); }
 
 template<typename Enum1, typename Enum2>
-constexpr typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_xor, Enum1> operator^(Enum1 lhs, Enum2 rhs) noexcept
+constexpr inline typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_xor, Enum1> operator^(Enum1 lhs, Enum2 rhs) noexcept
 { return static_cast<Enum1>(static_cast<std::underlying_type_t<Enum1>>(lhs) ^ static_cast<std::underlying_type_t<Enum2>>(rhs)); }
 
 template<typename Enum1, typename Enum2>
-constexpr typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_and, Enum1>& operator&=(Enum1& lhs, Enum2 rhs) noexcept
+constexpr inline typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_and, Enum1>& operator&=(Enum1& lhs, Enum2 rhs) noexcept
 { return reinterpret_cast<Enum1&>(reinterpret_cast<std::underlying_type_t<Enum1>&>(lhs) &= static_cast<std::underlying_type_t<Enum2>>(rhs)); }
 
 template<typename Enum1, typename Enum2>
-constexpr typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_or, Enum1>& operator|=(Enum1& lhs, Enum2 rhs) noexcept
+constexpr inline typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_or, Enum1>& operator|=(Enum1& lhs, Enum2 rhs) noexcept
 { return reinterpret_cast<Enum1&>(reinterpret_cast<std::underlying_type_t<Enum1>&>(lhs) |= static_cast<std::underlying_type_t<Enum2>>(rhs)); }
 
 template<typename Enum1, typename Enum2>
-constexpr typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_xor, Enum1>& operator^=(Enum1& lhs, Enum2 rhs) noexcept
+constexpr inline typename std::enable_if_t<enum_operators<Enum1, Enum2>::enable_xor, Enum1>& operator^=(Enum1& lhs, Enum2 rhs) noexcept
 { return reinterpret_cast<Enum1&>(reinterpret_cast<std::underlying_type_t<Enum1>&>(lhs) ^= static_cast<std::underlying_type_t<Enum2>>(rhs)); }
