@@ -25,7 +25,8 @@ namespace detail {
 template <typename T>
 union u64_t
 {
-  static_assert(sizeof(T) <= 8);
+  static_assert(sizeof(T) <= sizeof(uint64_t));
+  static_assert(std::is_trivial_v<T>);
 
   uint64_t as_uint64_t;
   T        as_value;
@@ -44,7 +45,7 @@ template <typename T>
 auto adjust(T desired) noexcept
 {
   constexpr bool is_control_register =
-    std::is_same_v<T, cr0_t>                   ||
+    std::is_same_v<T, cr0_t>                      ||
     std::is_same_v<T, cr4_t>;
 
   constexpr bool is_dr6 =
@@ -54,15 +55,18 @@ auto adjust(T desired) noexcept
     std::is_same_v<T, dr7_t>;
 
   constexpr bool is_vmx_ctl_msr =
-    std::is_same_v<T, msr::vmx_pinbased_ctls_t>  ||
-    std::is_same_v<T, msr::vmx_procbased_ctls_t> ||
-    std::is_same_v<T, msr::vmx_entry_ctls_t>     ||
+    std::is_same_v<T, msr::vmx_pinbased_ctls_t>   ||
+    std::is_same_v<T, msr::vmx_procbased_ctls_t>  ||
+    std::is_same_v<T, msr::vmx_entry_ctls_t>      ||
     std::is_same_v<T, msr::vmx_exit_ctls_t>;
 
   constexpr bool is_vmx_procbased_ctls2_msr =
     std::is_same_v<T, msr::vmx_procbased_ctls2_t>;
 
-  static_assert(is_control_register || is_dr6|| is_dr7 || is_vmx_ctl_msr ||
+  static_assert(is_control_register               ||
+                is_dr6                            ||
+                is_dr7                            ||
+                is_vmx_ctl_msr                    ||
                 is_vmx_procbased_ctls2_msr,
                 "type is not adjustable");
 
@@ -110,7 +114,7 @@ auto adjust(T desired) noexcept
   }
   else if constexpr (is_vmx_ctl_msr)
   {
-    constexpr uint32_t true_msr_id = T::msr_id + 0xC;
+    constexpr auto true_msr_id = T::msr_id + 0xC;
     auto true_ctls = msr::read<msr::vmx_true_ctls_t>(true_msr_id);
 
     desired.flags |= true_ctls.allowed_0_settings;
@@ -177,7 +181,7 @@ template <
   typename TArg3   = uint64_t,
   typename TArg4   = uint64_t
 >
-inline TResult vmcall(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3(), TArg4 r9 = TArg4()) noexcept
+inline TResult vmcall_fast(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3(), TArg4 r9 = TArg4()) noexcept
 {
   detail::u64_t<TArg1>   a1{};
   detail::u64_t<TArg2>   a2{};
@@ -212,9 +216,9 @@ template <
   typename TArg9   = uint64_t,
   typename TArg10  = uint64_t
 >
-inline TResult vmcall_ex(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3(), TArg4 r9 = TArg4(),
-                         TArg5 r10 = TArg5(), TArg6 r11 = TArg6(), TArg7 r12 = TArg7(), TArg8 r13 = TArg8(),
-                         TArg9 r14 = TArg9(), TArg10 r15 = TArg10()) noexcept
+inline TResult vmcall_slow(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TArg3(), TArg4 r9 = TArg4(),
+                           TArg5 r10 = TArg5(), TArg6 r11 = TArg6(), TArg7 r12 = TArg7(), TArg8 r13 = TArg8(),
+                           TArg9 r14 = TArg9(), TArg10 r15 = TArg10()) noexcept
 {
   detail::u64_t<TArg1>   a1{};
   detail::u64_t<TArg2>   a2{};
@@ -252,6 +256,26 @@ inline TResult vmcall_ex(TArg1 rcx = TArg1(), TArg2 rdx = TArg2(), TArg3 r8 = TA
     a10.as_uint64_t);
 
   return r.as_value;
+}
+
+template <
+  typename TResult = uint64_t,
+  typename ...TArgs
+>
+inline TResult vmcall(TArgs... args) noexcept
+{
+  if constexpr (sizeof...(args) <= 4)
+  {
+    return vmcall_fast<TResult, TArgs...>(args...);
+  }
+  else if constexpr (sizeof...(args) <= 10)
+  {
+    return vmcall_slow<TResult, TArgs...>(args...);
+  }
+  else
+  {
+    static_assert("too many arguments");
+  }
 }
 
 inline error_code invept(invept_t type, invept_desc_t* descriptor = nullptr) noexcept

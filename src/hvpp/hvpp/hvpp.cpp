@@ -437,7 +437,7 @@ HvppVmCall(
   _In_ ULONG_PTR R9
   )
 {
-  return vmx::vmcall(Rcx, Rdx, R8, R9);
+  return vmx::vmcall_fast(Rcx, Rdx, R8, R9);
 }
 
 ULONG_PTR
@@ -455,7 +455,7 @@ HvppVmCallEx(
   _In_ ULONG_PTR R15
   )
 {
-  return vmx::vmcall_ex(Rcx, Rdx, R8, R9, R10, R11, R12, R13, R14, R15);
+  return vmx::vmcall_slow(Rcx, Rdx, R8, R9, R10, R11, R12, R13, R14, R15);
 }
 
 VOID
