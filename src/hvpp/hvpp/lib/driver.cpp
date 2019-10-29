@@ -224,6 +224,9 @@ namespace driver::common
     // Return allocated memory back to the system.
     //
     mm::system_allocator()->free(hypervisor_allocator_base_address_);
+
+    hypervisor_allocator_base_address_ = nullptr;
+    hypervisor_allocator_capacity_ = 0;
   }
 
   auto hypervisor_allocator_recommended_capacity() noexcept -> size_t
