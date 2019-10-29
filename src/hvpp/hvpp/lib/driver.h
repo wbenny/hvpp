@@ -6,6 +6,12 @@ namespace driver
   extern void* begin_address;
   extern void* end_address;
 
+  extern void* kernel_begin_address;
+  extern void* kernel_end_address;
+
+  extern void* highest_user_address;
+  extern void* system_range_start_address;
+
   namespace common
   {
     using driver_initialize_fn = error_code_t(*)();
