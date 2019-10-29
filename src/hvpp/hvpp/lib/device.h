@@ -48,5 +48,5 @@ class device
     static auto copy_to_user(void* buffer_to, const void* buffer_from, size_t length) noexcept -> error_code_t;
 
   private:
-    void* impl_;
+    void* impl_ = nullptr;
 };
