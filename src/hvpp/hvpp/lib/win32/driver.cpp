@@ -32,21 +32,11 @@ namespace driver
   void* end_address   = nullptr;
 }
 
-static
 NTSTATUS
 NTAPI
-ErrorCodeToNtStatus(
+HvppErrorCodeToNtStatus(
   error_code_t error
-  )
-{
-  //
-  // TODO: Something meaningful...
-  //
-  return !error
-    ? STATUS_SUCCESS
-    : STATUS_UNSUCCESSFUL;
-}
-
+  );
 
 NTSTATUS
 NTAPI
@@ -130,7 +120,7 @@ DriverDispatch(
   //
   // Complete the I/O request.
   //
-  Irp->IoStatus.Status = ErrorCodeToNtStatus(err);
+  Irp->IoStatus.Status = HvppErrorCodeToNtStatus(err);
   Irp->IoStatus.Information = BytesTransferred;
 
   IoCompleteRequest(Irp, IO_NO_INCREMENT);
@@ -170,7 +160,6 @@ DriverEntry(
   UNREFERENCED_PARAMETER(RegistryPath);
 
   GlobalDriverObject = DriverObject;
-
   DriverObject->MajorFunction[IRP_MJ_CREATE]         = &DriverDispatch;
   DriverObject->MajorFunction[IRP_MJ_CLOSE]          = &DriverDispatch;
   DriverObject->MajorFunction[IRP_MJ_READ]           = &DriverDispatch;
@@ -188,5 +177,5 @@ DriverEntry(
   //
   DriverObject->DriverUnload = &DriverUnload;
 
-  return ErrorCodeToNtStatus(err);
+  return HvppErrorCodeToNtStatus(err);
 }

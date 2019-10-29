@@ -17,12 +17,9 @@ using namespace hvpp;
 #define vcpu_                                                 ((vcpu_t*)Vcpu)
 #define ept_                                                  ((ept_t*)Ept)
 
-extern "C" {
-
-static
 NTSTATUS
 NTAPI
-ErrorCodeToNtStatus(
+HvppErrorCodeToNtStatus(
   error_code_t error
   )
 {
@@ -33,6 +30,22 @@ ErrorCodeToNtStatus(
     ? STATUS_SUCCESS
     : STATUS_UNSUCCESSFUL;
 }
+
+error_code_t
+NTAPI
+HvppNtStatusToErrorCode(
+  NTSTATUS Status
+  )
+{
+  if (!NT_SUCCESS(Status))
+  {
+    return make_error_code_t(std::errc::operation_not_supported);
+  }
+
+  return {};
+}
+
+extern "C" {
 
 //////////////////////////////////////////////////////////////////////////
 // ept.h
@@ -273,7 +286,7 @@ HvppStart(
   // Start the hypervisor.
   //
 
-  return ErrorCodeToNtStatus(hypervisor::start(*c_exit_handler));
+  return HvppErrorCodeToNtStatus(hypervisor::start(*c_exit_handler));
 }
 
 VOID
