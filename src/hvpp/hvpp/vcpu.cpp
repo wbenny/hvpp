@@ -63,7 +63,7 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
   //
   // Fill out initial stack with garbage.
   //
-  memset(stack_.data, 0xcc, sizeof(stack_));
+  memset(&stack_.data, 0xcc, sizeof(stack_));
 
   //
   // Reset CPU contexts.
@@ -90,6 +90,7 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
     constexpr intptr_t VCPU_CONTEXT_OFFSET              =   0;        // ..
     constexpr intptr_t VCPU_LAUNCH_CONTEXT_OFFSET       =   0;        // ... connected by union {}
                                                                       //
+
     static_assert(VCPU_RSP + VCPU_OFFSET                == offsetof(vcpu_t, stack_));
     static_assert(VCPU_RSP + VCPU_CONTEXT_OFFSET        == offsetof(vcpu_t, context_));
     static_assert(VCPU_RSP + VCPU_LAUNCH_CONTEXT_OFFSET == offsetof(vcpu_t, launch_context_));
@@ -443,12 +444,12 @@ auto vcpu_t::guest_va_to_pa(va_t guest_va) noexcept -> pa_t
   return translator_.va_to_pa(guest_va, ::detail::kernel_cr3(guest_cr3()));
 }
 
-auto vcpu_t::guest_read_memory(va_t guest_va, void* buffer, size_t size, bool ignore_errors /* = false*/) noexcept -> va_t
+auto vcpu_t::guest_read_memory(va_t guest_va, void* buffer, size_t size, bool ignore_errors /* = false */) noexcept -> va_t
 {
   return translator_.read(guest_va, ::detail::kernel_cr3(guest_cr3()), buffer, size, ignore_errors);
 }
 
-auto vcpu_t::guest_write_memory(va_t guest_va, const void* buffer, size_t size, bool ignore_errors /* = false*/) noexcept -> va_t
+auto vcpu_t::guest_write_memory(va_t guest_va, const void* buffer, size_t size, bool ignore_errors /* = false */) noexcept -> va_t
 {
   return translator_.write(guest_va, ::detail::kernel_cr3(guest_cr3()), buffer, size, ignore_errors);
 }

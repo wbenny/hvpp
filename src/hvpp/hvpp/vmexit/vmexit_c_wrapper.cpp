@@ -72,7 +72,7 @@ void vmexit_c_wrapper_handler::handle_passthrough(passthrough_context* context) 
 {
   //
   // Fetch the handler instance, method and vcpu_t reference
-  // from the pass-trough context and call that method.
+  // from the pass-through context and call that method.
   //
 
   const auto  handler_instance =  context->handler_instance;

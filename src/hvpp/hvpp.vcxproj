@@ -113,10 +113,7 @@
     <ClCompile Include="hvpp\lib\mm\win32\paging_descriptor.cpp" />
     <ClCompile Include="hvpp\lib\mm\win32\physical_memory_descriptor.cpp" />
     <ClCompile Include="hvpp\vcpu.cpp" />
-    <ClCompile Include="hvpp\vmexit.cpp">
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)/$(RelativeDir)/%(Filename)%(Extension).obj</ObjectFileName>
-    </ClCompile>
+    <ClCompile Include="hvpp\vmexit.cpp" />
     <ClCompile Include="hvpp\vmexit\vmexit_c_wrapper.cpp" />
     <ClCompile Include="hvpp\vmexit\vmexit_dbgbreak.cpp" />
     <ClCompile Include="hvpp\vmexit\vmexit_passthrough.cpp" />

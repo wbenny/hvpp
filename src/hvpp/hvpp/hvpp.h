@@ -824,7 +824,7 @@ typedef PVOID PVCPU;
 typedef PVOID PEPT;
 
 //////////////////////////////////////////////////////////////////////////
-// VM-exit pass-trough handler.
+// VM-exit pass-through handler.
 //////////////////////////////////////////////////////////////////////////
 
 typedef VOID (NTAPI* PVMEXIT_PASSTROUGH_ROUTINE)(
@@ -833,13 +833,13 @@ typedef VOID (NTAPI* PVMEXIT_PASSTROUGH_ROUTINE)(
 
 typedef struct _VMEXIT_PASSTHROUGH
 {
-  PVMEXIT_PASSTROUGH_ROUTINE PasstroughRoutine;
+  PVMEXIT_PASSTROUGH_ROUTINE PassthroughRoutine;
   PVOID Context;
   // UCHAR Data[1];
 } VMEXIT_PASSTHROUGH, *PVMEXIT_PASSTHROUGH;
 
 #define HvppVmExitPassthrough(Passthrough)                    \
-  (((PVMEXIT_PASSTHROUGH)(Passthrough))->PasstroughRoutine(Passthrough));
+  (((PVMEXIT_PASSTHROUGH)(Passthrough))->PassthroughRoutine(Passthrough));
 
 #define HvppVmContext(Passthrough)                            \
   ((PVMEXIT_PASSTHROUGH)(Passthrough)->Context)
