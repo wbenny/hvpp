@@ -180,7 +180,7 @@ class vmexit_handler
     //   Use `auto _ = vp.stacked_lock_guard(lock)' for acquiring spinlocks.
     //   Spinlocks that are locked this way are by always unlocked.
     //
-    virtual void handle_guest_resume(vcpu_t& vp) noexcept;
+    virtual void handle_guest_resume(vcpu_t& vp, bool was_force_resumed) noexcept;
 
   protected:
     //

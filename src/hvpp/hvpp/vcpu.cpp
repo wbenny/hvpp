@@ -831,6 +831,11 @@ void vcpu_t::entry_host() noexcept
       if (!resume_context_.capture())
       {
         handler_.handle(*this);
+
+        if (state_ != state::terminated)
+        {
+          handler_.handle_guest_resume(*this, false);
+        }
       }
       else
       {
@@ -843,7 +848,7 @@ void vcpu_t::entry_host() noexcept
           stacked_lock_guard_pop();
         }
 
-        handler_.handle_guest_resume(*this);
+        handler_.handle_guest_resume(*this, true);
       }
 
       if (state_ == state::terminated)

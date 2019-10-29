@@ -100,9 +100,10 @@ void vmexit_handler::handle(vcpu_t& vp) noexcept
   (this->*handlers_[handler_index])(vp);
 }
 
-void vmexit_handler::handle_guest_resume(vcpu_t& vp) noexcept
+void vmexit_handler::handle_guest_resume(vcpu_t& vp, bool was_force_resumed) noexcept
 {
   (void)(vp);
+  (void)(was_force_resumed);
 }
 
 //
