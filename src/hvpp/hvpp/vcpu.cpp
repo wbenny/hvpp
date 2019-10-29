@@ -54,6 +54,8 @@ vcpu_t::vcpu_t(vmexit_handler& handler) noexcept
   , tsc_delta_previous_{}
   , tsc_delta_sum_{}
 
+  , user_data_{}
+
   //
   // Well, this is also not necessary.
   // This member is reset to "false" on each VM-exit in entry_host() method.
@@ -421,6 +423,16 @@ auto vcpu_t::context() noexcept -> context_t&
 void vcpu_t::suppress_rip_adjust() noexcept
 {
   suppress_rip_adjust_ = true;
+}
+
+auto vcpu_t::user_data() noexcept -> void*
+{
+  return user_data_;
+}
+
+void vcpu_t::user_data(void* new_data) noexcept
+{
+  user_data_ = new_data;
 }
 
 void vcpu_t::guest_resume() noexcept

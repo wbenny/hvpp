@@ -394,6 +394,25 @@ HvppVcpuSuppressRipAdjust(
   vcpu_->suppress_rip_adjust();
 }
 
+PVOID
+NTAPI
+HvppVcpuGetUserData(
+  _In_ PVCPU Vcpu
+  )
+{
+  return vcpu_->user_data();
+}
+
+VOID
+NTAPI
+HvppVcpuSetUserData(
+  _In_ PVCPU Vcpu,
+  _In_ PVOID UserData
+  )
+{
+  vcpu_->user_data(UserData);
+}
+
 #pragma endregion
 
 //////////////////////////////////////////////////////////////////////////

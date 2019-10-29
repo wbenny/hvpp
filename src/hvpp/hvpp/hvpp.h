@@ -1300,6 +1300,19 @@ HvppVcpuSuppressRipAdjust(
   _In_ PVCPU Vcpu
   );
 
+PVOID
+NTAPI
+HvppVcpuGetUserData(
+  _In_ PVCPU Vcpu
+  );
+
+VOID
+NTAPI
+HvppVcpuSetUserData(
+  _In_ PVCPU Vcpu,
+  _In_ PVOID UserData
+  );
+
 #pragma endregion
 
 //////////////////////////////////////////////////////////////////////////

@@ -14,7 +14,6 @@ typedef struct _PER_VCPU_DATA
   PHYSICAL_ADDRESS PageExec;
 } PER_VCPU_DATA, *PPER_VCPU_DATA;
 
-PER_VCPU_DATA PerVcpuData[32];
 
 VOID
 NTAPI
@@ -50,7 +49,7 @@ HvppHandleExecuteVmcall(
   PVCPU_CONTEXT Context = HvppVcpuContext(Vcpu);
   PEPT Ept = HvppVcpuGetCurrentEpt(Vcpu);
 
-  PPER_VCPU_DATA Data = &PerVcpuData[KeGetCurrentProcessorNumberEx(NULL)];
+  PPER_VCPU_DATA UserData = (PPER_VCPU_DATA)(HvppVcpuGetUserData(Vcpu));
 
   switch (Context->Rcx)
   {
@@ -58,22 +57,22 @@ HvppHandleExecuteVmcall(
       {
         ULONG_PTR Cr3;
         HvppAttachAddressSpace(&Cr3);
-        Data->PageRead = MmGetPhysicalAddress(Context->RdxAsPointer);
-        Data->PageExec = MmGetPhysicalAddress(Context->R8AsPointer);
+        UserData->PageRead = MmGetPhysicalAddress(Context->RdxAsPointer);
+        UserData->PageExec = MmGetPhysicalAddress(Context->R8AsPointer);
         HvppDetachAddressSpace(Cr3);
       }
 
       HvppTrace("vmcall (hook) EXEC: 0x%p READ: 0x%p",
-                Data->PageExec.QuadPart,
-                Data->PageRead.QuadPart);
+                UserData->PageExec.QuadPart,
+                UserData->PageRead.QuadPart);
 
       HvppEptSplit2MbTo4Kb(Ept,
-                           EPT_PD_PAGE_ALIGN(Data->PageExec),
-                           EPT_PD_PAGE_ALIGN(Data->PageExec));
+                           EPT_PD_PAGE_ALIGN(UserData->PageExec),
+                           EPT_PD_PAGE_ALIGN(UserData->PageExec));
 
       HvppEptMap4Kb(Ept,
-                    Data->PageExec,
-                    Data->PageExec,
+                    UserData->PageExec,
+                    UserData->PageExec,
                     EPT_ACCESS_EXECUTE);
 
       HvppInveptSingleContext(HvppEptGetEptPointer(Ept));
@@ -83,8 +82,8 @@ HvppHandleExecuteVmcall(
       HvppTrace("vmcall (unhook)");
 
       HvppEptJoin4KbTo2Mb(Ept,
-                          EPT_PD_PAGE_ALIGN(Data->PageExec),
-                          EPT_PD_PAGE_ALIGN(Data->PageExec));
+                          EPT_PD_PAGE_ALIGN(UserData->PageExec),
+                          EPT_PD_PAGE_ALIGN(UserData->PageExec));
 
       HvppInveptSingleContext(HvppEptGetEptPointer(Ept));
       break;
@@ -114,7 +113,7 @@ HvppHandleEptViolation(
 
   PEPT Ept = HvppVcpuGetCurrentEpt(Vcpu);
 
-  PPER_VCPU_DATA Data = &PerVcpuData[KeGetCurrentProcessorNumberEx(NULL)];
+  PPER_VCPU_DATA UserData = (PPER_VCPU_DATA)(HvppVcpuGetUserData(Vcpu));
 
   if (EptViolation.DataRead || EptViolation.DataWrite)
   {
@@ -123,8 +122,8 @@ HvppHandleEptViolation(
               GuestPhysicalAddress.QuadPart);
 
     HvppEptMap4Kb(Ept,
-                  Data->PageExec,
-                  Data->PageRead,
+                  UserData->PageExec,
+                  UserData->PageRead,
                   EPT_ACCESS_READ_WRITE);
   }
   else if (EptViolation.DataExecute)
@@ -134,8 +133,8 @@ HvppHandleEptViolation(
               GuestPhysicalAddress.QuadPart);
 
     HvppEptMap4Kb(Ept,
-                  Data->PageExec,
-                  Data->PageExec,
+                  UserData->PageExec,
+                  UserData->PageExec,
                   EPT_ACCESS_EXECUTE);
   }
 

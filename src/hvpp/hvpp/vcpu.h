@@ -42,6 +42,9 @@ class vcpu_t final
     auto context() noexcept -> context_t&;
     void suppress_rip_adjust() noexcept;
 
+    auto user_data() noexcept -> void*;
+    void user_data(void* data) noexcept;
+
     //
     // Guest helper methods.
     //
@@ -458,6 +461,8 @@ class vcpu_t final
     // Pending interrupt queue (FIFO).
     //
     interrupt_queue_t     pending_interrupt_queue_[interrupt_queue_max];
+
+    void*                 user_data_;
 
     bool                  suppress_rip_adjust_;
 };
