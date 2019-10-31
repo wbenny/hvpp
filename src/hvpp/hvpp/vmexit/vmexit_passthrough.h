@@ -16,6 +16,7 @@ class vmexit_passthrough_handler
   public:
     auto setup(vcpu_t& vp) noexcept -> error_code_t override;
     void teardown(vcpu_t& vp) noexcept override;
+    void terminate(vcpu_t& vp) noexcept override;
 
   protected:
     void handle_exception_or_nmi(vcpu_t& vp) noexcept override;

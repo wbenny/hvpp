@@ -304,7 +304,8 @@ NTAPI
 HvppStart(
   _In_ PVMEXIT_HANDLER VmExitHandler,
   _In_ PVMEXIT_HANDLER_SETUP_ROUTINE SetupRoutine,
-  _In_ PVMEXIT_HANDLER_TEARDOWN_ROUTINE TeardownRoutine
+  _In_ PVMEXIT_HANDLER_TEARDOWN_ROUTINE TeardownRoutine,
+  _In_ PVMEXIT_HANDLER_TERMINATE_ROUTINE TerminateRoutine
   )
 {
   //
@@ -319,7 +320,7 @@ HvppStart(
   //
 
   hvpp_assert(c_exit_handler == nullptr);
-  c_exit_handler = new vmexit_c_wrapper_handler(c_handlers, SetupRoutine, TeardownRoutine, NULL);
+  c_exit_handler = new vmexit_c_wrapper_handler(c_handlers, SetupRoutine, TeardownRoutine, TerminateRoutine, NULL);
 
   //
   // Start the hypervisor.

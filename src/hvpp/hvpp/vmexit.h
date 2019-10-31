@@ -120,8 +120,7 @@ class vmexit_handler
     // Constructor & destructor.
     //
     // Note:
-    //   Constructor & destructor is guaranteed to NOT be called
-    //   in VMX-root mode.
+    //   Constructor & destructor is called in VMX-non-root mode.
     //   Therefore, avoid execution of any VMX instructions there.
     //
              vmexit_handler() noexcept;
@@ -136,28 +135,46 @@ class vmexit_handler
     vmexit_handler& operator=(vmexit_handler&& other) noexcept = delete;
 
     //
-    // This method allows you to set up VCPU state before VMLAUNCH.
-    // Use this method for setting up VMCS.
+    // This method is responsible for setup of VCPU state & VMCS and
+    // allocation of resources for the VM-exit handler.
+    //
+    // It is called after VMXON but before VMLAUNCH, from the
+    // vcpu_t::vmx_enter() method.
     //
     // Note:
-    //   This method is guaranteed to be called in VMX-root mode.
+    //   This method is called in VMX-root mode.
     //
     virtual auto setup(vcpu_t& vp) noexcept -> error_code_t;
 
     //
-    // This method is called from vcpu_t::stop() method.
-    // It should be responsible for initiating VM tear-down
-    // and disabling the VMX mode.
+    // This method is responsible for freeing resources acquired in
+    // the setup() method.
+    //
+    // It is called after VMXOFF, from the vcpu_t::vmx_leave() method.
     //
     // Note:
-    //   This method is guaranteed to NOT be called in VMX-root mode.
-    //   Therefore, avoid execution of any VMX instructions there
-    //   (including VMXOFF).
-    //
-    //   If you wish to execute code in VMX-root mode when this method
-    //   is called, use "vmcall".
+    //   This method is called in VMX-non-root mode.
     //
     virtual void teardown(vcpu_t& vp) noexcept;
+
+    //
+    // This method is responsible for initiating termination of the
+    // VMX operation (i.e. leaving the virtualization mode).
+    //
+    // Note:
+    //   It must NOT execute the VMXOFF instruction directly, because
+    //   it is NOT called from VMX-root mode - instead, it should
+    //   perform such operation that causes distinguishable VM-exit,
+    //   which in turn executes the VMXOFF instruction.
+    //
+    //   Example might be performing VMCALL with RCX set to special
+    //   value that handle_execute_vmcall() recognizes, and calls
+    //   vp.vmx_leave().
+    //
+    //   See implementation of vmexit_passthrough_handler::terminate()
+    //   and vmexit_passthrough_handler::handle_execute_vmcall().
+    //
+    virtual void terminate(vcpu_t& vp) noexcept;
 
     //
     // This method is called on every VM-exit.
@@ -297,6 +314,13 @@ class vmexit_compositor_handler
       for_each_element(handlers, [&](auto&& handler, int) {
         handler.teardown(vp);
       });
+    }
+
+    void terminate(vcpu_t& vp) noexcept override
+    {
+      for_each_element(handlers, [&](auto&& handler, int) {
+        handler.terminate(vp);
+        });
     }
 
     void handle(vcpu_t& vp) noexcept override

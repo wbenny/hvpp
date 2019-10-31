@@ -94,6 +94,11 @@ void vmexit_handler::teardown(vcpu_t& vp) noexcept
   (void)(vp);
 }
 
+void vmexit_handler::terminate(vcpu_t& vp) noexcept
+{
+  (void)(vp);
+}
+
 void vmexit_handler::handle(vcpu_t& vp) noexcept
 {
   const auto handler_index = static_cast<int>(vp.exit_reason());

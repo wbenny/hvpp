@@ -4,7 +4,13 @@
 
 namespace hvpp {
 
-vmexit_c_wrapper_handler::vmexit_c_wrapper_handler(const c_handler_array_t& c_handlers, c_handler_setup_fn_t setup_callback, c_handler_teardown_fn_t teardown_callback, void* context /*= nullptr */) noexcept
+vmexit_c_wrapper_handler::vmexit_c_wrapper_handler(
+  const c_handler_array_t& c_handlers,
+  c_handler_setup_fn_t setup_callback,
+  c_handler_teardown_fn_t teardown_callback,
+  c_handler_terminate_fn_t terminate_callback,
+  void* context /*= nullptr */
+  ) noexcept
 {
   //
   // Make local copy of the C-handlers.
@@ -13,6 +19,7 @@ vmexit_c_wrapper_handler::vmexit_c_wrapper_handler(const c_handler_array_t& c_ha
   c_handlers_ = c_handlers;
   setup_callback_ = setup_callback;
   teardown_callback_ = teardown_callback;
+  terminate_callback_ = terminate_callback;
   context_ = context;
 }
 
@@ -29,11 +36,11 @@ auto vmexit_c_wrapper_handler::setup(vcpu_t& vp) noexcept -> error_code_t
     // C-handler has been defined - call that routine.
     //
 
-    auto context = passthrough_setup_context{
+    auto context = passthrough_context{
       .passthrough_routine = passthrough_fn_t(&vmexit_c_wrapper_handler::handle_passthrough_setup),
       .context             = context_,
       .handler_instance    = this,
-      .handler_method      = &base_type::setup,
+      .handler_method      = nullptr,
       .vcpu                = &vp,
     };
 
@@ -57,11 +64,11 @@ void vmexit_c_wrapper_handler::teardown(vcpu_t& vp) noexcept
     // C-handler has been defined - call that routine.
     //
 
-    auto context = passthrough_teardown_context{
+    auto context = passthrough_context{
       .passthrough_routine = passthrough_fn_t(&vmexit_c_wrapper_handler::handle_passthrough_teardown),
       .context             = context_,
       .handler_instance    = this,
-      .handler_method      = &vmexit_c_wrapper_handler::teardown,
+      .handler_method      = nullptr,
       .vcpu                = &vp,
     };
 
@@ -73,9 +80,38 @@ void vmexit_c_wrapper_handler::teardown(vcpu_t& vp) noexcept
     // C-handler has not been defined - call the pass-through handler.
     //
 
-    teardown(vp);
+    base_type::teardown(vp);
   }
 }
+
+void vmexit_c_wrapper_handler::terminate(vcpu_t& vp) noexcept
+{
+  if (terminate_callback_)
+  {
+    //
+    // C-handler has been defined - call that routine.
+    //
+
+    auto context = passthrough_context{
+      .passthrough_routine = passthrough_fn_t(&vmexit_c_wrapper_handler::handle_passthrough_terminate),
+      .context             = context_,
+      .handler_instance    = this,
+      .handler_method      = nullptr,
+      .vcpu                = &vp,
+    };
+
+    terminate_callback_(&vp, &context);
+  }
+  else
+  {
+    //
+    // C-handler has not been defined - call the pass-through handler.
+    //
+
+    base_type::terminate(vp);
+  }
+}
+
 
 void vmexit_c_wrapper_handler::handle(vcpu_t& vp) noexcept
 {
@@ -91,7 +127,7 @@ void vmexit_c_wrapper_handler::handle(vcpu_t& vp) noexcept
     // C-handler has been defined - call that routine.
     //
 
-    auto context = passthrough_handler_context{
+    auto context = passthrough_context{
       .passthrough_routine = passthrough_fn_t(&vmexit_c_wrapper_handler::handle_passthrough_handler),
       .context             = context_,
       .handler_instance    = this,
@@ -111,25 +147,31 @@ void vmexit_c_wrapper_handler::handle(vcpu_t& vp) noexcept
   }
 }
 
-auto vmexit_c_wrapper_handler::handle_passthrough_setup(passthrough_setup_context* context) noexcept -> error_code_t
+auto vmexit_c_wrapper_handler::handle_passthrough_setup(passthrough_context* context) noexcept -> error_code_t
 {
   const auto  handler_instance =  context->handler_instance;
-  const auto  handler_method   =  context->handler_method;
         auto& vp               = *context->vcpu;
 
-  return (handler_instance->*handler_method)(vp);
+  return handler_instance->base_type::setup(vp);
 }
 
-void vmexit_c_wrapper_handler::handle_passthrough_teardown(passthrough_teardown_context* context) noexcept
+void vmexit_c_wrapper_handler::handle_passthrough_teardown(passthrough_context* context) noexcept
 {
   const auto  handler_instance =  context->handler_instance;
-  const auto  handler_method   =  context->handler_method;
         auto& vp               = *context->vcpu;
 
-  (handler_instance->*handler_method)(vp);
+  handler_instance->base_type::teardown(vp);
 }
 
-void vmexit_c_wrapper_handler::handle_passthrough_handler(passthrough_handler_context* context) noexcept
+void vmexit_c_wrapper_handler::handle_passthrough_terminate(passthrough_context* context) noexcept
+{
+  const auto  handler_instance =  context->handler_instance;
+        auto& vp               = *context->vcpu;
+
+  handler_instance->base_type::terminate(vp);
+}
+
+void vmexit_c_wrapper_handler::handle_passthrough_handler(passthrough_context* context) noexcept
 {
   //
   // Fetch the handler instance, method and vcpu_t reference

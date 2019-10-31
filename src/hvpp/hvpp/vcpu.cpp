@@ -221,7 +221,7 @@ void vcpu_t::stop() noexcept
   // handler to call vcpu_t::vmx_leave(); e.g. VMCALL with specific
   // index.
   //
-  handler_.teardown(*this);
+  handler_.terminate(*this);
 }
 
 auto vcpu_t::vmx_enter() noexcept -> error_code_t
@@ -337,6 +337,11 @@ void vcpu_t::vmx_leave() noexcept
   // Signalize that this VCPU has terminated.
   //
   state_ = state::terminated;
+
+  //
+  // Finally, call teardown method.
+  //
+  handler_.teardown(*this);
 }
 
 void vcpu_t::ept_enable() noexcept

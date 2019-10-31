@@ -48,7 +48,7 @@ DriverEntry(
     [VMEXIT_REASON_EPT_VIOLATION]  = &HvppHandleEptViolation,
   } };
 
-  Status = HvppStart(&VmExitHandler, &HvppSetup, &HvppTeardown);
+  Status = HvppStart(&VmExitHandler, &HvppSetup, &HvppTeardown, NULL);
 
   if (!NT_SUCCESS(Status))
   {

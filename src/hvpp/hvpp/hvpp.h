@@ -860,6 +860,17 @@ typedef VOID (NTAPI* PVMEXIT_PASSTHROUGH_TEARDOWN_ROUTINE)(
   (((PVMEXIT_PASSTHROUGH_TEARDOWN_ROUTINE)(((PVMEXIT_PASSTHROUGH)(Passthrough))->PassthroughRoutine))(Passthrough));
 
 //
+// Terminate.
+//
+
+typedef VOID (NTAPI* PVMEXIT_PASSTHROUGH_TERMINATE_ROUTINE)(
+  _In_ PVOID PassthroughContext
+  );
+
+#define HvppPassthroughTerminate(Passthrough)                 \
+  (((PVMEXIT_PASSTHROUGH_TERMINATE_ROUTINE)(((PVMEXIT_PASSTHROUGH)(Passthrough))->PassthroughRoutine))(Passthrough));
+
+//
 // Handler.
 //
 
@@ -885,6 +896,11 @@ typedef NTSTATUS (NTAPI* PVMEXIT_HANDLER_SETUP_ROUTINE)(
   );
 
 typedef VOID (NTAPI* PVMEXIT_HANDLER_TEARDOWN_ROUTINE)(
+  _In_ PVCPU Vcpu,
+  _In_ PVOID Passthrough
+  );
+
+typedef VOID (NTAPI* PVMEXIT_HANDLER_TERMINATE_ROUTINE)(
   _In_ PVCPU Vcpu,
   _In_ PVOID Passthrough
   );
@@ -1290,7 +1306,8 @@ NTAPI
 HvppStart(
   _In_ PVMEXIT_HANDLER VmExitHandler,
   _In_ PVMEXIT_HANDLER_SETUP_ROUTINE SetupRoutine,
-  _In_ PVMEXIT_HANDLER_TEARDOWN_ROUTINE TeardownRoutine
+  _In_ PVMEXIT_HANDLER_TEARDOWN_ROUTINE TeardownRoutine,
+  _In_ PVMEXIT_HANDLER_TERMINATE_ROUTINE TerminateRoutine
   );
 
 VOID

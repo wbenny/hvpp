@@ -16,6 +16,7 @@ class vmexit_custom_handler
     using base_type = vmexit_passthrough_handler;
 
     auto setup(vcpu_t& vp) noexcept -> error_code_t override;
+    void teardown(vcpu_t& vp) noexcept override;
 
     void handle_execute_cpuid(vcpu_t& vp) noexcept override;
     void handle_execute_vmcall(vcpu_t& vp) noexcept override;
@@ -30,5 +31,5 @@ class vmexit_custom_handler
       pa_t page_exec;
     };
 
-    per_vcpu_data data_[32];
+    auto user_data(vcpu_t& vp) noexcept -> per_vcpu_data&;
 };

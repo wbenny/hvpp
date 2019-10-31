@@ -9,12 +9,18 @@ auto vmexit_custom_handler::setup(vcpu_t& vp) noexcept -> error_code_t
   base_type::setup(vp);
 
   //
-  // Enable EPT and mirror current physical memory.
+  // Set per-VCPU data and mirror current physical memory in EPT.
   //
-  auto& vp_data = data_[mp::cpu_index()];
-  vp.ept(vp_data.ept);
-  vp.ept().map_identity();
+  auto data = new per_vcpu_data{};
+  data->ept.map_identity();
+  data->page_exec = 0;
+  data->page_read = 0;
+  vp.user_data(data);
 
+  //
+  // Enable EPT.
+  //
+  vp.ept(data->ept);
   vp.ept_enable();
 
 #if 1
@@ -138,6 +144,14 @@ auto vmexit_custom_handler::setup(vcpu_t& vp) noexcept -> error_code_t
   return {};
 }
 
+void vmexit_custom_handler::teardown(vcpu_t& vp) noexcept
+{
+  auto& data = user_data(vp);
+  delete &data;
+
+  vp.user_data(nullptr);
+}
+
 void vmexit_custom_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
 {
   if (vp.context().eax == 'ppvh')
@@ -158,7 +172,7 @@ void vmexit_custom_handler::handle_execute_cpuid(vcpu_t& vp) noexcept
 
 void vmexit_custom_handler::handle_execute_vmcall(vcpu_t& vp) noexcept
 {
-  auto& data = data_[mp::cpu_index()];
+  auto& data = user_data(vp);
 
   switch (vp.context().rcx)
   {
@@ -218,7 +232,7 @@ void vmexit_custom_handler::handle_ept_violation(vcpu_t& vp) noexcept
   auto guest_pa = vp.exit_guest_physical_address();
   auto guest_va = vp.exit_guest_linear_address();
 
-  auto& data = data_[mp::cpu_index()];
+  auto& data = user_data(vp);
 
   if (exit_qualification.data_read || exit_qualification.data_write)
   {
@@ -277,4 +291,9 @@ void vmexit_custom_handler::handle_ept_violation(vcpu_t& vp) noexcept
   // again (this time without EPT violation).
   //
   vp.suppress_rip_adjust();
+}
+
+auto vmexit_custom_handler::user_data(vcpu_t& vp) noexcept -> per_vcpu_data&
+{
+  return *reinterpret_cast<per_vcpu_data*>(vp.user_data());
 }

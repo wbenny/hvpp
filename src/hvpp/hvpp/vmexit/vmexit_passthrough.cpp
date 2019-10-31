@@ -81,6 +81,11 @@ auto vmexit_passthrough_handler::setup(vcpu_t& vp) noexcept -> error_code_t
 void vmexit_passthrough_handler::teardown(vcpu_t& vp) noexcept
 {
   (void)(vp);
+}
+
+void vmexit_passthrough_handler::terminate(vcpu_t& vp) noexcept
+{
+  (void)(vp);
 
   vmx::vmcall(vmcall_terminate_id);
 }
