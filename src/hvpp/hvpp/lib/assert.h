@@ -1,7 +1,10 @@
 #pragma once
 #include "debugger.h"
+#include "../config.h"
 
-#if 1
+#if defined(HVPP_DISABLE_ASSERT)
+# define hvpp_assert(expression)
+#else
 # define hvpp_assert(expression)                        \
   do                                                    \
   {                                                     \
@@ -9,6 +12,4 @@
       debugger::breakpoint();                           \
     }                                                   \
   } while (0)
-#else
-# define hvpp_assert(expression)
 #endif

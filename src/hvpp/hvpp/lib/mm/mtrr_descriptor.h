@@ -101,7 +101,8 @@ namespace mm
 
       void dump() const noexcept
       {
-        auto dump_range = [](int i, const mtrr_range& mtrr) noexcept
+        auto dump_range = []([[maybe_unused]] int i,
+                             [[maybe_unused]] const mtrr_range& mtrr) noexcept
         {
           hvpp_info(
             "  %3i) %s [%016" PRIx64 " - %016" PRIx64 "] (%8u kb)", i,
