@@ -1197,6 +1197,19 @@ HvppEptMapIdentityEx(
   _In_ ULONG Access
   );
 
+VOID
+NTAPI
+HvppEptMapIdentitySparse(
+  _In_ PEPT Ept
+  );
+
+VOID
+NTAPI
+HvppEptMapIdentitySparseEx(
+  _In_ PEPT Ept,
+  _In_ ULONG Access
+  );
+
 PEPTE
 NTAPI
 HvppEptMap(

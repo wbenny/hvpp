@@ -90,6 +90,25 @@ HvppEptMapIdentityEx(
   ept_->map_identity((epte_t::access_type)(Access));
 }
 
+VOID
+NTAPI
+HvppEptMapIdentitySparse(
+  _In_ PEPT Ept
+  )
+{
+  ept_->map_identity_sparse();
+}
+
+VOID
+NTAPI
+HvppEptMapIdentitySparseEx(
+  _In_ PEPT Ept,
+  _In_ ULONG Access
+  )
+{
+  ept_->map_identity_sparse((epte_t::access_type)(Access));
+}
+
 PEPTE
 NTAPI
 HvppEptMap(

@@ -71,12 +71,6 @@ void ept_t::map_identity(epte_t::access_type access /* = epte_t::access_type::re
   //     loss.
   //
 
-  //
-  // TODO:
-  //   - Map only valid physical memory ranges?
-  //   - Map up to max valid physical memory address? (incl. "holes")
-  //
-
   static constexpr auto _512gb = 512ull * 1024
                                         * 1024
                                         * 1024;
@@ -84,6 +78,41 @@ void ept_t::map_identity(epte_t::access_type access /* = epte_t::access_type::re
   for (pa_t pa = 0; pa < _512gb; pa += ept_pd_t::size)
   {
     map_2mb(pa, pa, access);
+  }
+}
+
+void ept_t::map_identity_sparse(epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
+{
+  //
+  // This method is similar to the map_identity() method above, except that
+  // the memory is covered by using physical_memory_descriptor() as opposed to
+  // covering the first 512 GB of physical memory.
+  //
+  // The benefit of this approach is that it uses significantly less memory
+  // for the EPT structures. Only addresses backed by actual physical memory
+  // are mapped (considering that the machine doesn't have 512 GB+).
+  //
+  // The drawback of this approach is that it doesn't cover MMIO address ranges.
+  // Therefore there is a good chance that you'll receive several EPT violations.
+  // EPT violation handler then should create and map EPT entries for the missing
+  // pages.
+  //
+
+  //
+  // #TODO
+  // Consider combined approach where the first 4GB is mapped unconditionally (most
+  // MMIO is there) and rest is filled with physical_memory_descriptor().
+  //
+
+  for (auto& range : mm::physical_memory_descriptor())
+  {
+    auto from = pa_t{ page_align   (range.begin().value(), pd_t{}) };
+    auto to   = pa_t{ page_align_up(range.end().value(),   pd_t{}) };
+
+    for (pa_t pa = from; pa < to; pa += ept_pd_t::size)
+    {
+      map_2mb(pa, pa, access);
+    }
   }
 }
 

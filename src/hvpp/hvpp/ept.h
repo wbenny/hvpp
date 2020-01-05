@@ -20,6 +20,7 @@ class ept_t final
     ept_t& operator=(ept_t&& other) noexcept = delete;
 
     void map_identity(epte_t::access_type access = epte_t::access_type::read_write_execute) noexcept;
+    void map_identity_sparse(epte_t::access_type access = epte_t::access_type::read_write_execute) noexcept;
 
     epte_t* map    (pa_t guest_pa, pa_t host_pa,
                     epte_t::access_type access = epte_t::access_type::read_write_execute,
