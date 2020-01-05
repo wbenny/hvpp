@@ -64,7 +64,7 @@ namespace hvpp::hypervisor
     bool    running;
   };
 
-  global_t global;
+  static global_t global;
 
   auto start(vmexit_handler& handler) noexcept -> error_code_t
   {
