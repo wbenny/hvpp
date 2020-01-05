@@ -19,6 +19,7 @@ namespace driver::common
   static bool   has_default_hypervisor_allocator_ = false;
   static void*  hypervisor_allocator_base_address_ = nullptr;
   static size_t hypervisor_allocator_capacity_ = 0;
+         size_t hypervisor_allocator_capacity__ = 0;  // read from registry
 
   auto
   initialize(
@@ -231,6 +232,15 @@ namespace driver::common
 
   auto hypervisor_allocator_recommended_capacity() noexcept -> size_t
   {
+    //
+    // If allocator capacity was set in the registry, prefer that value.
+    //
+
+    if (hypervisor_allocator_capacity__ > 0)
+    {
+      return hypervisor_allocator_capacity__;
+    }
+
     //
     // Estimate required memory size.
     // If hypervisor begins to run out of memory, required_memory_size

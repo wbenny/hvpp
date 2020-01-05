@@ -16,6 +16,10 @@
 # undef max
 #endif
 
+#define HVPP_MEMORY_TAG 'ppvh'
+
+#define HVPP_ALLOCATOR_CAPACITY_VALUE_NAME    L"AllocatorCapacity"
+
 //
 // Macro to extract access out of the device io control code
 //
@@ -46,14 +50,19 @@ extern "C"
 
 namespace driver
 {
-  void* begin_address               = nullptr;
-  void* end_address                 = nullptr;
+  void*   begin_address                   = nullptr;
+  void*   end_address                     = nullptr;
 
-  void* kernel_begin_address        = nullptr;
-  void* kernel_end_address          = nullptr;
+  void*   kernel_begin_address            = nullptr;
+  void*   kernel_end_address              = nullptr;
 
-  void* highest_user_address        = nullptr;
-  void* system_range_start_address  = nullptr;
+  void*   highest_user_address            = nullptr;
+  void*   system_range_start_address      = nullptr;
+
+  namespace common
+  {
+    extern size_t hypervisor_allocator_capacity__;
+  }
 }
 
 NTSTATUS
@@ -161,6 +170,94 @@ DriverDispatch(
   return Irp->IoStatus.Status;
 }
 
+NTSTATUS
+NTAPI
+DriverReadKey_ULONGLONG(
+  _In_ PUNICODE_STRING RegistryPath,
+  _In_ PUNICODE_STRING ValueName,
+  _Out_ PULONGLONG ValueContent
+  )
+{
+  NTSTATUS Status;
+
+  *ValueContent = 0;
+
+  HANDLE KeyHandle;
+  OBJECT_ATTRIBUTES ObjectAttributes;
+  InitializeObjectAttributes(&ObjectAttributes,
+                             RegistryPath,
+                             OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE,
+                             NULL,
+                             NULL);
+
+  Status = ZwOpenKey(&KeyHandle, KEY_READ, &ObjectAttributes);
+
+  if (!NT_SUCCESS(Status))
+  {
+    return Status;
+  }
+
+  ULONG ResultLength;
+  Status = ZwQueryValueKey(KeyHandle,
+                           ValueName,
+                           KeyValueFullInformation,
+                           NULL,
+                           0,
+                           &ResultLength);
+
+  if (Status != STATUS_BUFFER_TOO_SMALL)
+  {
+    ZwClose(KeyHandle);
+    return Status;
+  }
+
+  PKEY_VALUE_FULL_INFORMATION KeyValueInformation;
+  KeyValueInformation = (PKEY_VALUE_FULL_INFORMATION)(ExAllocatePoolWithTag(NonPagedPool,
+                                                                            ResultLength,
+                                                                            HVPP_MEMORY_TAG));
+
+  if (KeyValueInformation == NULL)
+  {
+    ZwClose(KeyHandle);
+    return Status;
+  }
+
+  Status = ZwQueryValueKey(KeyHandle,
+                           ValueName,
+                           KeyValueFullInformation,
+                           KeyValueInformation,
+                           ResultLength,
+                           &ResultLength);
+
+  if (!NT_SUCCESS(Status))
+  {
+    ExFreePoolWithTag(KeyValueInformation, HVPP_MEMORY_TAG);
+    ZwClose(KeyHandle);
+    return Status;
+  }
+
+  switch (KeyValueInformation->Type)
+  {
+    case REG_DWORD:
+      NT_ASSERT(KeyValueInformation->DataLength == sizeof(ULONG));
+      *ValueContent = *(PULONG)((PVOID)((ULONG_PTR)(KeyValueInformation) + KeyValueInformation->DataOffset));
+      break;
+
+    case REG_QWORD:
+      NT_ASSERT(KeyValueInformation->DataLength == sizeof(ULONGLONG));
+      *ValueContent = *(PULONGLONG)((PVOID)((ULONG_PTR)(KeyValueInformation) + KeyValueInformation->DataOffset));
+      break;
+
+    default:
+      Status = STATUS_DATA_ERROR;
+      break;
+  }
+
+  ExFreePoolWithTag(KeyValueInformation, HVPP_MEMORY_TAG);
+  ZwClose(KeyHandle);
+  return Status;
+}
+
 EXTERN_C
 VOID
 NTAPI
@@ -181,7 +278,7 @@ DriverEntry(
   _In_ PUNICODE_STRING RegistryPath
   )
 {
-  UNREFERENCED_PARAMETER(RegistryPath);
+  NTSTATUS Status;
 
   GlobalDriverObject = DriverObject;
   DriverObject->MajorFunction[IRP_MJ_CREATE]         = &DriverDispatch;
@@ -230,6 +327,21 @@ DriverEntry(
 
   driver::highest_user_address        = MmHighestUserAddress;
   driver::system_range_start_address  = MmSystemRangeStart;
+
+  //
+  // Check if the allocator capacity is preconfigured.
+  //
+
+  UNICODE_STRING AllocatorCapacityValueName = RTL_CONSTANT_STRING(HVPP_ALLOCATOR_CAPACITY_VALUE_NAME);
+  ULONGLONG AllocatorCapacity;
+  Status = DriverReadKey_ULONGLONG(RegistryPath,
+                                   &AllocatorCapacityValueName,
+                                   &AllocatorCapacity);
+
+  if (NT_SUCCESS(Status))
+  {
+    driver::common::hypervisor_allocator_capacity__ = AllocatorCapacity;
+  }
 
   auto err = driver::common::initialize(&driver::initialize,
                                         &driver::destroy);
