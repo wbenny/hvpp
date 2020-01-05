@@ -41,15 +41,17 @@ ept_t::~ept_t() noexcept
 void ept_t::map_identity(epte_t::access_type access /* = epte_t::access_type::read_write_execute */) noexcept
 {
   //
-  // This method will map the EPT in such way that they'll mirror
+  // This method will map the EPT in such a way that they'll mirror
   // host physical memory to the guest.  This means that physical memory
   // at address 0x4000 in the guest will point to the physical memory
   // at address 0x4000 in the host.
   //
-  // Only first 512 GB of physical memory is covered - hopefully that should
-  // cover most cases - and 2MB pages are used.
+  // Only first 512 GB of physical memory is covered - hopefully, that
+  // should cover most cases, including MMIO - and 2MB pages are used.
+  // There is a good chance that no EPT violations will occur with this
+  // setup (assuming that the EPT structure and/or access is not modified).
   //
-  // Usage of 2MB pages has following benefits:
+  // Usage of 2MB pages has the following benefits:
   //   - Compared to 4kb pages, it requires less memory to cover the same
   //     address space.
   //   - CPU spends less time walking the paging hierarchy (one level less).
@@ -59,13 +61,13 @@ void ept_t::map_identity(epte_t::access_type access /* = epte_t::access_type::re
   // Usage of 2MB pages has also following drawbacks:
   //   - Hooking of 2MB pages is inconvenient as we would get very frequent
   //     EPT violations.  If we want to do EPT hooking on smaller granularity
-  //     (i.e. 4kb) we have to split desired 2MB page into 4kb pages.
+  //     (i.e. 4kb) we have to split the desired 2MB page into 4kb pages.
   //   - Higher risk of MTRR conflict - see mtrr::type() method implementation -
   //     if two or more MTRRs are contained within single 2MB page and those
   //     MTRRs are of different types, the memory type of the whole 2MB page
   //     must be set to "least dangerous" option.  Worst case scenario is if
   //     UC (uncached) memory type collides with something else - the whole page
-  //     must be then set to UC type.  This may result in slight performance
+  //     must be then set to UC type.  This may result in a slight performance
   //     loss.
   //
 
