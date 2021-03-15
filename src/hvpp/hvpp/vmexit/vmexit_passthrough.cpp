@@ -39,30 +39,30 @@ namespace detail
   
   static bool is_syscall_instruction(const uint8_t* first, const uint8_t* last) noexcept
   {
-	first = skip_prefixes(first, last);
     static constexpr uint8_t opcode[] = { 0x0f, 0x05 };
-    return (last-first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
+    first = skip_prefixes(first, last);
+    return (last - first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
   }
 
   static bool is_sysret_instruction(const uint8_t* first, const uint8_t* last) noexcept
   {
-	first = skip_prefixes(first, last);
     static constexpr uint8_t opcode[] = { 0x48, 0x0f, 0x07 };
+    first = skip_prefixes(first, last);
     return (last-first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
   }
 
   static bool is_rdtsc_instruction(const uint8_t* first, const uint8_t* last) noexcept
   {
-	first = skip_prefixes(first, last);
     static constexpr uint8_t opcode[] = { 0x0f, 0x31 };
-    return (last-first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
+    first = skip_prefixes(first, last);
+    return (last - first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
   }
 
   static bool is_rdtscp_instruction(const uint8_t* first, const uint8_t* last) noexcept
   {
-	first = skip_prefixes(first, last);
     static constexpr uint8_t opcode[] = { 0x0f, 0x01, 0xf9 };
-    return (last-first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
+    first = skip_prefixes(first, last);
+    return (last - first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
   }
 }
 
