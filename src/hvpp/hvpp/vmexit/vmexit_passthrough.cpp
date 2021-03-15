@@ -1107,7 +1107,7 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
           uint8_t buffer[3];
 
           auto instruction_length = static_cast<size_t>(vp.exit_instruction_length());
-          auto read_size = std::max(instruction_length, sizeof(buffer));
+          auto read_size = std::min(instruction_length, sizeof(buffer));
 
           if (auto err_va = vp.guest_read_memory(vp.context().rip, buffer, read_size))
           {
@@ -1154,7 +1154,7 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
           uint8_t buffer[3];
 
           auto instruction_length = static_cast<size_t>(vp.exit_instruction_length());
-          auto read_size = std::max(instruction_length, sizeof(buffer));
+          auto read_size = std::min(instruction_length, sizeof(buffer));
 
           if (auto err_va = vp.guest_read_memory(vp.context().rip, buffer, read_size))
           {
