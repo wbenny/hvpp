@@ -12,6 +12,8 @@
 # include "hvpp/lib/vmware/vmware.h"
 #endif
 
+#include <algorithm>
+
 namespace hvpp {
 
 static constexpr uint64_t vmcall_terminate_id  = 0xDEAD;
@@ -19,28 +21,48 @@ static constexpr uint64_t vmcall_breakpoint_id = 0xAABB;
 
 namespace detail
 {
-  static bool is_syscall_instruction(const void* address) noexcept
+  static const uint8_t* skip_prefixes(const uint8_t* first, const uint8_t* last) noexcept
   {
+	  //
+	  // Return the first byte of the opcode that is not a prefix.
+	  //
+	  return std::find_if(first, last, [&](uint8_t byte){		  
+		  //
+		  // List of prefix types that should be skipped, LOCK is not included as it'd #UD.
+		  //
+		  static constexpr uint8_t skip_table[] = {
+			  0xF2, 0xF3, 0x2E, 0x36, 0x3E, 0x26, 0x64, 0x65, 0x2E, 0x3E, 0x66, 0x67
+		  };
+		  return std::find(std::begin(skip_table), std::end(skip_table), byte) == std::end(skip_table);
+	  }
+  }
+  
+  static bool is_syscall_instruction(const uint8_t* first, const uint8_t* last) noexcept
+  {
+	first = skip_prefixes(first, last);
     static constexpr uint8_t opcode[] = { 0x0f, 0x05 };
-    return memcmp(address, opcode, sizeof(opcode)) == 0;
+    return (last-first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
   }
 
-  static bool is_sysret_instruction(const void* address) noexcept
+  static bool is_sysret_instruction(const uint8_t* first, const uint8_t* last) noexcept
   {
+	first = skip_prefixes(first, last);
     static constexpr uint8_t opcode[] = { 0x48, 0x0f, 0x07 };
-    return memcmp(address, opcode, sizeof(opcode)) == 0;
+    return (last-first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
   }
 
-  static bool is_rdtsc_instruction(const void* address) noexcept
+  static bool is_rdtsc_instruction(const uint8_t* first, const uint8_t* last) noexcept
   {
+	first = skip_prefixes(first, last);
     static constexpr uint8_t opcode[] = { 0x0f, 0x31 };
-    return memcmp(address, opcode, sizeof(opcode)) == 0;
+    return (last-first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
   }
 
-  static bool is_rdtscp_instruction(const void* address) noexcept
+  static bool is_rdtscp_instruction(const uint8_t* first, const uint8_t* last) noexcept
   {
+	first = skip_prefixes(first, last);
     static constexpr uint8_t opcode[] = { 0x0f, 0x01, 0xf9 };
-    return memcmp(address, opcode, sizeof(opcode)) == 0;
+    return (last-first) >= std::size(opcode) && memcmp(first, opcode, sizeof(opcode)) == 0;
   }
 }
 
@@ -1101,10 +1123,9 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
         case exception_vector::invalid_opcode:
         {
           //
-          // 3 bytes are enough to hold either `syscall' or `sysret'
-          // instruction opcode.
+          // Have to fetch the full instruction to skip the prefixes.
           //
-          uint8_t buffer[3];
+          uint8_t buffer[15];
 
           auto instruction_length = static_cast<size_t>(vp.exit_instruction_length());
           auto read_size = std::min(instruction_length, sizeof(buffer));
@@ -1129,13 +1150,13 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
           //
           // Compare copied memory to `syscall' & `sysret' instructions.
           //
-          if (detail::is_syscall_instruction(buffer))
+          if (detail::is_syscall_instruction(&buffer[0], &buffer[read_size]))
           {
             handle_emulate_syscall(vp);
             vp.suppress_rip_adjust();
             return;
           }
-          else if (detail::is_sysret_instruction(buffer))
+          else if (detail::is_sysret_instruction(&buffer[0], &buffer[read_size]))
           {
             handle_emulate_sysret(vp);
             vp.suppress_rip_adjust();
@@ -1148,10 +1169,9 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
         case exception_vector::general_protection:
         {
           //
-          // 3 bytes are enough to hold either `rdtsc' or `rdtscp'
-          // instruction opcode.
+          // Have to fetch the full instruction to skip the prefixes.
           //
-          uint8_t buffer[3];
+          uint8_t buffer[15];
 
           auto instruction_length = static_cast<size_t>(vp.exit_instruction_length());
           auto read_size = std::min(instruction_length, sizeof(buffer));
@@ -1176,12 +1196,12 @@ void vmexit_passthrough_handler::handle_interrupt(vcpu_t& vp) noexcept
           //
           // Compare copied memory to `rdtsc' & `rdtscp' instructions.
           //
-          if (detail::is_rdtsc_instruction(buffer))
+          if (detail::is_rdtsc_instruction(&buffer[0], &buffer[read_size]))
           {
             handle_emulate_rdtsc(vp);
             return;
           }
-          else if (detail::is_rdtscp_instruction(buffer))
+          else if (detail::is_rdtscp_instruction(&buffer[0], &buffer[read_size]))
           {
             handle_emulate_rdtscp(vp);
             return;
